@@ -9,14 +9,14 @@ export const USGS_FEEDS = {
 export const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 export const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
 export const AUTO_REFRESH_MS = 15 * 60 * 1000;
-export const CACHE_KEY = "global-pulse-news-v2";
+export const CACHE_KEY = "global-pulse-news-v4";
 
 export const CATEGORY_CONFIG = {
-  all: { label: "全部", tone: "blue" },
-  international: { label: "国际", tone: "cyan" },
-  politics: { label: "政治", tone: "blue" },
-  economy: { label: "经济", tone: "cyan" },
-  technology: { label: "科技", tone: "blue" },
+  all: { label: "全球焦点", tone: "blue" },
+  international: { label: "国际政治", tone: "cyan" },
+  politics: { label: "国际政治", tone: "blue" },
+  economy: { label: "全球经济", tone: "cyan" },
+  technology: { label: "科技创新", tone: "blue" },
   ai: { label: "人工智能", tone: "cyan" },
   energy: { label: "能源", tone: "yellow" },
   disaster: { label: "自然灾害", tone: "red" },

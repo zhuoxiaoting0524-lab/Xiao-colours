@@ -10,6 +10,7 @@ import {
   parseGdeltDate,
   safeImageUrl,
 } from "./utils.js";
+import { clusterNewsEvents } from "./news-quality.js";
 
 const REQUEST_TIMEOUT_MS = 30000;
 const CORS_TIMEOUT_MS = 12000;
@@ -22,7 +23,7 @@ function normalizeArticles(rawArticles) {
     const url = canonicalUrl(String(raw.url || "").trim());
     if (!title || !/^https?:\/\//i.test(url)) continue;
 
-    const key = `${title.toLocaleLowerCase()}|${new URL(url).hostname.replace(/^www\./, "")}`;
+    const key = url;
     if (deduped.has(key)) continue;
 
     deduped.set(key, {
@@ -38,9 +39,10 @@ function normalizeArticles(rawArticles) {
     });
   }
 
-  return [...deduped.values()].sort((a, b) => {
+  const normalized = [...deduped.values()].sort((a, b) => {
     return (b.publishedAt?.valueOf() || 0) - (a.publishedAt?.valueOf() || 0);
   });
+  return clusterNewsEvents(normalized);
 }
 
 function serializeSnapshot(snapshot) {
@@ -49,6 +51,11 @@ function serializeSnapshot(snapshot) {
     articles: snapshot.articles.map((article) => ({
       ...article,
       publishedAt: article.publishedAt?.toISOString() || null,
+      eventUpdatedAt: article.eventUpdatedAt?.toISOString() || null,
+      relatedSources: (article.relatedSources || []).map((source) => ({
+        ...source,
+        publishedAt: source.publishedAt?.toISOString() || null,
+      })),
     })),
     fetchedAt: snapshot.fetchedAt?.toISOString() || null,
   };
@@ -61,6 +68,11 @@ function hydrateSnapshot(snapshot) {
     articles: snapshot.articles.map((article) => ({
       ...article,
       publishedAt: article.publishedAt ? new Date(article.publishedAt) : null,
+      eventUpdatedAt: article.eventUpdatedAt ? new Date(article.eventUpdatedAt) : null,
+      relatedSources: (article.relatedSources || []).map((source) => ({
+        ...source,
+        publishedAt: source.publishedAt ? new Date(source.publishedAt) : null,
+      })),
     })),
     earthquakes: Array.isArray(snapshot.earthquakes) ? snapshot.earthquakes : [],
     fetchedAt: snapshot.fetchedAt ? new Date(snapshot.fetchedAt) : null,

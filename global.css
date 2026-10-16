@@ -1,5 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap");
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 122px;
+}
+
 .gp-app {
   --gp-bg: #0b1020;
   --gp-card: #151c2e;
@@ -111,6 +116,7 @@
   position: sticky;
   z-index: 30;
   top: 0;
+  isolation: isolate;
   border-bottom: 1px solid var(--gp-line);
   background: color-mix(in srgb, var(--gp-bg) 90%, transparent);
   backdrop-filter: blur(18px) saturate(120%);
@@ -336,7 +342,8 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 32px;
-  padding: clamp(48px, 7vw, 96px) 0 clamp(38px, 5vw, 68px);
+  padding: clamp(58px, 7vw, 92px) 0 clamp(42px, 5vw, 66px);
+  scroll-margin-top: 122px;
 }
 
 .gp-kicker,
@@ -357,7 +364,7 @@
 }
 
 .gp-intro__subtitle {
-  margin: 19px 0 0;
+  margin: 16px 0 0;
   color: var(--gp-muted);
   font-size: clamp(14px, 1.3vw, 18px);
   letter-spacing: 0.04em;
@@ -384,6 +391,7 @@
 
 .gp-section {
   margin-bottom: clamp(56px, 7vw, 96px);
+  scroll-margin-top: 122px;
 }
 
 .gp-section-heading,
@@ -462,7 +470,7 @@
 .gp-featured-card__media::after {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(5, 9, 18, 0.06) 5%, rgba(5, 9, 18, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(5, 9, 18, 0.03) 18%, rgba(5, 9, 18, 0.28) 56%, rgba(5, 9, 18, 0.94) 100%);
   content: "";
 }
 
@@ -555,6 +563,16 @@
   gap: 8px;
   color: var(--gp-muted);
   font-size: 10px;
+  line-height: 1.45;
+}
+
+.gp-featured-card__meta > span:not(:first-child)::before,
+.gp-featured-card__meta > time::before,
+.gp-news-card__meta > span:not(:first-child)::before,
+.gp-news-card__meta > time::before {
+  margin-right: 8px;
+  color: color-mix(in srgb, currentColor 48%, transparent);
+  content: "·";
 }
 
 .gp-featured-card__source,
@@ -657,6 +675,48 @@
   min-height: 520px;
   overflow: hidden;
   background: #09101e;
+}
+
+.gp-map-context {
+  display: grid;
+  grid-template-columns: 1.1fr 0.65fr 0.65fr 1.25fr;
+  border-bottom: 1px solid var(--gp-line);
+  background: color-mix(in srgb, var(--gp-card-secondary) 62%, transparent);
+}
+
+.gp-map-context div {
+  min-width: 0;
+  padding: 13px 16px;
+  border-right: 1px solid var(--gp-line);
+}
+
+.gp-map-context div:last-child {
+  border-right: 0;
+}
+
+.gp-map-context span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--gp-faint);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+.gp-map-context strong {
+  display: block;
+  overflow: hidden;
+  color: var(--gp-text);
+  font-size: 10px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gp-map-context div:nth-child(2) strong,
+.gp-map-context div:nth-child(3) strong {
+  color: var(--gp-cyan);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
 }
 
 #gp-world-map {
@@ -826,6 +886,73 @@
   color: var(--gp-muted);
   font-size: 10px;
   line-height: 1.5;
+}
+
+.gp-related-coverage {
+  border-top: 1px solid var(--gp-line);
+}
+
+.gp-related-coverage__heading {
+  padding: 17px 20px 10px;
+}
+
+.gp-related-coverage__heading h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+}
+
+.gp-related-coverage__heading span {
+  color: var(--gp-faint);
+  font-size: 8px;
+}
+
+.gp-related-event {
+  border-top: 1px solid var(--gp-line);
+}
+
+.gp-related-event summary {
+  display: grid;
+  gap: 5px;
+  padding: 12px 20px;
+  font-size: 10px;
+  line-height: 1.5;
+  list-style-position: inside;
+}
+
+.gp-related-event summary small {
+  color: var(--gp-cyan);
+  font-size: 8px;
+}
+
+.gp-related-event ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0;
+  padding: 0 20px 14px;
+  list-style: none;
+}
+
+.gp-related-event li a {
+  display: inline-flex;
+  padding: 5px 7px;
+  border: 1px solid var(--gp-line);
+  border-radius: 6px;
+  color: var(--gp-muted);
+  font-size: 8px;
+}
+
+.gp-related-event li a:hover {
+  border-color: var(--gp-line-strong);
+  color: var(--gp-cyan);
+}
+
+.gp-related-empty {
+  margin: 0;
+  padding: 10px 20px 18px;
+  color: var(--gp-muted);
+  font-size: 10px;
+  line-height: 1.6;
 }
 
 .gp-major-events {
@@ -1115,10 +1242,53 @@
 
 .gp-news-card details p {
   margin: 0;
-  padding: 0 18px 15px;
   color: var(--gp-muted);
   font-size: 10px;
   line-height: 1.6;
+}
+
+.gp-news-detail {
+  display: grid;
+  gap: 10px;
+  padding: 0 18px 16px;
+}
+
+.gp-news-detail p b {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--gp-text);
+  font-size: 9px;
+}
+
+.gp-related-sources {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gp-related-sources li {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border: 1px solid var(--gp-line);
+  border-radius: 8px;
+  background: var(--gp-card-secondary);
+}
+
+.gp-related-sources a {
+  width: max-content;
+  color: var(--gp-cyan);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.gp-related-sources span,
+.gp-related-sources small {
+  color: var(--gp-faint);
+  font-size: 8px;
+  line-height: 1.5;
 }
 
 .gp-news-skeleton {
@@ -1339,10 +1509,12 @@
   .gp-world-brief { display: grid; grid-template-columns: 1fr 1fr; }
   .gp-world-brief .gp-card-heading { grid-column: 1 / -1; }
   .gp-brief-details { align-self: start; }
+  .gp-related-coverage { grid-column: 1 / -1; }
   .gp-major-events { grid-column: 1 / -1; }
 }
 
 @media (max-width: 860px) {
+  html { scroll-padding-top: 24px; }
   .gp-app { --gp-page: min(100% - 28px, 820px); }
   .gp-header { position: relative; }
   .gp-header__inner { grid-template-columns: 1fr auto; padding: 12px 0; }
@@ -1355,6 +1527,7 @@
   .gp-news-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gp-filter-row { align-items: stretch; flex-direction: column; }
   .gp-time-filter select { width: 100%; }
+  .gp-section, .gp-intro { scroll-margin-top: 24px; }
 }
 
 @media (max-width: 620px) {
@@ -1383,6 +1556,9 @@
   .gp-map-heading .gp-segmented { width: 100%; }
   .gp-segmented button { flex: 1; }
   .gp-map-stage { height: 480px; min-height: 480px; }
+  .gp-map-context { grid-template-columns: 1fr 1fr; }
+  .gp-map-context div:nth-child(2) { border-right: 0; }
+  .gp-map-context div:nth-child(-n + 2) { border-bottom: 1px solid var(--gp-line); }
   .gp-map-legend { right: 9px; bottom: 9px; }
   .gp-world-brief { display: flex; }
   .gp-section-heading--feed { align-items: flex-start; flex-direction: column; }

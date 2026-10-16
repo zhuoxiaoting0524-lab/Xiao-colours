@@ -88,12 +88,18 @@ export function filterArticles(articles, filters) {
   const threshold = Date.now() - windowMs;
 
   return articles.filter((article) => {
-    const categoryMatches = filters.category === "all" || article.category === filters.category;
-    const regionMatches = filters.region === "all" || article.country === filters.region;
-    const searchMatches = !search || `${article.title} ${article.source} ${article.country} ${categoryLabel(article.category)}`
+    const categoryMatches = filters.category === "all"
+      || article.category === filters.category
+      || (filters.category === "politics" && article.category === "international");
+    const regionMatches = filters.region === "all"
+      || article.country === filters.region
+      || article.countries?.includes(filters.region);
+    const relatedText = (article.relatedSources || []).map((source) => `${source.title} ${source.source} ${source.country}`).join(" ");
+    const searchMatches = !search || `${article.title} ${article.source} ${article.country} ${categoryLabel(article.category)} ${relatedText}`
       .toLocaleLowerCase()
       .includes(search);
-    const timeMatches = !article.publishedAt || article.publishedAt.valueOf() >= threshold;
+    const relevantTime = article.eventUpdatedAt || article.publishedAt;
+    const timeMatches = !relevantTime || relevantTime.valueOf() >= threshold;
     return categoryMatches && regionMatches && searchMatches && timeMatches;
   });
 }

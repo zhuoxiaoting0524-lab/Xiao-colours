@@ -101,14 +101,21 @@
         <div class="gp-intelligence__map gp-card">
           <div class="gp-card-heading gp-map-heading">
             <div>
-              <p class="gp-section-index">02 / LIVE MAP</p>
-              <h2 id="gp-map-title">全球实时地图</h2>
+              <p class="gp-section-index">02 / LIVE INTELLIGENCE MAP</p>
+              <h2 id="gp-map-title">全球实时动态</h2>
             </div>
             <div class="gp-segmented" role="group" aria-label="地图图层">
               <button class="is-active" type="button" data-gp-layer="all" aria-pressed="true">全部</button>
               <button type="button" data-gp-layer="news" aria-pressed="false">媒体来源</button>
               <button type="button" data-gp-layer="quake" aria-pressed="false">地震</button>
             </div>
+          </div>
+
+          <div class="gp-map-context" aria-label="地图实时统计">
+            <div><span>最近更新</span><strong id="gp-map-updated">尚未更新</strong></div>
+            <div><span>地震事件</span><strong id="gp-map-quake-count">0</strong></div>
+            <div><span>媒体地区</span><strong id="gp-map-region-count">0</strong></div>
+            <div><span>当前范围</span><strong id="gp-map-filter-summary">全球 · 全球焦点</strong></div>
           </div>
 
           <div class="gp-map-stage" id="gp-map-stage">
@@ -159,6 +166,16 @@
             </ul>
           </details>
 
+          <div class="gp-related-coverage">
+            <div class="gp-related-coverage__heading">
+              <h3>关联报道</h3>
+              <span>标题相似度聚合 · 非 AI</span>
+            </div>
+            <div id="gp-related-coverage">
+              <div class="gp-inline-skeleton"></div>
+            </div>
+          </div>
+
           <div class="gp-major-events">
             <div class="gp-major-events__heading">
               <h3>重点信号</h3>
@@ -192,11 +209,10 @@
 
         <div class="gp-filter-row" aria-label="新闻筛选">
           <div class="gp-category-tabs" id="gp-category-tabs" role="group" aria-label="新闻分类">
-            <button class="is-active" type="button" data-gp-category="all" aria-pressed="true">全部</button>
-            <button type="button" data-gp-category="international" aria-pressed="false">国际</button>
-            <button type="button" data-gp-category="politics" aria-pressed="false">政治</button>
-            <button type="button" data-gp-category="economy" aria-pressed="false">经济</button>
-            <button type="button" data-gp-category="technology" aria-pressed="false">科技</button>
+            <button class="is-active" type="button" data-gp-category="all" aria-pressed="true">全球焦点</button>
+            <button type="button" data-gp-category="politics" aria-pressed="false">国际政治</button>
+            <button type="button" data-gp-category="economy" aria-pressed="false">全球经济</button>
+            <button type="button" data-gp-category="technology" aria-pressed="false">科技创新</button>
             <button type="button" data-gp-category="ai" aria-pressed="false">人工智能</button>
             <button type="button" data-gp-category="energy" aria-pressed="false">能源</button>
             <button type="button" data-gp-category="disaster" aria-pressed="false">自然灾害</button>

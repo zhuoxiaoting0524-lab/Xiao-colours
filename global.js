@@ -6,13 +6,14 @@ import {
   MajorEvents,
   NewsFeed,
   NewsFilters,
+  RelatedCoverage,
   ThemeToggle,
   TopStories,
   WorldBrief,
   categoryExists,
 } from "./global/components.js";
 import { GlobalMapSection } from "./global/map.js";
-import { debounce, filterArticles } from "./global/utils.js";
+import { categoryLabel, debounce, filterArticles, fullDateTime, uniqueValues } from "./global/utils.js";
 
 const elements = {
   body: document.body,
@@ -34,6 +35,11 @@ const elements = {
   mapStage: document.querySelector("#gp-map-stage"),
   map: document.querySelector("#gp-world-map"),
   mapLoading: document.querySelector("#gp-map-loading"),
+  mapUpdated: document.querySelector("#gp-map-updated"),
+  mapQuakeCount: document.querySelector("#gp-map-quake-count"),
+  mapRegionCount: document.querySelector("#gp-map-region-count"),
+  mapFilterSummary: document.querySelector("#gp-map-filter-summary"),
+  relatedCoverage: document.querySelector("#gp-related-coverage"),
   backToTop: document.querySelector("#gp-back-to-top"),
   toast: document.querySelector("#gp-toast"),
   utcClock: document.querySelector("#gp-utc-clock"),
@@ -54,6 +60,7 @@ const state = {
 };
 
 const dataService = new GlobalPulseDataService();
+let activeLoadId = 0;
 const mapSection = new GlobalMapSection({
   mapElement: elements.map,
   loadingElement: elements.mapLoading,
@@ -75,9 +82,18 @@ function render() {
   NewsFeed(elements.newsFeed, visible);
   WorldBrief(elements.briefMetrics, visible);
   MajorEvents(elements.majorEvents, visible);
+  RelatedCoverage(elements.relatedCoverage, visible);
   mapSection.update({ articles: visible, earthquakes: state.earthquakes });
   elements.resultCount.textContent = `${visible.length} 条新闻`;
   LastUpdatedIndicator(elements.updated, state.fetchedAt, state.source);
+  const mediaRegions = uniqueValues(visible.flatMap((article) => {
+    return article.countries?.length ? article.countries : [article.country];
+  }).filter((country) => country && country !== "来源地未知"));
+  elements.mapUpdated.textContent = state.fetchedAt ? fullDateTime(state.fetchedAt) : "尚未更新";
+  elements.mapQuakeCount.textContent = String(state.earthquakes.length);
+  elements.mapRegionCount.textContent = String(mediaRegions.length);
+  const regionLabel = state.filters.region === "all" ? "全球" : state.filters.region;
+  elements.mapFilterSummary.textContent = `${regionLabel} · ${categoryLabel(state.filters.category)}`;
 }
 
 function setLoading(loading) {
@@ -150,7 +166,7 @@ function renderLoadError(error) {
 }
 
 async function loadData({ announce = false } = {}) {
-  if (state.loading) return;
+  const loadId = ++activeLoadId;
   setLoading(true);
   GlobalPulseHeader({
     statusText: elements.statusText,
@@ -161,12 +177,14 @@ async function loadData({ announce = false } = {}) {
 
   try {
     const snapshot = await dataService.load(state.filters.time, { force: true });
+    if (loadId !== activeLoadId) return;
     applySnapshot(snapshot, { announce });
   } catch (error) {
+    if (loadId !== activeLoadId) return;
     renderLoadError(error);
     if (announce) showToast("更新失败，请稍后重试");
   } finally {
-    setLoading(false);
+    if (loadId === activeLoadId) setLoading(false);
   }
 }
 
@@ -221,6 +239,7 @@ elements.categoryTabs.addEventListener("click", (event) => {
 
 elements.time.addEventListener("change", () => {
   state.filters.time = elements.time.value;
+  render();
   loadData({ announce: true });
 });
 

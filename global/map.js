@@ -102,8 +102,11 @@ export class GlobalMapSection {
     this.quakeLayer.clearLayers();
 
     const byCountry = this.articles.reduce((groups, article) => {
-      if (!COUNTRY_COORDS[article.country]) return groups;
-      (groups[article.country] ||= []).push(article);
+      const countries = article.countries?.length ? article.countries : [article.country];
+      countries.forEach((country) => {
+        if (!COUNTRY_COORDS[country]) return;
+        (groups[country] ||= []).push(article);
+      });
       return groups;
     }, {});
 
@@ -115,7 +118,7 @@ export class GlobalMapSection {
       });
       marker.bindPopup(`
         <b>${escapeHtml(country)} · 媒体来源聚合</b><br>
-        ${articles.length} 条已载入报道的发布媒体来源于该国。<br>
+        ${articles.length} 个新闻事件包含来自该国的媒体来源。<br>
         此标记不是新闻事件坐标。<br>
         <a href="#gp-news-feed" data-gp-map-country="${escapeHtml(country)}">在新闻列表中筛选 →</a>`);
       marker.on("popupopen", (event) => {
