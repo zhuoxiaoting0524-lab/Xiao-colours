@@ -2,7 +2,7 @@
 
 ## World Monitor
 
-“全球动态”页面的产品思路与信息架构参考了 [World Monitor](https://github.com/koala73/worldmonitor)。World Monitor 源代码采用 **AGPL-3.0-only** 许可证，版权归原作者及贡献者所有。
+“GLOBAL PULSE 全球脉搏”页面的产品思路与信息架构参考了 [World Monitor](https://github.com/koala73/worldmonitor)。World Monitor 源代码采用 **AGPL-3.0-only** 许可证，版权归原作者及贡献者所有。
 
 当前实现没有复制或打包 World Monitor 的源代码，也没有使用其官方商标、标识、付费 API 或需要授权的密钥。页面底部保留了项目名称、源码链接和许可证背景说明。如果未来直接合并、修改或网络提供 World Monitor 的 AGPL 源码，应按适用的 AGPL-3.0 要求向用户提供对应源代码。
 

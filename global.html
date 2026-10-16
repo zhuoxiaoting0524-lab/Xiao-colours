@@ -5,224 +5,238 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="全球动态——基于 GDELT 与 USGS 公开数据的实时新闻与事件监控中心。"
+      content="GLOBAL PULSE 全球脉搏——基于 GDELT 与 USGS 公开数据的全球实时新闻与情报中心。"
     />
-    <meta name="theme-color" content="#07110f" />
-    <title>全球动态｜卓潇婷</title>
+    <meta name="theme-color" content="#0B1020" />
+    <title>GLOBAL PULSE 全球脉搏｜卓潇婷</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-    <link
-      rel="preconnect"
-      href="https://api.gdeltproject.org"
-      crossorigin
-    />
+    <link rel="preconnect" href="https://api.gdeltproject.org" crossorigin />
+    <link rel="preconnect" href="https://earthquake.usgs.gov" crossorigin />
     <link rel="stylesheet" href="./global.css" />
-    <script src="./global.js" defer></script>
+    <script type="module" src="./global.js"></script>
   </head>
-  <body>
-    <a class="skip-link" href="#news-stream">跳到新闻列表</a>
+  <body class="gp-app" data-gp-theme="dark">
+    <a class="gp-skip-link" href="#gp-news-feed">跳到新闻列表</a>
 
-    <header class="monitor-header">
-      <a class="monitor-brand" href="./index.html" aria-label="返回卓潇婷的个人主页">
-        <span class="monitor-brand-mark" aria-hidden="true">潇</span>
-        <span class="monitor-brand-copy">
-          <b>卓潇婷</b>
-          <small>PERSONAL SPACE</small>
-        </span>
-      </a>
+    <header class="gp-header" id="gp-top">
+      <div class="gp-header__inner">
+        <a class="gp-brand" href="./index.html" aria-label="返回卓潇婷的个人主页">
+          <span class="gp-brand__mark" aria-hidden="true">GP</span>
+          <span class="gp-brand__copy">
+            <b>GLOBAL PULSE</b>
+            <small>全球脉搏</small>
+          </span>
+        </a>
 
-      <nav class="monitor-nav" aria-label="页面导航">
-        <a href="./index.html">个人主页</a>
-        <a class="is-active" href="./global.html" aria-current="page">全球动态</a>
-      </nav>
+        <nav class="gp-nav" aria-label="页面导航">
+          <a href="./index.html">个人主页</a>
+          <a class="is-active" href="./global.html" aria-current="page">全球脉搏</a>
+        </nav>
 
-      <div class="header-status" title="数据由公开接口按需更新">
-        <span class="pulse-dot" aria-hidden="true"></span>
-        <span>LIVE DATA</span>
-      </div>
-    </header>
-
-    <main>
-      <section class="monitor-intro" aria-labelledby="page-title">
-        <div>
-          <p class="monitor-eyebrow">GLOBAL SITUATION ROOM · OPEN DATA</p>
-          <h1 id="page-title">全球动态</h1>
-          <p class="monitor-description">
-            从全球公开新闻与地震监测数据中，快速了解此刻正在发生什么。
-          </p>
-        </div>
-
-        <div class="clock-card" aria-label="当前协调世界时">
-          <span>UTC</span>
-          <strong id="utc-clock">--:--:--</strong>
-          <small id="utc-date">---- / -- / --</small>
-        </div>
-      </section>
-
-      <section class="control-deck" aria-label="新闻筛选条件">
-        <label class="search-control">
-          <span class="control-label">搜索新闻</span>
-          <span class="input-wrap">
+        <div class="gp-header__tools">
+          <label class="gp-search" for="gp-search-input">
             <svg aria-hidden="true" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="6.5"></circle>
               <path d="m16 16 4 4"></path>
             </svg>
-            <input id="news-search" type="search" placeholder="输入关键词，例如 AI、能源、贸易" autocomplete="off" />
-          </span>
-        </label>
+            <input id="gp-search-input" type="search" placeholder="搜索新闻" autocomplete="off" />
+          </label>
 
-        <label>
-          <span class="control-label">国家 / 地区</span>
-          <select id="country-filter">
-            <option value="all">全部地区</option>
-          </select>
-        </label>
+          <label class="gp-select-wrap" for="gp-region-filter">
+            <span class="gp-sr-only">筛选地区</span>
+            <select id="gp-region-filter">
+              <option value="all">全球地区</option>
+            </select>
+          </label>
 
-        <label>
-          <span class="control-label">新闻分类</span>
-          <select id="category-filter">
-            <option value="all">全球综合</option>
-            <option value="politics">国际政治</option>
-            <option value="conflict">地缘冲突</option>
-            <option value="economy">全球经济</option>
-            <option value="technology">科技与 AI</option>
-            <option value="disaster">自然灾害</option>
-            <option value="trade">国际贸易</option>
-            <option value="energy">能源动态</option>
-          </select>
-        </label>
-
-        <label>
-          <span class="control-label">时间范围</span>
-          <select id="time-filter">
-            <option value="1h">最近 1 小时</option>
-            <option value="1d" selected>最近 24 小时</option>
-            <option value="1w">最近 7 天</option>
-          </select>
-        </label>
-
-        <button class="refresh-button" id="refresh-button" type="button">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"></path><path d="M18.3 9A7 7 0 0 0 6.1 6.1L4 8m2 7a7 7 0 0 0 11.9 2.9L20 16"></path></svg>
-          <span>刷新</span>
-        </button>
-      </section>
-
-      <section class="data-status" aria-live="polite">
-        <div class="status-copy">
-          <span class="status-light" id="status-light" aria-hidden="true"></span>
-          <span id="status-text">正在连接全球新闻数据…</span>
+          <button class="gp-theme-toggle" id="gp-theme-toggle" type="button" aria-label="切换为浅色模式" aria-pressed="false">
+            <svg class="gp-theme-toggle__sun" aria-hidden="true" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3.5"></circle>
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+            </svg>
+            <span>主题</span>
+          </button>
         </div>
-        <div class="status-meta">
-          <span id="result-count">0 条新闻</span>
-          <span aria-hidden="true">·</span>
-          <span id="updated-at">尚未更新</span>
+      </div>
+
+      <div class="gp-statusbar" aria-live="polite">
+        <div class="gp-live-state">
+          <span class="gp-live-dot is-loading" id="gp-status-dot" aria-hidden="true"></span>
+          <span id="gp-status-text">正在连接全球数据源…</span>
+        </div>
+        <div class="gp-last-updated" id="gp-last-updated">尚未更新</div>
+      </div>
+    </header>
+
+    <main class="gp-main">
+      <section class="gp-intro" aria-labelledby="gp-page-title">
+        <div>
+          <p class="gp-kicker">MIDNIGHT INTELLIGENCE · OPEN DATA</p>
+          <h1 id="gp-page-title">GLOBAL PULSE</h1>
+          <p class="gp-intro__subtitle">全球脉搏 · 洞察世界每一刻</p>
+        </div>
+        <div class="gp-intro__meta">
+          <span>REAL-TIME SIGNALS</span>
+          <strong id="gp-utc-clock">--:-- UTC</strong>
         </div>
       </section>
 
-      <section class="dashboard-grid">
-        <section class="panel news-panel" aria-labelledby="news-title">
-          <div class="panel-heading">
+      <section class="gp-section gp-focus" aria-labelledby="gp-focus-title">
+        <div class="gp-section-heading">
+          <div>
+            <p class="gp-section-index">01 / TOP STORIES</p>
+            <h2 id="gp-focus-title">今日全球焦点</h2>
+          </div>
+          <a class="gp-text-link" href="#gp-explore">查看全部新闻 <span aria-hidden="true">↓</span></a>
+        </div>
+
+        <div class="gp-top-stories" id="gp-top-stories" aria-live="polite">
+          <div class="gp-story-skeleton gp-story-skeleton--large"></div>
+          <div class="gp-story-skeleton"></div>
+          <div class="gp-story-skeleton"></div>
+        </div>
+      </section>
+
+      <section class="gp-section gp-intelligence" aria-labelledby="gp-map-title">
+        <div class="gp-intelligence__map gp-card">
+          <div class="gp-card-heading gp-map-heading">
             <div>
-              <span class="panel-index">01</span>
-              <h2 id="news-title">全球最新新闻</h2>
+              <p class="gp-section-index">02 / LIVE MAP</p>
+              <h2 id="gp-map-title">全球实时地图</h2>
             </div>
-            <button class="icon-button" id="clear-filters" type="button" title="清除筛选">重置</button>
-          </div>
-
-          <div class="source-note">
-            <span>数据源</span>
-            <a href="https://www.gdeltproject.org/" target="_blank" rel="noopener noreferrer">GDELT Project ↗</a>
-          </div>
-
-          <div class="news-stream" id="news-stream" tabindex="-1">
-            <div class="news-skeleton" aria-label="正在加载新闻">
-              <i></i><i></i><i></i><i></i>
+            <div class="gp-segmented" role="group" aria-label="地图图层">
+              <button class="is-active" type="button" data-gp-layer="all" aria-pressed="true">全部</button>
+              <button type="button" data-gp-layer="news" aria-pressed="false">媒体来源</button>
+              <button type="button" data-gp-layer="quake" aria-pressed="false">地震</button>
             </div>
           </div>
-        </section>
 
-        <section class="panel map-panel" aria-labelledby="map-title">
-          <div class="panel-heading map-heading">
+          <div class="gp-map-stage" id="gp-map-stage">
+            <div id="gp-world-map" aria-label="可缩放和拖动的全球新闻来源与地震事件地图"></div>
+            <div class="gp-map-loading" id="gp-map-loading">
+              <span aria-hidden="true"></span>
+              <p>地图将在进入视野后加载</p>
+            </div>
+            <div class="gp-map-legend" aria-label="地图图例">
+              <span><i class="is-news"></i>媒体来源国</span>
+              <span><i class="is-disaster"></i>M4.5+ 地震</span>
+              <span><i class="is-critical"></i>M6.0+ 重大地震</span>
+            </div>
+          </div>
+
+          <p class="gp-map-note">
+            蓝色标记是媒体来源国聚合，不代表新闻发生地；黄色与橙红色事件使用 USGS 提供的真实坐标。
+          </p>
+        </div>
+
+        <aside class="gp-world-brief gp-card" aria-labelledby="gp-brief-title">
+          <div class="gp-card-heading">
             <div>
-              <span class="panel-index">02</span>
-              <h2 id="map-title">全球事件地图</h2>
+              <p class="gp-section-index">03 / AI WORLD BRIEF</p>
+              <h2 id="gp-brief-title">AI 世界简报</h2>
             </div>
-            <div class="map-layer-switch" role="group" aria-label="地图图层">
-              <button class="is-active" type="button" data-layer="all" aria-pressed="true">全部</button>
-              <button type="button" data-layer="news" aria-pressed="false">新闻</button>
-              <button type="button" data-layer="quake" aria-pressed="false">地震</button>
-            </div>
+            <span class="gp-badge gp-badge--muted">未启用</span>
           </div>
 
-          <div class="map-stage" id="map-stage">
-            <div id="world-map" aria-label="可缩放和拖动的全球新闻与地震地图"></div>
-            <div class="map-loading" id="map-loading">
-              <span></span>
-              <p>正在加载地图与实时事件…</p>
-            </div>
-            <div class="map-legend" aria-label="地图图例">
-              <span><i class="legend-news"></i>新闻来源国</span>
-              <span><i class="legend-quake"></i>M4.5+ 地震</span>
-            </div>
+          <div class="gp-brief-state">
+            <span class="gp-brief-state__icon" aria-hidden="true">AI</span>
+            <h3>等待安全的模型服务</h3>
+            <p>当前网站没有服务端 AI 接口，因此不会生成或展示未经来源支持的分析。</p>
           </div>
 
-          <div class="map-disclosure">
-            新闻圆点表示媒体来源国，不等同于事件发生地；地震坐标来自 USGS。
+          <div class="gp-brief-metrics" id="gp-brief-metrics" aria-label="当前新闻数据概览">
+            <div><strong>—</strong><span>新闻</span></div>
+            <div><strong>—</strong><span>媒体</span></div>
+            <div><strong>—</strong><span>地区</span></div>
           </div>
-        </section>
 
-        <aside class="right-column" aria-label="重大事件与分析">
-          <section class="panel briefing-panel" aria-labelledby="briefing-title">
-            <div class="panel-heading compact">
-              <div>
-                <span class="panel-index">03</span>
-                <h2 id="briefing-title">态势概览</h2>
-              </div>
-              <span class="method-badge">统计生成</span>
-            </div>
-            <div class="briefing-content" id="briefing-content">
-              <p>新闻载入后，将根据来源国、媒体与分类生成透明的统计概览。</p>
-            </div>
-          </section>
+          <details class="gp-brief-details">
+            <summary>启用后可提供什么？</summary>
+            <ul>
+              <li>今日重点新闻中文摘要</li>
+              <li>相同事件的多来源归类</li>
+              <li>关联原始报道的媒体视角比较</li>
+            </ul>
+          </details>
 
-          <section class="panel events-panel" aria-labelledby="events-title">
-            <div class="panel-heading compact">
-              <div>
-                <span class="panel-index">04</span>
-                <h2 id="events-title">重大事件</h2>
-              </div>
-              <span class="method-badge">规则筛选</span>
+          <div class="gp-major-events">
+            <div class="gp-major-events__heading">
+              <h3>重点信号</h3>
+              <span>关键词规则筛选，非 AI 判断</span>
             </div>
-            <div class="event-list" id="event-list">
-              <p class="empty-copy">等待实时数据…</p>
+            <div id="gp-major-events">
+              <div class="gp-inline-skeleton"></div>
+              <div class="gp-inline-skeleton"></div>
             </div>
-          </section>
-
-          <section class="panel ai-panel" aria-labelledby="ai-title">
-            <div class="panel-heading compact">
-              <div>
-                <span class="panel-index">AI</span>
-                <h2 id="ai-title">AI 新闻分析</h2>
-              </div>
-              <span class="method-badge is-muted">未接入</span>
-            </div>
-            <p>
-              当前网站没有安全的服务端模型接口，因此不会伪造 AI 摘要。接入后端模型服务后，可在这里启用中文摘要与多源对比。
-            </p>
-          </section>
+          </div>
         </aside>
+      </section>
+
+      <section class="gp-section gp-explore" id="gp-explore" aria-labelledby="gp-explore-title">
+        <div class="gp-section-heading gp-section-heading--feed">
+          <div>
+            <p class="gp-section-index">04 / EXPLORE THE WORLD</p>
+            <h2 id="gp-explore-title">探索全球新闻</h2>
+          </div>
+          <div class="gp-feed-meta">
+            <span id="gp-result-count">0 条新闻</span>
+            <button id="gp-refresh-button" class="gp-refresh-button" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M20 7v5h-5M4 17v-5h5"></path>
+                <path d="M18.3 9A7 7 0 0 0 6.1 6.1L4 8m2 7a7 7 0 0 0 11.9 2.9L20 16"></path>
+              </svg>
+              刷新数据
+            </button>
+          </div>
+        </div>
+
+        <div class="gp-filter-row" aria-label="新闻筛选">
+          <div class="gp-category-tabs" id="gp-category-tabs" role="group" aria-label="新闻分类">
+            <button class="is-active" type="button" data-gp-category="all" aria-pressed="true">全部</button>
+            <button type="button" data-gp-category="international" aria-pressed="false">国际</button>
+            <button type="button" data-gp-category="politics" aria-pressed="false">政治</button>
+            <button type="button" data-gp-category="economy" aria-pressed="false">经济</button>
+            <button type="button" data-gp-category="technology" aria-pressed="false">科技</button>
+            <button type="button" data-gp-category="ai" aria-pressed="false">人工智能</button>
+            <button type="button" data-gp-category="energy" aria-pressed="false">能源</button>
+            <button type="button" data-gp-category="disaster" aria-pressed="false">自然灾害</button>
+          </div>
+
+          <label class="gp-time-filter" for="gp-time-filter">
+            <span class="gp-sr-only">筛选时间</span>
+            <select id="gp-time-filter">
+              <option value="1h">最近 1 小时</option>
+              <option value="1d" selected>最近 24 小时</option>
+              <option value="1w">最近 7 天</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="gp-feed-state" id="gp-feed-state" hidden></div>
+        <div class="gp-news-grid" id="gp-news-feed" tabindex="-1" aria-live="polite">
+          <article class="gp-news-skeleton"></article>
+          <article class="gp-news-skeleton"></article>
+          <article class="gp-news-skeleton"></article>
+          <article class="gp-news-skeleton"></article>
+          <article class="gp-news-skeleton"></article>
+          <article class="gp-news-skeleton"></article>
+        </div>
       </section>
     </main>
 
-    <footer class="monitor-footer">
-      <p>© <span id="footer-year">2026</span> 卓潇婷 · 全球动态</p>
+    <footer class="gp-footer">
+      <p>© <span id="gp-footer-year">2026</span> 卓潇婷 · GLOBAL PULSE</p>
       <p>
-        数据：<a href="https://www.gdeltproject.org/" target="_blank" rel="noopener noreferrer">GDELT</a>
+        数据 <a href="https://www.gdeltproject.org/" target="_blank" rel="noopener noreferrer">GDELT</a>
         · <a href="https://earthquake.usgs.gov/" target="_blank" rel="noopener noreferrer">USGS</a>
         · 地图 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
-        · 设计参考 <a href="https://github.com/koala73/worldmonitor" target="_blank" rel="noopener noreferrer">World Monitor</a>
+        · <a href="./OPEN_SOURCE_NOTICES.md">开源说明</a>
       </p>
     </footer>
 
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <button class="gp-back-to-top" id="gp-back-to-top" type="button" aria-label="返回顶部">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"></path></svg>
+    </button>
+    <div class="gp-toast" id="gp-toast" role="status" aria-live="polite"></div>
   </body>
 </html>
