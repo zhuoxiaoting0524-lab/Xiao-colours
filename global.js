@@ -1,18 +1,19 @@
 import { AUTO_REFRESH_MS } from "./global/config.js";
 import { GlobalPulseDataService } from "./global/data-service.js";
 import {
+  DailyBrief,
   GlobalPulseHeader,
   LastUpdatedIndicator,
-  MajorEvents,
   NewsFeed,
   NewsFilters,
   RelatedCoverage,
   ThemeToggle,
-  TopStories,
+  TodayTopFive,
   WorldBrief,
   categoryExists,
 } from "./global/components.js";
 import { GlobalMapSection } from "./global/map.js";
+import { rankNewsEvents, selectTopEvents } from "./global/news-quality.js";
 import { categoryLabel, debounce, filterArticles, fullDateTime, uniqueValues } from "./global/utils.js";
 
 const elements = {
@@ -24,14 +25,17 @@ const elements = {
   statusDot: document.querySelector("#gp-status-dot"),
   updated: document.querySelector("#gp-last-updated"),
   topStories: document.querySelector("#gp-top-stories"),
+  topFiveStatus: document.querySelector("#gp-top-five-status"),
+  dailyBrief: document.querySelector("#gp-daily-brief"),
   briefMetrics: document.querySelector("#gp-brief-metrics"),
-  majorEvents: document.querySelector("#gp-major-events"),
   categoryTabs: document.querySelector("#gp-category-tabs"),
+  viewModes: document.querySelector("#gp-view-modes"),
   time: document.querySelector("#gp-time-filter"),
   refresh: document.querySelector("#gp-refresh-button"),
   resultCount: document.querySelector("#gp-result-count"),
   feedState: document.querySelector("#gp-feed-state"),
   newsFeed: document.querySelector("#gp-news-feed"),
+  loadMore: document.querySelector("#gp-load-more"),
   mapStage: document.querySelector("#gp-map-stage"),
   map: document.querySelector("#gp-world-map"),
   mapLoading: document.querySelector("#gp-map-loading"),
@@ -47,10 +51,14 @@ const elements = {
 
 const state = {
   articles: [],
+  topArticles: [],
+  topEvents: [],
   earthquakes: [],
   fetchedAt: null,
   source: null,
   loading: false,
+  viewMode: "curated",
+  visibleCount: 6,
   filters: {
     search: "",
     region: "all",
@@ -61,6 +69,7 @@ const state = {
 
 const dataService = new GlobalPulseDataService();
 let activeLoadId = 0;
+let activeTopLoadId = 0;
 const mapSection = new GlobalMapSection({
   mapElement: elements.map,
   loadingElement: elements.mapLoading,
@@ -76,15 +85,44 @@ function getVisibleArticles() {
   return filterArticles(state.articles, state.filters);
 }
 
+function getOrderedArticles(articles) {
+  if (state.viewMode === "latest") {
+    return [...articles].sort((left, right) => {
+      return (right.eventUpdatedAt?.valueOf() || right.publishedAt?.valueOf() || 0)
+        - (left.eventUpdatedAt?.valueOf() || left.publishedAt?.valueOf() || 0);
+    });
+  }
+  return rankNewsEvents(articles);
+}
+
+function updateTopPool(articles) {
+  state.topArticles = filterArticles(articles, {
+    search: "",
+    region: "all",
+    category: "all",
+    time: "1d",
+  });
+  state.topEvents = selectTopEvents(state.topArticles, 5);
+}
+
 function render() {
   const visible = getVisibleArticles();
-  TopStories(elements.topStories, visible);
-  NewsFeed(elements.newsFeed, visible);
-  WorldBrief(elements.briefMetrics, visible);
-  MajorEvents(elements.majorEvents, visible);
-  RelatedCoverage(elements.relatedCoverage, visible);
+  const ordered = getOrderedArticles(visible);
+  const displayed = ordered.slice(0, state.visibleCount);
+  const briefPool = state.topArticles.length ? state.topArticles : visible;
+  TodayTopFive(elements.topStories, state.topEvents);
+  DailyBrief(elements.dailyBrief, state.topEvents);
+  NewsFeed(elements.newsFeed, displayed);
+  WorldBrief(elements.briefMetrics, briefPool);
+  RelatedCoverage(elements.relatedCoverage, briefPool);
   mapSection.update({ articles: visible, earthquakes: state.earthquakes });
-  elements.resultCount.textContent = `${visible.length} 条新闻`;
+  elements.topFiveStatus.textContent = `${state.topEvents.length} 个独立焦点 · 最近 24 小时`;
+  elements.resultCount.textContent = ordered.length
+    ? `显示 ${displayed.length} / ${ordered.length} 条新闻`
+    : "0 条新闻";
+  const remaining = Math.max(0, ordered.length - displayed.length);
+  elements.loadMore.hidden = remaining === 0;
+  elements.loadMore.textContent = remaining > 0 ? `查看更多新闻（剩余 ${remaining} 条）` : "已显示全部新闻";
   LastUpdatedIndicator(elements.updated, state.fetchedAt, state.source);
   const mediaRegions = uniqueValues(visible.flatMap((article) => {
     return article.countries?.length ? article.countries : [article.country];
@@ -119,6 +157,7 @@ function applySnapshot(snapshot, { announce = false } = {}) {
   state.earthquakes = snapshot.earthquakes || [];
   state.fetchedAt = snapshot.fetchedAt;
   state.source = snapshot.source;
+  if (state.filters.time === "1d" || !state.topArticles.length) updateTopPool(snapshot.articles);
 
   NewsFilters(elements.region, state.articles, state.filters.region);
   state.filters.region = elements.region.value;
@@ -165,6 +204,18 @@ function renderLoadError(error) {
   }
 }
 
+async function refreshTopPool() {
+  const topLoadId = ++activeTopLoadId;
+  try {
+    const snapshot = await dataService.load("1d", { force: true });
+    if (topLoadId !== activeTopLoadId) return;
+    updateTopPool(snapshot.articles);
+    render();
+  } catch {
+    // Keep the last valid 24-hour selection when the live source is unavailable.
+  }
+}
+
 async function loadData({ announce = false } = {}) {
   const loadId = ++activeLoadId;
   setLoading(true);
@@ -179,6 +230,7 @@ async function loadData({ announce = false } = {}) {
     const snapshot = await dataService.load(state.filters.time, { force: true });
     if (loadId !== activeLoadId) return;
     applySnapshot(snapshot, { announce });
+    if (state.filters.time !== "1d") void refreshTopPool();
   } catch (error) {
     if (loadId !== activeLoadId) return;
     renderLoadError(error);
@@ -211,17 +263,20 @@ function getInitialTheme() {
 
 const updateSearch = debounce(() => {
   state.filters.search = elements.search.value;
+  state.visibleCount = 6;
   render();
 }, 220);
 
 elements.search.addEventListener("input", updateSearch);
 elements.search.addEventListener("search", () => {
   state.filters.search = elements.search.value;
+  state.visibleCount = 6;
   render();
 });
 
 elements.region.addEventListener("change", () => {
   state.filters.region = elements.region.value;
+  state.visibleCount = 6;
   render();
 });
 
@@ -234,13 +289,33 @@ elements.categoryTabs.addEventListener("click", (event) => {
     item.classList.toggle("is-active", active);
     item.setAttribute("aria-pressed", String(active));
   });
+  state.visibleCount = 6;
+  render();
+});
+
+elements.viewModes.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-gp-view-mode]");
+  if (!button || !["curated", "latest"].includes(button.dataset.gpViewMode)) return;
+  state.viewMode = button.dataset.gpViewMode;
+  state.visibleCount = 6;
+  elements.viewModes.querySelectorAll("[data-gp-view-mode]").forEach((item) => {
+    const active = item === button;
+    item.classList.toggle("is-active", active);
+    item.setAttribute("aria-pressed", String(active));
+  });
   render();
 });
 
 elements.time.addEventListener("change", () => {
   state.filters.time = elements.time.value;
+  state.visibleCount = 6;
   render();
   loadData({ announce: true });
+});
+
+elements.loadMore.addEventListener("click", () => {
+  state.visibleCount += 6;
+  render();
 });
 
 elements.refresh.addEventListener("click", () => loadData({ announce: true }));

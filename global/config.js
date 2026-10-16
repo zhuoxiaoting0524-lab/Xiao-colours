@@ -9,7 +9,7 @@ export const USGS_FEEDS = {
 export const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 export const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
 export const AUTO_REFRESH_MS = 15 * 60 * 1000;
-export const CACHE_KEY = "global-pulse-news-v4";
+export const CACHE_KEY = "global-pulse-news-v5";
 
 export const CATEGORY_CONFIG = {
   all: { label: "全球焦点", tone: "blue" },
@@ -36,6 +36,8 @@ export const GDELT_QUERY = "(diplomacy OR conflict OR election OR economy OR tec
 
 export const HIGH_PRIORITY = /\b(invasion|airstrike|missile|tsunami|hurricane|cyclone|evacuation|ceasefire|emergency|explosion|war|nuclear|default|market crash)\b|入侵|空袭|导弹|海啸|飓风|撤离|停火|紧急|爆炸|战争|核|违约|崩盘/i;
 export const MEDIUM_PRIORITY = /\b(conflict|military|sanction|earthquake|flood|wildfire|recession|tariff|cyberattack|outbreak|protest)\b|冲突|军事|制裁|地震|洪水|山火|衰退|关税|网络攻击|疫情|抗议/i;
+export const PUBLIC_IMPACT = /\b(election|president|prime minister|government|parliament|central bank|interest rate|inflation|gdp|trade deal|summit|united nations|breakthrough|launch|regulation|peace talks|humanitarian|casualties)\b|选举|总统|总理|政府|议会|央行|利率|通胀|国内生产总值|贸易协议|峰会|联合国|突破|发布|监管|和谈|人道主义|伤亡/i;
+export const LOW_PRIORITY = /\b(celebrity|entertainment|gossip|recipe|fashion|horoscope|lottery|giveaway|book review|travel tips?|wedding|scholarships?|football|soccer|basketball|tennis|cricket|newsletter|podcast|opinion|editorial|trustee election|school board|local election|municipal election|updated? wildfire tracker|launches? (?:an? )?updated? tracker)\b|明星|娱乐|八卦|食谱|时尚|星座|彩票|赠品|书评|旅行攻略|婚礼|奖学金|足球|篮球|网球|校董选举|地方选举/i;
 
 export const TIME_WINDOWS = {
   "1h": 60 * 60 * 1000,

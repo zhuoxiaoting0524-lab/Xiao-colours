@@ -19,9 +19,19 @@ export function canonicalUrl(url) {
   try {
     const parsed = new URL(url);
     parsed.hash = "";
-    ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach((key) => {
+    parsed.hostname = parsed.hostname.toLocaleLowerCase().replace(/^www\./, "");
+    if ((parsed.protocol === "https:" && parsed.port === "443") || (parsed.protocol === "http:" && parsed.port === "80")) {
+      parsed.port = "";
+    }
+    [
+      "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id",
+      "fbclid", "gclid", "mc_cid", "mc_eid", "ref", "referrer", "source",
+    ].forEach((key) => {
       parsed.searchParams.delete(key);
     });
+    parsed.searchParams.sort();
+    parsed.pathname = parsed.pathname.replace(/\/(amp|print)\/?$/i, "/").replace(/\/{2,}/g, "/");
+    if (parsed.pathname !== "/") parsed.pathname = parsed.pathname.replace(/\/$/, "");
     return parsed.toString();
   } catch {
     return url;

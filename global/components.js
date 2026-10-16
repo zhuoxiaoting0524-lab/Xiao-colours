@@ -23,7 +23,7 @@ function imageMarkup(article, { eager = false } = {}) {
 function bindImageFallbacks(container) {
   container.querySelectorAll("[data-gp-news-image]").forEach((image) => {
     image.addEventListener("error", () => {
-      image.closest(".gp-featured-card, .gp-news-card")?.classList.add("no-image");
+      image.closest(".gp-featured-card, .gp-top-five-card, .gp-news-card")?.classList.add("no-image");
       image.remove();
     }, { once: true });
   });
@@ -34,45 +34,78 @@ function knownCountry(country) {
 }
 
 function sourceMeta(article, { includeCategory = false } = {}) {
+  const displayDate = article.eventUpdatedAt || article.publishedAt;
   const parts = [
     `<span class="gp-news-card__source">${escapeHtml(article.source)}</span>`,
     includeCategory ? `<span>${escapeHtml(categoryLabel(article.category))}</span>` : "",
     knownCountry(article.country) ? `<span>媒体来源国 ${escapeHtml(article.country)}</span>` : "",
-    `<time datetime="${article.publishedAt?.toISOString() || ""}" title="${escapeHtml(fullDateTime(article.publishedAt))}">${escapeHtml(relativeTime(article.publishedAt))}</time>`,
+    `<time datetime="${displayDate?.toISOString() || ""}" title="${escapeHtml(fullDateTime(displayDate))}">${escapeHtml(relativeTime(displayDate))}</time>`,
     article.sourceCount > 1 ? `<span>${article.sourceCount} 个媒体来源</span>` : "",
   ].filter(Boolean);
   return parts.join("");
 }
 
-export function FeaturedNewsCard(article, { lead = false } = {}) {
-  const cardClass = `gp-featured-card${lead ? " gp-featured-card--lead" : ""}${article.image ? "" : " no-image"}`;
+function conciseText(value, limit = 150) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit).trim()}…`;
+}
+
+function factualEventSummary(article) {
+  if (article.summary) return conciseText(article.summary);
+  if (article.sourceCount > 1) {
+    return `该事件已聚合 ${article.sourceCount} 个独立媒体来源；页面保留每条原始报道供交叉查看。`;
+  }
+  return `来自 ${article.source} 的报道。当前数据源未提供正文摘要，请通过原始链接阅读全文。`;
+}
+
+function relatedSourcesMarkup(article) {
+  const sources = article.relatedSources?.length ? article.relatedSources : [{
+    title: article.originalTitle || article.title,
+    url: article.url,
+    source: article.source,
+    publishedAt: article.publishedAt,
+  }];
+  return `
+    <details class="gp-top-five-card__sources">
+      <summary>查看 ${sources.length} 条原始报道</summary>
+      <ul>
+        ${sources.map((source) => `
+          <li>
+            <a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.source)} ↗</a>
+            <time>${escapeHtml(relativeTime(source.publishedAt))}</time>
+          </li>`).join("")}
+      </ul>
+    </details>`;
+}
+
+export function TopFiveCard(article, rank) {
+  const size = rank === 1 ? "lead" : rank <= 3 ? "medium" : "compact";
+  const cardClass = `gp-top-five-card gp-top-five-card--${size}${article.image ? "" : " no-image"}`;
   return `
     <article class="${cardClass}">
-      <a class="gp-featured-card__link" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer" aria-label="阅读原始报道：${escapeHtml(article.title)}"></a>
-      <div class="gp-featured-card__media">${imageMarkup(article, { eager: lead })}</div>
-      <div class="gp-featured-card__content">
-        <span class="gp-badge">${escapeHtml(categoryLabel(article.category))}</span>
-        <h3>${escapeHtml(article.title)}</h3>
+      <a class="gp-top-five-card__media" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer" aria-label="阅读原始报道：${escapeHtml(article.title)}">${imageMarkup(article, { eager: rank === 1 })}</a>
+      <span class="gp-top-five-card__rank" aria-label="第 ${rank} 名">${String(rank).padStart(2, "0")}</span>
+      <div class="gp-top-five-card__content">
+        <div class="gp-top-five-card__eyebrow">
+          <span class="gp-badge">${escapeHtml(categoryLabel(article.category))}</span>
+          <span title="依据可验证元数据计算">规则评分 ${article.importance?.score ?? "—"}</span>
+        </div>
+        <h3><a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a></h3>
+        <p>${escapeHtml(factualEventSummary(article))}</p>
         <div class="gp-featured-card__meta">${sourceMeta(article)}</div>
+        ${relatedSourcesMarkup(article)}
       </div>
     </article>`;
 }
 
-export function TopStories(container, articles) {
-  if (!articles.length) {
-    container.innerHTML = '<div class="gp-empty-state"><p><strong>暂无焦点新闻</strong>请更换筛选条件或稍后刷新。</p></div>';
+export function TodayTopFive(container, topEvents) {
+  container.dataset.count = String(topEvents.length);
+  if (!topEvents.length) {
+    container.innerHTML = '<div class="gp-empty-state"><p><strong>当前没有足够可靠的重大事件</strong>系统不会使用普通新闻或虚构内容补足五条。</p></div>';
     return;
   }
-
-  const uniqueEvents = [...new Map(articles.map((article) => [article.eventId || article.url, article])).values()];
-  const stories = uniqueEvents
-    .sort((a, b) => {
-      const scoreDifference = (priorityScore(b) + Number(Boolean(b.image))) - (priorityScore(a) + Number(Boolean(a.image)));
-      return scoreDifference || (b.eventUpdatedAt?.valueOf() || b.publishedAt?.valueOf() || 0) - (a.eventUpdatedAt?.valueOf() || a.publishedAt?.valueOf() || 0);
-    })
-    .slice(0, 3);
-
-  container.innerHTML = stories.map((article, index) => FeaturedNewsCard(article, { lead: index === 0 })).join("");
+  container.innerHTML = topEvents.map((article, index) => TopFiveCard(article, index + 1)).join("");
   bindImageFallbacks(container);
 }
 
@@ -133,6 +166,23 @@ export function NewsFeed(container, articles) {
   bindImageFallbacks(container);
 }
 
+export function DailyBrief(container, topEvents) {
+  if (!topEvents.length) {
+    container.innerHTML = '<p class="gp-related-empty">当前24小时内没有通过重要性门槛的事件。这里不会把普通摘要冒充为 AI 分析。</p>';
+    return;
+  }
+
+  container.innerHTML = topEvents.map((article, index) => `
+    <article class="gp-daily-brief__item">
+      <span>${String(index + 1).padStart(2, "0")}</span>
+      <div>
+        <h3><a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a></h3>
+        <p>${escapeHtml(factualEventSummary(article))}</p>
+        <small>${escapeHtml(article.source)} · ${escapeHtml(relativeTime(article.eventUpdatedAt || article.publishedAt))} · ${article.sourceCount || 1} 个媒体来源</small>
+      </div>
+    </article>`).join("");
+}
+
 export function WorldBrief(container, articles) {
   const sources = uniqueValues(articles.flatMap((article) => {
     return article.relatedSources?.map((source) => source.source) || [article.source];
@@ -141,7 +191,7 @@ export function WorldBrief(container, articles) {
     return article.countries?.length ? article.countries : [article.country];
   }).filter((country) => country !== "来源地未知"));
   container.innerHTML = `
-    <div><strong>${articles.length}</strong><span>新闻</span></div>
+    <div><strong>${articles.length}</strong><span>事件</span></div>
     <div><strong>${sources.length}</strong><span>媒体</span></div>
     <div><strong>${regions.length}</strong><span>地区</span></div>`;
 }

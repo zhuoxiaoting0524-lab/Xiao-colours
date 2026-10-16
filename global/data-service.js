@@ -29,6 +29,7 @@ function normalizeArticles(rawArticles) {
     deduped.set(key, {
       id: key,
       title,
+      summary: String(raw.summary || raw.description || raw.snippet || "").trim(),
       url,
       image: safeImageUrl(raw.socialimage),
       source: String(raw.domain || new URL(url).hostname).replace(/^www\./, ""),

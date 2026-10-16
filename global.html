@@ -84,16 +84,78 @@
       <section class="gp-section gp-focus" aria-labelledby="gp-focus-title">
         <div class="gp-section-heading">
           <div>
-            <p class="gp-section-index">01 / TOP STORIES</p>
-            <h2 id="gp-focus-title">今日全球焦点</h2>
+            <p class="gp-section-index">01 / TODAY'S TOP 5</p>
+            <h2 id="gp-focus-title">今日全球五大焦点</h2>
           </div>
-          <a class="gp-text-link" href="#gp-explore">查看全部新闻 <span aria-hidden="true">↓</span></a>
+          <div class="gp-top-five-heading__meta">
+            <span id="gp-top-five-status">正在评估真实新闻事件…</span>
+            <a class="gp-text-link" href="#gp-explore">探索更多新闻 <span aria-hidden="true">↓</span></a>
+          </div>
         </div>
 
-        <div class="gp-top-stories" id="gp-top-stories" aria-live="polite">
-          <div class="gp-story-skeleton gp-story-skeleton--large"></div>
+        <div class="gp-top-five" id="gp-top-stories" aria-live="polite">
+          <div class="gp-story-skeleton gp-story-skeleton--lead"></div>
           <div class="gp-story-skeleton"></div>
           <div class="gp-story-skeleton"></div>
+          <div class="gp-story-skeleton"></div>
+          <div class="gp-story-skeleton"></div>
+        </div>
+      </section>
+
+      <section class="gp-section gp-daily-brief gp-card" aria-labelledby="gp-brief-title">
+        <div class="gp-card-heading gp-daily-brief__heading">
+          <div>
+            <p class="gp-section-index">02 / AI WORLD BRIEF</p>
+            <h2 id="gp-brief-title">60秒看懂今天的世界</h2>
+          </div>
+          <div class="gp-brief-status">
+            <span class="gp-badge gp-badge--muted">AI 未接入</span>
+            <small>真实新闻热点速览 · 非 AI 生成</small>
+          </div>
+        </div>
+
+        <div class="gp-daily-brief__layout">
+          <div class="gp-daily-brief__digest">
+            <div class="gp-daily-brief__intro">
+              <h3>今日重点</h3>
+              <p>依据事件影响信号、独立媒体数量、时效与跨地区媒体覆盖排序。当前数据源无正文摘要时，仅展示可验证的标题与元数据。</p>
+            </div>
+            <div id="gp-daily-brief" aria-live="polite">
+              <div class="gp-inline-skeleton"></div>
+              <div class="gp-inline-skeleton"></div>
+              <div class="gp-inline-skeleton"></div>
+            </div>
+          </div>
+
+          <aside class="gp-daily-brief__side" aria-label="简报数据与方法">
+            <div class="gp-brief-metrics" id="gp-brief-metrics" aria-label="最近24小时新闻数据概览">
+              <div><strong>—</strong><span>事件</span></div>
+              <div><strong>—</strong><span>媒体</span></div>
+              <div><strong>—</strong><span>地区</span></div>
+            </div>
+
+            <details class="gp-brief-details">
+              <summary>重要性评分如何计算？</summary>
+              <ul>
+                <li>事件影响信号：最高 35 分</li>
+                <li>独立媒体数量：最高 25 分</li>
+                <li>新闻时效性：最高 20 分</li>
+                <li>跨地区媒体覆盖：最高 10 分</li>
+                <li>公共影响主题：最高 10 分</li>
+                <li>媒体数量按独立域名统计；数据源没有媒体信誉分时不做虚构评级</li>
+              </ul>
+            </details>
+
+            <div class="gp-related-coverage">
+              <div class="gp-related-coverage__heading">
+                <h3>多来源事件</h3>
+                <span>URL 与标题相似度聚合 · 非 AI</span>
+              </div>
+              <div id="gp-related-coverage">
+                <div class="gp-inline-skeleton"></div>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
 
@@ -101,7 +163,7 @@
         <div class="gp-intelligence__map gp-card">
           <div class="gp-card-heading gp-map-heading">
             <div>
-              <p class="gp-section-index">02 / LIVE INTELLIGENCE MAP</p>
+              <p class="gp-section-index">03 / LIVE INTELLIGENCE MAP</p>
               <h2 id="gp-map-title">全球实时动态</h2>
             </div>
             <div class="gp-segmented" role="group" aria-label="地图图层">
@@ -135,58 +197,6 @@
             蓝色标记是媒体来源国聚合，不代表新闻发生地；黄色与橙红色事件使用 USGS 提供的真实坐标。
           </p>
         </div>
-
-        <aside class="gp-world-brief gp-card" aria-labelledby="gp-brief-title">
-          <div class="gp-card-heading">
-            <div>
-              <p class="gp-section-index">03 / AI WORLD BRIEF</p>
-              <h2 id="gp-brief-title">AI 世界简报</h2>
-            </div>
-            <span class="gp-badge gp-badge--muted">未启用</span>
-          </div>
-
-          <div class="gp-brief-state">
-            <span class="gp-brief-state__icon" aria-hidden="true">AI</span>
-            <h3>等待安全的模型服务</h3>
-            <p>当前网站没有服务端 AI 接口，因此不会生成或展示未经来源支持的分析。</p>
-          </div>
-
-          <div class="gp-brief-metrics" id="gp-brief-metrics" aria-label="当前新闻数据概览">
-            <div><strong>—</strong><span>新闻</span></div>
-            <div><strong>—</strong><span>媒体</span></div>
-            <div><strong>—</strong><span>地区</span></div>
-          </div>
-
-          <details class="gp-brief-details">
-            <summary>启用后可提供什么？</summary>
-            <ul>
-              <li>今日重点新闻中文摘要</li>
-              <li>相同事件的多来源归类</li>
-              <li>关联原始报道的媒体视角比较</li>
-            </ul>
-          </details>
-
-          <div class="gp-related-coverage">
-            <div class="gp-related-coverage__heading">
-              <h3>关联报道</h3>
-              <span>标题相似度聚合 · 非 AI</span>
-            </div>
-            <div id="gp-related-coverage">
-              <div class="gp-inline-skeleton"></div>
-            </div>
-          </div>
-
-          <div class="gp-major-events">
-            <div class="gp-major-events__heading">
-              <h3>重点信号</h3>
-              <span>关键词规则筛选，非 AI 判断</span>
-            </div>
-            <div id="gp-major-events">
-              <div class="gp-inline-skeleton"></div>
-              <div class="gp-inline-skeleton"></div>
-            </div>
-          </div>
-        </aside>
       </section>
 
       <section class="gp-section gp-explore" id="gp-explore" aria-labelledby="gp-explore-title">
@@ -195,15 +205,21 @@
             <p class="gp-section-index">04 / EXPLORE THE WORLD</p>
             <h2 id="gp-explore-title">探索全球新闻</h2>
           </div>
-          <div class="gp-feed-meta">
-            <span id="gp-result-count">0 条新闻</span>
-            <button id="gp-refresh-button" class="gp-refresh-button" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M20 7v5h-5M4 17v-5h5"></path>
-                <path d="M18.3 9A7 7 0 0 0 6.1 6.1L4 8m2 7a7 7 0 0 0 11.9 2.9L20 16"></path>
-              </svg>
-              刷新数据
-            </button>
+          <div class="gp-explore-actions">
+            <div class="gp-view-modes" id="gp-view-modes" role="group" aria-label="新闻排序模式">
+              <button class="is-active" type="button" data-gp-view-mode="curated" aria-pressed="true">精选</button>
+              <button type="button" data-gp-view-mode="latest" aria-pressed="false">最新</button>
+            </div>
+            <div class="gp-feed-meta">
+              <span id="gp-result-count">0 条新闻</span>
+              <button id="gp-refresh-button" class="gp-refresh-button" type="button">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M20 7v5h-5M4 17v-5h5"></path>
+                  <path d="M18.3 9A7 7 0 0 0 6.1 6.1L4 8m2 7a7 7 0 0 0 11.9 2.9L20 16"></path>
+                </svg>
+                刷新数据
+              </button>
+            </div>
           </div>
         </div>
 
@@ -236,6 +252,9 @@
           <article class="gp-news-skeleton"></article>
           <article class="gp-news-skeleton"></article>
           <article class="gp-news-skeleton"></article>
+        </div>
+        <div class="gp-load-more-wrap">
+          <button class="gp-load-more" id="gp-load-more" type="button" hidden>查看更多新闻</button>
         </div>
       </section>
     </main>
