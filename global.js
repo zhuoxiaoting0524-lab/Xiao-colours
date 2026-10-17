@@ -57,6 +57,7 @@ const state = {
   fetchedAt: null,
   source: null,
   loading: false,
+  usingStaleFallback: false,
   viewMode: "curated",
   visibleCount: 6,
   filters: {
@@ -82,7 +83,12 @@ const mapSection = new GlobalMapSection({
 });
 
 function getVisibleArticles() {
-  return filterArticles(state.articles, state.filters);
+  const filtered = filterArticles(state.articles, state.filters);
+  state.usingStaleFallback = false;
+  if (filtered.length || state.source === "live" || !state.articles.length) return filtered;
+  const recentSnapshot = filterArticles(state.articles, { ...state.filters, time: "1w" });
+  state.usingStaleFallback = recentSnapshot.length > 0;
+  return recentSnapshot;
 }
 
 function getOrderedArticles(articles) {
@@ -132,6 +138,13 @@ function render() {
   elements.mapRegionCount.textContent = String(mediaRegions.length);
   const regionLabel = state.filters.region === "all" ? "全球" : state.filters.region;
   elements.mapFilterSummary.textContent = `${regionLabel} · ${categoryLabel(state.filters.category)}`;
+  if (state.usingStaleFallback) {
+    setFeedState("当前时间范围没有可用新闻，实时接口暂不可用；以下展示最近成功快照中的真实内容，并保留其实际时间。");
+  } else if (state.source && state.source !== "live") {
+    setFeedState("当前展示最近成功的真实新闻快照，实际数据时间显示在页面顶部；系统不会将缓存内容标记为实时。");
+  } else if (state.source === "live") {
+    setFeedState("");
+  }
 }
 
 function setLoading(loading) {
@@ -182,7 +195,9 @@ function applySnapshot(snapshot, { announce = false } = {}) {
     message: `实时新闻接口暂不可用，正在显示${cacheLabel}`,
     type: "cached",
   });
-  setFeedState(`当前展示${cacheLabel}，实际数据时间显示在页面顶部；系统不会将缓存内容标记为实时。`);
+  setFeedState(state.usingStaleFallback
+    ? `当前时间范围没有可用新闻，实时接口暂不可用；以下展示${cacheLabel}中的真实内容，并保留其实际时间。`
+    : `当前展示${cacheLabel}，实际数据时间显示在页面顶部；系统不会将缓存内容标记为实时。`);
   if (announce) showToast("实时接口不可用，已保留最近成功内容");
 }
 

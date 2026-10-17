@@ -226,7 +226,7 @@ function attentionNote({ regions, sources, hasHighSignal, hasMediumSignal, categ
           : "具有公共影响的事件";
     statements.push(`报道主题属于${topic}`);
   }
-  if (sources.size > 1) statements.push(`已聚合 ${sources.size} 个独立媒体来源，可交叉核对后续进展`);
+  if (sources.size > 1) statements.push(`已聚合 ${sources.size} 个不同媒体域名，可交叉核对后续进展`);
   return statements.length ? `${statements.join("；")}。` : "";
 }
 
@@ -284,9 +284,9 @@ export function scoreNewsImportance(article, now = Date.now()) {
     || hasMediumSignal
     || hasPublicImpactSignal
     || regions.length > 1;
-  const eligible = age >= 0 && age <= DAY_MS && !isLowPriority && substantive && score >= 44;
+  const eligible = age >= 0 && age <= DAY_MS && !isLowPriority && substantive && score >= 40;
   const reasons = [
-    sources.size > 1 ? `${sources.size} 个独立媒体来源` : "单一媒体来源",
+    sources.size > 1 ? `${sources.size} 个不同媒体域名` : "单一媒体来源",
     regions.length > 1 ? `标题涉及 ${regions.length} 个地区` : "未用地区配额加分",
     gdeltRank ? `GDELT 相关性候选第 ${gdeltRank} 位` : "无外部相关性位次",
     hasHighSignal ? "重大事件关键词" : hasMediumSignal ? "重要事件关键词" : "主题影响度",

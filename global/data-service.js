@@ -11,9 +11,11 @@ import {
   safeImageUrl,
 } from "./utils.js";
 import { clusterNewsEvents } from "./news-quality.js";
+import { fetchGdeltJson } from "./gdelt-client.js";
 
-const REQUEST_TIMEOUT_MS = 30000;
-const CORS_TIMEOUT_MS = 12000;
+const REQUEST_TIMEOUT_MS = 40000;
+const GDELT_TIMEOUT_MS = 30000;
+const SEED_NEWS_URL = new URL("../data/news-cache.json", import.meta.url);
 
 function normalizeArticles(rawArticles, { rankedByRelevance = true } = {}) {
   const deduped = new Map();
@@ -102,16 +104,15 @@ function writeBrowserCache(time, snapshot) {
   }
 }
 
-function buildGdeltUrl(time, format = "json", callback = "") {
+function buildGdeltUrl(time) {
   const params = new URLSearchParams({
     query: GDELT_QUERY,
     mode: "ArtList",
-    maxrecords: "250",
-    format,
+    maxrecords: "150",
+    format: "json",
     sort: "HybridRel",
     timespan: time,
   });
-  if (callback) params.set("callback", callback);
   return `${GDELT_API}?${params}`;
 }
 
@@ -125,45 +126,14 @@ async function fetchJson(url, signal) {
   return response.json();
 }
 
-function fetchGdeltJsonp(time, signal) {
-  return new Promise((resolve, reject) => {
-    const callbackName = `__globalPulseGdelt${Date.now()}${Math.floor(Math.random() * 10000)}`;
-    const script = document.createElement("script");
-    let settled = false;
-
-    const cleanup = () => {
-      script.remove();
-      delete window[callbackName];
-      signal?.removeEventListener("abort", onAbort);
-    };
-    const finish = (handler, value) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      handler(value);
-    };
-    const onAbort = () => finish(reject, new DOMException("请求已中止", "AbortError"));
-
-    window[callbackName] = (data) => finish(resolve, data);
-    script.src = buildGdeltUrl(time, "jsonp", callbackName);
-    script.async = true;
-    script.onerror = () => finish(reject, new Error("GDELT JSONP 请求失败"));
-    signal?.addEventListener("abort", onAbort, { once: true });
-    document.head.append(script);
-  });
-}
-
 async function fetchGdelt(time, signal) {
   const corsController = new AbortController();
   const abortCors = () => corsController.abort();
-  const timeout = window.setTimeout(abortCors, CORS_TIMEOUT_MS);
+  const timeout = window.setTimeout(abortCors, GDELT_TIMEOUT_MS);
   signal?.addEventListener("abort", abortCors, { once: true });
 
   try {
-    return await fetchJson(buildGdeltUrl(time), corsController.signal);
-  } catch (error) {
-    if (signal?.aborted) throw error;
-    return fetchGdeltJsonp(time, signal);
+    return await fetchGdeltJson(buildGdeltUrl(time), corsController.signal);
   } finally {
     window.clearTimeout(timeout);
     signal?.removeEventListener("abort", abortCors);
@@ -172,7 +142,7 @@ async function fetchGdelt(time, signal) {
 
 async function readSeedSnapshot() {
   try {
-    const response = await fetch("./data/news-cache.json", { cache: "no-store" });
+    const response = await fetch(SEED_NEWS_URL, { cache: "no-store" });
     if (!response.ok) return null;
     const seed = await response.json();
     const articles = normalizeArticles(seed.articles, { rankedByRelevance: false });

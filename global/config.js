@@ -1,4 +1,5 @@
 export const GDELT_API = "https://api.gdeltproject.org/api/v2/doc/doc";
+export const GDELT_CONTEXT_API = "https://api.gdeltproject.org/api/v2/context/context";
 
 export const USGS_FEEDS = {
   "1h": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_hour.geojson",
@@ -10,6 +11,7 @@ export const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 export const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
 export const AUTO_REFRESH_MS = 15 * 60 * 1000;
 export const CACHE_KEY = "global-pulse-news-v6";
+export const READER_CACHE_KEY = "global-pulse-reader-v2";
 
 export const CATEGORY_CONFIG = {
   all: { label: "全球焦点", tone: "blue" },
