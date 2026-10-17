@@ -1,74 +1,60 @@
 const BIRTHDAY = new Date(2005, 4, 24);
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function getAge(date) {
   let age = date.getFullYear() - BIRTHDAY.getFullYear();
-  const birthdayHasPassed =
-    date.getMonth() > BIRTHDAY.getMonth() ||
-    (date.getMonth() === BIRTHDAY.getMonth() && date.getDate() >= BIRTHDAY.getDate());
-
+  const birthdayHasPassed = date.getMonth() > BIRTHDAY.getMonth()
+    || (date.getMonth() === BIRTHDAY.getMonth() && date.getDate() >= BIRTHDAY.getDate());
   if (!birthdayHasPassed) age -= 1;
   return age;
 }
 
 function getDaysLived(date) {
-  const oneDay = 24 * 60 * 60 * 1000;
-  return Math.floor((date - BIRTHDAY) / oneDay);
+  return Math.floor((date - BIRTHDAY) / (24 * 60 * 60 * 1000));
 }
 
 const today = new Date();
-const age = getAge(today);
-const year = today.getFullYear();
-
-document.querySelectorAll("#age, #chapter-number, #closing-chapter").forEach((element) => {
-  element.textContent = age;
-});
-
-document.querySelector("#current-year").textContent = year;
-document.querySelector("#footer-year").textContent = year;
+document.querySelector("#age").textContent = getAge(today);
+document.querySelector("#current-year").textContent = today.getFullYear();
+document.querySelector("#footer-year").textContent = today.getFullYear();
 document.querySelector("#days-lived").textContent = getDaysLived(today).toLocaleString("zh-CN");
 
 const revealItems = document.querySelectorAll("[data-reveal]");
-const revealObserver = new IntersectionObserver(
-  (entries, observer) => {
+if (reducedMotion || !("IntersectionObserver" in window)) {
+  revealItems.forEach((item) => item.classList.add("is-visible"));
+} else {
+  const revealObserver = new IntersectionObserver((entries, observer) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) return;
       const delay = Number(entry.target.dataset.delay || 0);
       window.setTimeout(() => entry.target.classList.add("is-visible"), delay);
       observer.unobserve(entry.target);
     });
-  },
-  { threshold: 0.12 }
-);
+  }, { threshold: 0.1, rootMargin: "0px 0px -6%" });
+  revealItems.forEach((item) => revealObserver.observe(item));
+}
 
-revealItems.forEach((item) => revealObserver.observe(item));
-
-const palettes = document.querySelectorAll(".palette");
-const savedTheme = window.localStorage.getItem("xiaoting-theme");
-const validThemes = ["sunrise", "twilight", "garden"];
+const palettes = [...document.querySelectorAll(".palette")];
+const validThemes = ["mint", "blush", "sky"];
+const themeColors = { mint: "#eaf5ec", blush: "#f8e9ee", sky: "#eaf2f6" };
 
 function setTheme(theme) {
-  if (!validThemes.includes(theme)) return;
-
-  if (theme === "sunrise") {
-    document.documentElement.removeAttribute("data-theme");
-  } else {
-    document.documentElement.dataset.theme = theme;
-  }
+  const safeTheme = validThemes.includes(theme) ? theme : "mint";
+  if (safeTheme === "mint") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.dataset.theme = safeTheme;
 
   palettes.forEach((palette) => {
-    const selected = palette.dataset.theme === theme;
+    const selected = palette.dataset.theme === safeTheme;
     palette.classList.toggle("is-active", selected);
     palette.setAttribute("aria-pressed", String(selected));
   });
 
-  window.localStorage.setItem("xiaoting-theme", theme);
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", themeColors[safeTheme]);
+  window.localStorage.setItem("xiaoting-theme", safeTheme);
 }
 
-if (validThemes.includes(savedTheme)) setTheme(savedTheme);
-
-palettes.forEach((palette) => {
-  palette.addEventListener("click", () => setTheme(palette.dataset.theme));
-});
+setTheme(window.localStorage.getItem("xiaoting-theme"));
+palettes.forEach((palette) => palette.addEventListener("click", () => setTheme(palette.dataset.theme)));
 
 const menuButton = document.querySelector(".menu-button");
 const mobileMenu = document.querySelector(".mobile-menu");
@@ -89,7 +75,60 @@ menuButton.addEventListener("click", () => {
 });
 
 mobileMenu.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu));
-
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !mobileMenu.hidden) closeMenu();
 });
+
+const journeyItems = [...document.querySelectorAll(".journey-list li")];
+journeyItems.forEach((item) => {
+  const button = item.querySelector(".journey-node");
+  const detail = item.querySelector(".journey-detail");
+  button.addEventListener("click", () => {
+    const wasOpen = button.getAttribute("aria-expanded") === "true";
+    journeyItems.forEach((otherItem) => {
+      otherItem.classList.remove("is-active");
+      otherItem.querySelector(".journey-node").setAttribute("aria-expanded", "false");
+      otherItem.querySelector(".journey-detail").hidden = true;
+    });
+    if (!wasOpen) {
+      item.classList.add("is-active");
+      button.setAttribute("aria-expanded", "true");
+      detail.hidden = false;
+    }
+  });
+});
+
+if (!reducedMotion && window.matchMedia("(pointer: fine)").matches) {
+  document.querySelectorAll("[data-tilt]").forEach((card) => {
+    card.addEventListener("pointermove", (event) => {
+      const rect = card.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - 0.5;
+      const y = (event.clientY - rect.top) / rect.height - 0.5;
+      card.style.setProperty("--ry", `${x * 5}deg`);
+      card.style.setProperty("--rx", `${y * -5}deg`);
+    });
+    card.addEventListener("pointerleave", () => {
+      card.style.setProperty("--ry", "0deg");
+      card.style.setProperty("--rx", "0deg");
+    });
+  });
+
+  const parallaxItems = [...document.querySelectorAll("[data-parallax]")];
+  let scheduled = false;
+  const updateParallax = () => {
+    const viewportCenter = window.innerHeight / 2;
+    parallaxItems.forEach((item) => {
+      const rect = item.getBoundingClientRect();
+      const strength = Number(item.dataset.parallax || 0.03);
+      const offset = Math.max(-18, Math.min(18, (rect.top + rect.height / 2 - viewportCenter) * strength));
+      item.style.translate = `0 ${offset}px`;
+    });
+    scheduled = false;
+  };
+  window.addEventListener("scroll", () => {
+    if (scheduled) return;
+    scheduled = true;
+    window.requestAnimationFrame(updateParallax);
+  }, { passive: true });
+  updateParallax();
+}
