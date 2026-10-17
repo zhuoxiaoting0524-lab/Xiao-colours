@@ -118,7 +118,7 @@
           <div class="gp-daily-brief__digest">
             <div class="gp-daily-brief__intro">
               <h3>今日重点</h3>
-              <p>依据事件影响信号、独立媒体数量、时效与跨地区媒体覆盖排序。当前数据源无正文摘要时，仅展示可验证的标题与元数据。</p>
+              <p>依据事件影响、独立来源、GDELT 相关性、时效与跨地区信号排序，不设置地区配额。当前数据源无正文摘要时，仅展示可验证的标题与元数据。</p>
             </div>
             <div id="gp-daily-brief" aria-live="polite">
               <div class="gp-inline-skeleton"></div>
@@ -137,12 +137,13 @@
             <details class="gp-brief-details">
               <summary>重要性评分如何计算？</summary>
               <ul>
-                <li>事件影响信号：最高 35 分</li>
+                <li>事件影响信号：最高 30 分</li>
                 <li>独立媒体数量：最高 25 分</li>
-                <li>新闻时效性：最高 20 分</li>
-                <li>跨地区媒体覆盖：最高 10 分</li>
+                <li>新闻时效性：最高 15 分</li>
+                <li>GDELT 相关性位次：最高 10 分</li>
+                <li>跨地区事件与媒体信号：最高 10 分</li>
                 <li>公共影响主题：最高 10 分</li>
-                <li>媒体数量按独立域名统计；数据源没有媒体信誉分时不做虚构评级</li>
+                <li>媒体数量按独立域名统计；不把媒体来源国当作事件发生地，也不虚构媒体信誉评级</li>
               </ul>
             </details>
 

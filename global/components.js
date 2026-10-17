@@ -51,6 +51,20 @@ function conciseText(value, limit = 150) {
   return `${text.slice(0, limit).trim()}…`;
 }
 
+function hasChineseText(value) {
+  return /[\u3400-\u9fff]/u.test(String(value || ""));
+}
+
+function displayTitle(article) {
+  return article.translatedTitle || article.title;
+}
+
+function languageNotice(article) {
+  if (article.translatedTitle) return "中文译文 · 保留原文";
+  if (!hasChineseText(article.title)) return "未接入翻译 · 显示原文";
+  return "中文原文";
+}
+
 function factualEventSummary(article) {
   if (article.summary) return conciseText(article.summary);
   if (article.sourceCount > 1) {
@@ -72,7 +86,10 @@ function relatedSourcesMarkup(article) {
       <ul>
         ${sources.map((source) => `
           <li>
-            <a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.source)} ↗</a>
+            <a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">
+              <strong>${escapeHtml(source.source)} ↗</strong>
+              <span>${escapeHtml(conciseText(source.title, 92))}</span>
+            </a>
             <time>${escapeHtml(relativeTime(source.publishedAt))}</time>
           </li>`).join("")}
       </ul>
@@ -82,6 +99,11 @@ function relatedSourcesMarkup(article) {
 export function TopFiveCard(article, rank) {
   const size = rank === 1 ? "lead" : rank <= 3 ? "medium" : "compact";
   const cardClass = `gp-top-five-card gp-top-five-card--${size}${article.image ? "" : " no-image"}`;
+  const visibleTitle = displayTitle(article);
+  const attention = article.importance?.attentionNote;
+  const summary = size === "lead" && article.summary
+    ? `<p class="gp-top-five-card__summary">${escapeHtml(conciseText(article.summary, 132))}</p>`
+    : "";
   return `
     <article class="${cardClass}">
       <a class="gp-top-five-card__media" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer" aria-label="阅读原始报道：${escapeHtml(article.title)}">${imageMarkup(article, { eager: rank === 1 })}</a>
@@ -89,10 +111,12 @@ export function TopFiveCard(article, rank) {
       <div class="gp-top-five-card__content">
         <div class="gp-top-five-card__eyebrow">
           <span class="gp-badge">${escapeHtml(categoryLabel(article.category))}</span>
-          <span title="依据可验证元数据计算">规则评分 ${article.importance?.score ?? "—"}</span>
+          <span class="gp-top-five-card__language">${escapeHtml(languageNotice(article))}</span>
         </div>
-        <h3><a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a></h3>
-        <p>${escapeHtml(factualEventSummary(article))}</p>
+        <h3><a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(visibleTitle)}</a></h3>
+        ${article.translatedTitle ? `<p class="gp-top-five-card__original" lang="auto">原文：${escapeHtml(article.title)}</p>` : ""}
+        ${summary}
+        ${attention ? `<div class="gp-top-five-card__attention"><strong>为什么值得关注？</strong><p>${escapeHtml(attention)}</p><small>基于新闻标题、时间与来源元数据 · 非 AI 生成</small></div>` : ""}
         <div class="gp-featured-card__meta">${sourceMeta(article)}</div>
         ${relatedSourcesMarkup(article)}
       </div>
@@ -140,16 +164,17 @@ export function NewsDetail(article) {
 }
 
 export function NewsCard(article) {
+  const visibleTitle = displayTitle(article);
   return `
     <article class="gp-news-card${article.image ? "" : " no-image"}">
       <div class="gp-news-card__media">${imageMarkup(article)}</div>
       <div class="gp-news-card__body">
         <div class="gp-news-card__meta">${sourceMeta(article)}</div>
         <span class="gp-badge">${escapeHtml(categoryLabel(article.category))}</span>
-        <h3><a class="gp-news-card__title" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a></h3>
+        <h3><a class="gp-news-card__title" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(visibleTitle)}</a></h3>
         <p class="gp-news-card__context">${article.sourceCount > 1 ? `该事件已聚合 ${article.sourceCount} 个媒体来源。` : "页面展示原始新闻标题与可验证元数据。"}完整内容请以原始报道为准。</p>
         <div class="gp-news-card__footer">
-          <span>${escapeHtml(article.language)}</span>
+          <span>${escapeHtml(article.translatedTitle ? "中文译文 · 保留原文" : hasChineseText(article.title) ? "中文原文" : `未接入翻译 · ${article.language} 原文`)}</span>
           <a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">阅读原文 ↗</a>
         </div>
       </div>
@@ -177,7 +202,7 @@ export function DailyBrief(container, topEvents) {
       <span>${String(index + 1).padStart(2, "0")}</span>
       <div>
         <h3><a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a></h3>
-        <p>${escapeHtml(factualEventSummary(article))}</p>
+        <p>${escapeHtml(article.importance?.attentionNote || factualEventSummary(article))}</p>
         <small>${escapeHtml(article.source)} · ${escapeHtml(relativeTime(article.eventUpdatedAt || article.publishedAt))} · ${article.sourceCount || 1} 个媒体来源</small>
       </div>
     </article>`).join("");

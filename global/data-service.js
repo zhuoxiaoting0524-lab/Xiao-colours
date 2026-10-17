@@ -15,10 +15,10 @@ import { clusterNewsEvents } from "./news-quality.js";
 const REQUEST_TIMEOUT_MS = 30000;
 const CORS_TIMEOUT_MS = 12000;
 
-function normalizeArticles(rawArticles) {
+function normalizeArticles(rawArticles, { rankedByRelevance = true } = {}) {
   const deduped = new Map();
 
-  for (const raw of Array.isArray(rawArticles) ? rawArticles : []) {
+  for (const [index, raw] of (Array.isArray(rawArticles) ? rawArticles : []).entries()) {
     const title = String(raw.title || "").trim();
     const url = canonicalUrl(String(raw.url || "").trim());
     if (!title || !/^https?:\/\//i.test(url)) continue;
@@ -37,6 +37,7 @@ function normalizeArticles(rawArticles) {
       language: String(raw.language || "").trim() || "未知语言",
       publishedAt: parseGdeltDate(raw.seendate),
       category: classifyTitle(title),
+      apiRank: rankedByRelevance ? index + 1 : null,
     });
   }
 
@@ -107,7 +108,7 @@ function buildGdeltUrl(time, format = "json", callback = "") {
     mode: "ArtList",
     maxrecords: "250",
     format,
-    sort: "DateDesc",
+    sort: "HybridRel",
     timespan: time,
   });
   if (callback) params.set("callback", callback);
@@ -174,7 +175,7 @@ async function readSeedSnapshot() {
     const response = await fetch("./data/news-cache.json", { cache: "no-store" });
     if (!response.ok) return null;
     const seed = await response.json();
-    const articles = normalizeArticles(seed.articles);
+    const articles = normalizeArticles(seed.articles, { rankedByRelevance: false });
     if (!articles.length) return null;
     const newest = Math.max(...articles.map((article) => article.publishedAt?.valueOf() || 0));
     return {

@@ -1498,9 +1498,9 @@ html {
 
 .gp-top-five {
   display: grid;
-  min-height: 520px;
+  min-height: 554px;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(245px, 1fr));
+  grid-template-rows: repeat(2, minmax(270px, 1fr));
   gap: 14px;
 }
 
@@ -1593,6 +1593,10 @@ html {
   background: linear-gradient(155deg, transparent 25%, color-mix(in srgb, var(--gp-blue) 8%, transparent));
 }
 
+.gp-top-five-card:not(.gp-top-five-card--lead).no-image .gp-top-five-card__media::before {
+  display: none;
+}
+
 .gp-top-five-card__rank {
   position: absolute;
   z-index: 2;
@@ -1641,6 +1645,18 @@ html {
   font-size: 8px;
 }
 
+.gp-top-five-card__language {
+  overflow: hidden;
+  max-width: 58%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gp-top-five-card:not(.gp-top-five-card--lead) .gp-top-five-card__eyebrow {
+  min-height: 22px;
+  padding-left: 48px;
+}
+
 .gp-top-five-card:not(.no-image) .gp-top-five-card__eyebrow,
 .gp-top-five-card:not(.no-image) .gp-featured-card__meta,
 .gp-top-five-card:not(.no-image) .gp-featured-card__source {
@@ -1670,7 +1686,8 @@ html {
   color: var(--gp-cyan);
 }
 
-.gp-top-five-card__content > p {
+.gp-top-five-card__summary,
+.gp-top-five-card__original {
   display: -webkit-box;
   overflow: hidden;
   margin: 0;
@@ -1681,12 +1698,52 @@ html {
   -webkit-line-clamp: 2;
 }
 
-.gp-top-five-card:not(.no-image) .gp-top-five-card__content > p {
+.gp-top-five-card:not(.no-image) .gp-top-five-card__summary,
+.gp-top-five-card:not(.no-image) .gp-top-five-card__original {
   color: #cbd5e1;
 }
 
-.gp-top-five-card--compact .gp-top-five-card__content > p {
+.gp-top-five-card__original {
+  font-size: 8px;
   -webkit-line-clamp: 1;
+}
+
+.gp-top-five-card__attention {
+  display: grid;
+  gap: 4px;
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in srgb, var(--gp-cyan) 72%, transparent);
+}
+
+.gp-top-five-card__attention strong {
+  color: inherit;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.gp-top-five-card__attention p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: var(--gp-muted);
+  font-size: 9px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.gp-top-five-card:not(.no-image) .gp-top-five-card__attention p,
+.gp-top-five-card:not(.no-image) .gp-top-five-card__attention small {
+  color: #cbd5e1;
+}
+
+.gp-top-five-card__attention small {
+  color: var(--gp-faint);
+  font-size: 7px;
+}
+
+.gp-top-five-card:not(.gp-top-five-card--lead) .gp-top-five-card__attention small {
+  display: none;
 }
 
 .gp-top-five-card__sources {
@@ -1728,16 +1785,28 @@ html {
 
 .gp-top-five-card__sources li {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
 .gp-top-five-card__sources a {
+  display: grid;
   overflow: hidden;
   color: var(--gp-cyan);
   text-overflow: ellipsis;
+}
+
+.gp-top-five-card__sources a strong,
+.gp-top-five-card__sources a span {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.gp-top-five-card__sources a span {
+  color: var(--gp-muted);
+  font-size: 7px;
 }
 
 .gp-top-five-card__sources time {
@@ -1950,7 +2019,7 @@ html {
   .gp-filter-row { align-items: stretch; flex-direction: column; }
   .gp-time-filter select { width: 100%; }
   .gp-section, .gp-intro { scroll-margin-top: 24px; }
-  .gp-top-five { min-height: 0; grid-template-columns: 1fr 1fr; grid-template-rows: 440px repeat(2, minmax(220px, auto)); }
+  .gp-top-five { min-height: 0; grid-template-columns: 1fr 1fr; grid-template-rows: 440px repeat(2, minmax(270px, auto)); }
   .gp-top-five .gp-top-five-card { grid-column: auto !important; grid-row: auto !important; }
   .gp-top-five .gp-top-five-card--lead { grid-column: 1 / -1 !important; }
   .gp-top-five[data-count="2"] .gp-top-five-card:nth-child(2) { grid-column: 1 / -1 !important; }
@@ -2001,7 +2070,7 @@ html {
   .gp-top-five { display: flex; flex-direction: column; }
   .gp-top-five-card--lead { min-height: 400px; }
   .gp-top-five-card--medium,
-  .gp-top-five-card--compact { min-height: 245px; }
+  .gp-top-five-card--compact { min-height: 290px; }
   .gp-top-five-card--lead .gp-top-five-card__content { padding: 24px 20px; }
   .gp-top-five-card--lead .gp-top-five-card__content h3 { font-size: 27px; }
   .gp-top-five-card__rank { top: 14px; left: 14px; width: 34px; height: 34px; }

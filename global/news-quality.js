@@ -120,6 +120,7 @@ function relatedSource(article) {
     country: article.country,
     language: article.language,
     publishedAt: article.publishedAt,
+    apiRank: article.apiRank ?? null,
   };
 }
 
@@ -134,13 +135,13 @@ function stableHash(value) {
 
 function categoryImpact(category) {
   return {
-    disaster: 30,
-    politics: 23,
-    economy: 22,
-    energy: 19,
-    ai: 17,
-    technology: 15,
-    international: 8,
+    disaster: 26,
+    politics: 20,
+    economy: 19,
+    energy: 16,
+    ai: 15,
+    technology: 13,
+    international: 10,
   }[category] || 8;
 }
 
@@ -154,20 +155,79 @@ function sourceBreadthScore(count) {
   return count === 1 ? 4 : 0;
 }
 
-function regionalCoverageScore(count) {
-  if (count >= 4) return 10;
-  if (count === 3) return 7;
-  if (count === 2) return 5;
-  return count === 1 ? 2 : 0;
-}
-
 function recencyScore(date, now) {
   const age = now - (date?.valueOf() || 0);
   if (!date || age < 0 || age > DAY_MS) return 0;
-  if (age <= 60 * 60 * 1000) return 20;
-  if (age <= 6 * 60 * 60 * 1000) return 18;
-  if (age <= 12 * 60 * 60 * 1000) return 15;
-  return 10;
+  if (age <= 60 * 60 * 1000) return 15;
+  if (age <= 6 * 60 * 60 * 1000) return 13;
+  if (age <= 12 * 60 * 60 * 1000) return 11;
+  return 8;
+}
+
+const REGION_PATTERNS = [
+  ["美国", /\b(united states|u\.?s\.?a?|america(?:n)?)\b|美国|美方/i],
+  ["中国", /\b(china|chinese|beijing)\b|中国|中方|北京/i],
+  ["俄罗斯", /\b(russia|russian|moscow|kremlin)\b|俄罗斯|俄方|莫斯科/i],
+  ["乌克兰", /\b(ukraine|ukrainian|kyiv)\b|乌克兰|基辅/i],
+  ["以色列与巴勒斯坦", /\b(israel|israeli|palestine|palestinian|gaza|hamas)\b|以色列|巴勒斯坦|加沙/i],
+  ["伊朗", /\b(iran|iranian|tehran)\b|伊朗|德黑兰/i],
+  ["欧洲", /\b(european union|europe|eu)\b|欧盟|欧洲/i],
+  ["印度", /\b(india|indian|new delhi)\b|印度|新德里/i],
+  ["日本", /\b(japan|japanese|tokyo)\b|日本|东京/i],
+  ["朝鲜半岛", /\b(north korea|south korea|korean|pyongyang|seoul)\b|朝鲜|韩国|首尔|平壤/i],
+  ["英国", /\b(united kingdom|britain|british|u\.?k\.?)\b|英国|英方/i],
+  ["法国", /\b(france|french|paris)\b|法国|巴黎/i],
+  ["德国", /\b(germany|german|berlin)\b|德国|柏林/i],
+  ["印度尼西亚", /\b(indonesia|indonesian|jakarta)\b|印度尼西亚|印尼|雅加达/i],
+  ["巴西", /\b(brazil|brazilian|brasilia)\b|巴西|巴西利亚/i],
+  ["墨西哥", /\b(mexico|mexican)\b|墨西哥/i],
+  ["加拿大", /\b(canada|canadian|ottawa)\b|加拿大|渥太华/i],
+  ["中东", /\b(middle east|saudi arabia|syria|yemen|iraq|lebanon)\b|中东|沙特|叙利亚|也门|伊拉克|黎巴嫩/i],
+  ["非洲", /\b(africa|african|sudan|ethiopia|nigeria|kenya|south africa)\b|非洲|苏丹|埃塞俄比亚|尼日利亚|肯尼亚|南非/i],
+  ["拉丁美洲", /\b(latin america|argentina|chile|colombia|venezuela|peru)\b|拉丁美洲|阿根廷|智利|哥伦比亚|委内瑞拉|秘鲁/i],
+];
+
+function mentionedRegions(article) {
+  const text = [article.title, ...(article.relatedSources || []).map((source) => source.title)]
+    .filter(Boolean)
+    .join(" ");
+  return REGION_PATTERNS.filter(([, pattern]) => pattern.test(text)).map(([label]) => label);
+}
+
+function relevanceScore(apiRank) {
+  if (!Number.isFinite(apiRank)) return 0;
+  if (apiRank <= 10) return 10;
+  if (apiRank <= 25) return 9;
+  if (apiRank <= 50) return 8;
+  if (apiRank <= 100) return 6;
+  if (apiRank <= 175) return 4;
+  return 2;
+}
+
+function internationalScopeScore(regionCount, sourceCountryCount, signalText) {
+  if (/\b(united nations|nato|g7|g20|world bank|imf|international court)\b|联合国|北约|七国集团|二十国集团|世界银行|国际货币基金组织/i.test(signalText)) return 10;
+  if (regionCount >= 3) return 10;
+  if (regionCount === 2) return 8;
+  if (sourceCountryCount >= 3) return 6;
+  if (sourceCountryCount === 2) return 4;
+  return 0;
+}
+
+function attentionNote({ regions, sources, hasHighSignal, hasMediumSignal, category }) {
+  const statements = [];
+  if (regions.length >= 2) {
+    statements.push(`标题明确涉及${regions.slice(0, 3).join("、")}，属于跨地区事件`);
+  } else if (regions.length === 1 && (hasHighSignal || hasMediumSignal)) {
+    statements.push(`报道涉及${regions[0]}及具有公共影响的重大事件`);
+  } else if (hasHighSignal || hasMediumSignal) {
+    const topic = category === "disaster" ? "重大自然灾害"
+      : category === "economy" ? "重要经济变化"
+        : category === "politics" || category === "international" ? "国际政治或安全事件"
+          : "具有公共影响的事件";
+    statements.push(`报道主题属于${topic}`);
+  }
+  if (sources.size > 1) statements.push(`已聚合 ${sources.size} 个独立媒体来源，可交叉核对后续进展`);
+  return statements.length ? `${statements.join("；")}。` : "";
 }
 
 function articleSignalText(article) {
@@ -191,24 +251,31 @@ export function scoreNewsImportance(article, now = Date.now()) {
     .map((source) => source.country)
     .filter((country) => country && country !== "来源地未知"));
   const latestDate = article.eventUpdatedAt || article.publishedAt;
+  const regions = mentionedRegions(article);
+  const bestApiRank = Math.min(...(article.relatedSources || [article])
+    .map((source) => source.apiRank)
+    .filter(Number.isFinite));
+  const gdeltRank = Number.isFinite(bestApiRank) ? bestApiRank : null;
 
   const components = {
-    impact: hasHighSignal ? 35 : hasMediumSignal ? 27 : categoryImpact(article.category),
+    impact: hasHighSignal ? 30 : hasMediumSignal ? 24 : categoryImpact(article.category),
     sources: sourceBreadthScore(sources.size),
     recency: recencyScore(latestDate, now),
-    coverage: regionalCoverageScore(sourceCountries.size),
+    relevance: relevanceScore(gdeltRank),
+    internationalScope: internationalScopeScore(regions.length, sourceCountries.size, signalText),
     publicRelevance: hasPublicImpactSignal
       ? 10
       : ["politics", "economy", "disaster"].includes(article.category)
         ? 8
         : ["energy", "ai", "technology"].includes(article.category) ? 5 : 0,
-    lowPriorityPenalty: isLowPriority ? 32 : 0,
+    lowPriorityPenalty: isLowPriority ? 35 : 0,
   };
   const score = Math.max(0, Math.min(100, Math.round(
     components.impact
       + components.sources
       + components.recency
-      + components.coverage
+      + components.relevance
+      + components.internationalScope
       + components.publicRelevance
       - components.lowPriorityPenalty,
   )));
@@ -216,15 +283,23 @@ export function scoreNewsImportance(article, now = Date.now()) {
   const substantive = hasHighSignal
     || hasMediumSignal
     || hasPublicImpactSignal
-    || ["politics", "economy", "disaster", "energy", "ai", "technology"].includes(article.category);
+    || regions.length > 1;
   const eligible = age >= 0 && age <= DAY_MS && !isLowPriority && substantive && score >= 44;
   const reasons = [
     sources.size > 1 ? `${sources.size} 个独立媒体来源` : "单一媒体来源",
-    sourceCountries.size > 1 ? `${sourceCountries.size} 个媒体来源地区关注` : "单一媒体来源地区",
+    regions.length > 1 ? `标题涉及 ${regions.length} 个地区` : "未用地区配额加分",
+    gdeltRank ? `GDELT 相关性候选第 ${gdeltRank} 位` : "无外部相关性位次",
     hasHighSignal ? "重大事件关键词" : hasMediumSignal ? "重要事件关键词" : "主题影响度",
   ];
 
-  return { score, eligible, components, reasons };
+  return {
+    score,
+    eligible,
+    components,
+    reasons,
+    regions,
+    attentionNote: attentionNote({ regions, sources, hasHighSignal, hasMediumSignal, category: article.category }),
+  };
 }
 
 export function rankNewsEvents(articles, now = Date.now()) {
@@ -289,7 +364,9 @@ export function clusterNewsEvents(articles) {
       relatedSources,
       sourceCount: new Set(relatedSources.map((source) => source.source)).size,
       countries,
+      apiRank: Math.min(...relatedSources.map((source) => source.apiRank).filter(Number.isFinite), Infinity),
     };
+    if (!Number.isFinite(event.apiRank)) event.apiRank = null;
     return {
       ...event,
       importance: scoreNewsImportance(event),
