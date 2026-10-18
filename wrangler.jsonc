@@ -19,7 +19,7 @@
     {
       "binding": "DB",
       "database_name": "xiao-colours-db",
-      "database_id": "00000000-0000-4000-8000-000000000001",
+      "database_id": "cc41e1e0-aa65-442f-a6e5-929c8e324b7c",
       "migrations_dir": "migrations"
     }
   ],
