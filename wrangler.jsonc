@@ -9,6 +9,12 @@
     "binding": "ASSETS",
     "run_worker_first": ["/api/*"]
   },
+  "kv_namespaces": [
+    {
+      "binding": "GLOBAL_PULSE_CACHE",
+      "id": "551ba00b38a94fd1808387c1d238b3ef"
+    }
+  ],
   "triggers": {
     "crons": ["*/15 * * * *"]
   },
@@ -16,7 +22,4 @@
     "enabled": true,
     "head_sampling_rate": 1
   }
-  // Production must bind a Workers KV namespace as GLOBAL_PULSE_CACHE.
-  // The Worker falls back to Cache API when the binding is absent, but KV is
-  // required for durable, globally shared last-successful-news persistence.
 }
