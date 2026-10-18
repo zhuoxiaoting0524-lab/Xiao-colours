@@ -34,28 +34,6 @@ if (reducedMotion || !("IntersectionObserver" in window)) {
   revealItems.forEach((item) => revealObserver.observe(item));
 }
 
-const palettes = [...document.querySelectorAll(".palette")];
-const validThemes = ["mint", "blush", "sky"];
-const themeColors = { mint: "#eaf5ec", blush: "#f8e9ee", sky: "#eaf2f6" };
-
-function setTheme(theme) {
-  const safeTheme = validThemes.includes(theme) ? theme : "mint";
-  if (safeTheme === "mint") document.documentElement.removeAttribute("data-theme");
-  else document.documentElement.dataset.theme = safeTheme;
-
-  palettes.forEach((palette) => {
-    const selected = palette.dataset.theme === safeTheme;
-    palette.classList.toggle("is-active", selected);
-    palette.setAttribute("aria-pressed", String(selected));
-  });
-
-  document.querySelector('meta[name="theme-color"]').setAttribute("content", themeColors[safeTheme]);
-  window.localStorage.setItem("xiaoting-theme", safeTheme);
-}
-
-setTheme(window.localStorage.getItem("xiaoting-theme"));
-palettes.forEach((palette) => palette.addEventListener("click", () => setTheme(palette.dataset.theme)));
-
 const menuButton = document.querySelector(".menu-button");
 const mobileMenu = document.querySelector(".mobile-menu");
 

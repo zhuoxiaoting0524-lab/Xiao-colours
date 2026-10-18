@@ -1,6 +1,6 @@
-# 卓潇婷的个人简介网站
+# XiaoColour
 
-一个纯 HTML、CSS 和 JavaScript 制作的响应式个人网站，无需安装任何构建依赖。
+一个纯 HTML、CSS 和 JavaScript 制作的综合性网站，无需安装任何构建依赖。
 
 网站包含个人主页与“GLOBAL PULSE 全球脉搏”实时新闻与情报中心。
 
@@ -12,7 +12,7 @@
 
 - `index.html`：个人主页内容与结构
 - `styles.css`：页面设计与响应式样式
-- `script.js`：年龄计算、滚动动画、配色切换和移动端菜单
+- `script.js`：年龄计算、滚动动画、时间线和移动端菜单
 - `favicon.svg`：浏览器标签页图标
 - `global.html`：全球动态监控页面
 - `global.css`：监控中心、地图和移动端样式
