@@ -1,71 +1,62 @@
 const GDELT_API = "https://api.gdeltproject.org/api/v2/doc/doc";
-const GDELT_QUERY = "(war OR ceasefire OR sanctions OR election OR summit OR inflation OR tariff OR earthquake OR flood OR wildfire OR hurricane OR \"artificial intelligence\" OR semiconductor OR \"United Nations\")";
-const HEALTH_KEY = "global-pulse:health:v1";
-const NEWS_KEY_PREFIX = "global-pulse:news:v1:";
-const UPDATE_INTERVAL_MS = 15 * 60 * 1000;
-const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
-const MIN_RETRY_INTERVAL_MS = 60 * 1000;
-const REQUEST_TIMEOUT_MS = 25 * 1000;
-const MIN_VALID_ARTICLES = 5;
+const GDELT_QUERY =
+  '(theme:GENERAL_HEALTH OR theme:NATURAL_DISASTER OR theme:ARMEDCONFLICT OR theme:TAX_FNCACT_PRESIDENT OR theme:UNREST OR theme:ECON OR theme:ENV OR theme:IMMIGRATION OR theme:MEDIA OR theme:SCIENCE) sourcelang:eng';
+
+const TIMEOUT_MS = 25000;
 const RETRY_DELAYS_MS = [5500, 11000];
+const LIVE_WINDOW_MS = 30 * 60 * 1000;
+const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+const REFRESH_COOLDOWN_MS = 60 * 1000;
+const MIN_VALID_ARTICLES = 5;
 
-function isoTime(now = Date.now()) {
-  return new Date(now).toISOString();
+const CACHE_KEYS = {
+  "1d": "news:1d",
+  "1w": "news:1w",
+  health: "news:health",
+  cooldown: "news:cooldown",
+};
+
+function nowIso() {
+  return new Date().toISOString();
 }
 
-function parseWindow(value) {
-  return value === "1w" ? "1w" : "1d";
+function windowTimespan(time) {
+  return time === "1w" ? "7d" : "1d";
 }
 
-function snapshotKey(windowName) {
-  return `${NEWS_KEY_PREFIX}${parseWindow(windowName)}`;
+function buildGdeltUrl(time) {
+  const params = new URLSearchParams({
+    query: GDELT_QUERY,
+    mode: "ArtList",
+    maxrecords: "150",
+    format: "json",
+    sort: "HybridRel",
+    timespan: windowTimespan(time),
+  });
+  return `${GDELT_API}?${params}`;
 }
 
-function jsonResponse(payload, init = {}) {
-  const headers = new Headers(init.headers || {});
-  headers.set("content-type", "application/json; charset=utf-8");
-  headers.set("cache-control", "no-store");
-  return new Response(JSON.stringify(payload), { ...init, headers });
-}
-
-function cacheRequest(key) {
-  return new Request(`https://global-pulse-cache.internal/${encodeURIComponent(key)}`);
-}
-
-function edgeCacheStore() {
-  const edgeCache = globalThis.caches?.default;
-  if (!edgeCache) return null;
+function emptyHealth(storage) {
   return {
-    kind: "edge-cache",
-    async get(key) {
-      const response = await edgeCache.match(cacheRequest(key));
-      return response ? response.text() : null;
-    },
-    async put(key, value) {
-      await edgeCache.put(cacheRequest(key), new Response(value, {
-        headers: {
-          "content-type": "application/json; charset=utf-8",
-          "cache-control": "public, max-age=31536000",
-        },
-      }));
-    },
+    lastSuccessAt: null,
+    lastFailureAt: null,
+    lastError: null,
+    rawCount: 0,
+    validCount: 0,
+    cacheCount: 0,
+    cacheAgeMs: null,
+    stale: false,
+    requestedWindow: null,
+    storage,
   };
-}
-
-export function resolveStore(env) {
-  if (env?.GLOBAL_PULSE_CACHE?.get && env?.GLOBAL_PULSE_CACHE?.put) {
-    return { kind: "kv", get: env.GLOBAL_PULSE_CACHE.get.bind(env.GLOBAL_PULSE_CACHE), put: env.GLOBAL_PULSE_CACHE.put.bind(env.GLOBAL_PULSE_CACHE) };
-  }
-  return edgeCacheStore();
 }
 
 async function readJson(store, key) {
   if (!store) return null;
   try {
-    const value = await store.get(key);
-    return value ? JSON.parse(value) : null;
-  } catch (error) {
-    console.warn(JSON.stringify({ event: "cache_read_failed", key, message: error?.message || String(error) }));
+    const value = await store.get(key, "json");
+    return value || null;
+  } catch {
     return null;
   }
 }
@@ -75,336 +66,243 @@ async function writeJson(store, key, value) {
   await store.put(key, JSON.stringify(value));
 }
 
-function emptyHealth() {
-  return {
-    lastSuccessAt: null,
-    lastFailureAt: null,
-    lastAttemptAt: null,
-    lastError: null,
-    windows: {},
-  };
-}
-
-export async function readHealth(env) {
-  return { ...emptyHealth(), ...(await readJson(resolveStore(env), HEALTH_KEY) || {}) };
-}
-
-function gdeltUrl(windowName) {
-  const params = new URLSearchParams({
-    query: GDELT_QUERY,
-    mode: "ArtList",
-    maxrecords: windowName === "1w" ? "250" : "150",
-    format: "json",
-    sort: "HybridRel",
-    timespan: windowName,
+function validateArticles(payload) {
+  const articles = Array.isArray(payload?.articles) ? payload.articles : [];
+  const valid = articles.filter((article) => {
+    const title = String(article?.title || "").trim();
+    const url = String(article?.url || "").trim();
+    const seen = String(article?.seendate || "").trim();
+    return title && /^https?:\/\//i.test(url) && seen;
   });
-  return `${GDELT_API}?${params}`;
+  return { rawCount: articles.length, articles: valid, validCount: valid.length };
 }
 
-function cleanText(value, limit = 500) {
-  return String(value || "").replace(/\s+/g, " ").trim().slice(0, limit);
-}
-
-function validHttpUrl(value) {
-  try {
-    return /^https?:$/.test(new URL(value).protocol);
-  } catch {
-    return false;
-  }
-}
-
-export function sanitizeArticles(rawArticles) {
-  const seen = new Set();
-  const articles = [];
-  for (const raw of Array.isArray(rawArticles) ? rawArticles : []) {
-    const url = cleanText(raw?.url, 1800);
-    const title = cleanText(raw?.title, 400);
-    const seenDate = cleanText(raw?.seendate, 40);
-    if (!title || !validHttpUrl(url) || !/^\d{8}T\d{6}Z$/.test(seenDate) || seen.has(url)) continue;
-    seen.add(url);
-    articles.push({
-      url,
-      url_mobile: validHttpUrl(raw?.url_mobile) ? cleanText(raw.url_mobile, 1800) : "",
-      title,
-      seendate: seenDate,
-      socialimage: validHttpUrl(raw?.socialimage) ? cleanText(raw.socialimage, 1800) : "",
-      domain: cleanText(raw?.domain, 255),
-      language: cleanText(raw?.language, 80),
-      sourcecountry: cleanText(raw?.sourcecountry, 120),
-      summary: cleanText(raw?.summary || raw?.description || raw?.snippet, 900),
-    });
-  }
-  return articles;
-}
-
-export function classifyError(error) {
-  if (error?.name === "AbortError" || error?.name === "TimeoutError") return "timeout";
-  if (Number(error?.status) === 429) return "rate_limit";
-  if (Number(error?.status) >= 500) return "upstream_5xx";
-  if (Number(error?.status) >= 400) return "upstream_4xx";
-  if (error?.name === "InvalidNewsPayloadError") return "invalid_data";
-  return "network";
-}
-
-function retryable(error) {
-  return ["rate_limit", "upstream_5xx", "timeout", "network"].includes(classifyError(error));
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function fetchAttempt(windowName, fetchImpl) {
+async function fetchUpstream(time) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const response = await fetchImpl(gdeltUrl(windowName), {
+    const response = await fetch(buildGdeltUrl(time), {
       signal: controller.signal,
-      headers: {
-        accept: "application/json",
-        "user-agent": "GLOBAL-PULSE/1.0 (+https://xiao-colours.zhuoxiaoting0524.workers.dev/global)",
-      },
+      headers: { Accept: "application/json" },
     });
-    const text = await response.text();
     if (!response.ok) {
-      const error = new Error(cleanText(text, 220) || `GDELT HTTP ${response.status}`);
-      error.name = "GdeltResponseError";
-      error.status = response.status;
+      const error = new Error(`GDELT HTTP ${response.status}`);
+      error.code = `http_${response.status}`;
       throw error;
     }
-    let payload;
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      const error = new Error("GDELT returned non-JSON content");
-      error.name = "InvalidNewsPayloadError";
-      throw error;
-    }
-    const rawCount = Array.isArray(payload?.articles) ? payload.articles.length : 0;
-    const articles = sanitizeArticles(payload?.articles);
-    if (articles.length < MIN_VALID_ARTICLES) {
-      const error = new Error(`GDELT payload contained ${rawCount} raw and ${articles.length} valid articles`);
-      error.name = "InvalidNewsPayloadError";
-      error.rawCount = rawCount;
-      error.validCount = articles.length;
-      throw error;
-    }
-    return { articles, rawCount, validCount: articles.length };
+    return await response.json();
   } finally {
     clearTimeout(timer);
   }
 }
 
-export async function fetchGdeltWithRetry(windowName, {
-  fetchImpl = fetch,
-  sleepImpl = sleep,
-} = {}) {
-  let lastError;
+async function fetchWithRetry(time) {
+  let lastError = null;
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
     try {
-      return { ...(await fetchAttempt(windowName, fetchImpl)), attempts: attempt + 1 };
+      const payload = await fetchUpstream(time);
+      const checked = validateArticles(payload);
+      if (checked.validCount < MIN_VALID_ARTICLES) {
+        const error = new Error(`有效新闻不足：${checked.validCount}`);
+        error.code = "empty_or_invalid";
+        throw error;
+      }
+      return checked;
     } catch (error) {
       lastError = error;
-      if (attempt >= RETRY_DELAYS_MS.length || !retryable(error)) break;
-      await sleepImpl(RETRY_DELAYS_MS[attempt]);
+      if (attempt >= RETRY_DELAYS_MS.length) break;
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
     }
   }
-  throw lastError;
+  throw lastError || new Error("GDELT refresh failed");
 }
 
-async function writeFailureHealth(store, health, windowName, error, now) {
-  const failure = {
-    at: isoTime(now),
-    type: classifyError(error),
-    status: Number(error?.status) || null,
-    message: cleanText(error?.message, 260) || "Unknown upstream error",
-  };
-  const next = {
-    ...health,
-    lastAttemptAt: failure.at,
-    lastFailureAt: failure.at,
-    lastError: failure,
-    windows: {
-      ...(health.windows || {}),
-      [windowName]: {
-        ...(health.windows?.[windowName] || {}),
-        lastAttemptAt: failure.at,
-        lastFailureAt: failure.at,
-        lastError: failure,
-      },
-    },
-  };
-  await writeJson(store, HEALTH_KEY, next);
-  console.error(JSON.stringify({ event: "news_refresh_failed", window: windowName, ...failure }));
-  return next;
-}
-
-export async function refreshWindow(env, windowValue, {
-  fetchImpl = fetch,
-  sleepImpl = sleep,
-  now = Date.now(),
-} = {}) {
-  const windowName = parseWindow(windowValue);
-  const store = resolveStore(env);
-  const health = { ...emptyHealth(), ...(await readJson(store, HEALTH_KEY) || {}) };
-  const attemptAt = isoTime(now);
-  await writeJson(store, HEALTH_KEY, {
-    ...health,
-    lastAttemptAt: attemptAt,
-    windows: {
-      ...(health.windows || {}),
-      [windowName]: { ...(health.windows?.[windowName] || {}), lastAttemptAt: attemptAt },
-    },
-  });
-
-  try {
-    const result = await fetchGdeltWithRetry(windowName, { fetchImpl, sleepImpl });
-    const snapshot = {
-      version: 1,
-      source: "gdelt",
-      window: windowName,
-      fetchedAt: isoTime(now),
-      rawCount: result.rawCount,
-      validCount: result.validCount,
-      attempts: result.attempts,
-      articles: result.articles,
-    };
-    await writeJson(store, snapshotKey(windowName), snapshot);
-    const successHealth = {
-      ...health,
-      lastAttemptAt: attemptAt,
-      lastSuccessAt: snapshot.fetchedAt,
-      windows: {
-        ...(health.windows || {}),
-        [windowName]: {
-          ...(health.windows?.[windowName] || {}),
-          lastAttemptAt: attemptAt,
-          lastSuccessAt: snapshot.fetchedAt,
-          rawCount: result.rawCount,
-          validCount: result.validCount,
-          cacheCount: result.validCount,
-          attempts: result.attempts,
-        },
-      },
-    };
-    await writeJson(store, HEALTH_KEY, successHealth);
-    console.log(JSON.stringify({ event: "news_refresh_success", window: windowName, rawCount: result.rawCount, validCount: result.validCount, attempts: result.attempts }));
-    return { snapshot, health: successHealth };
-  } catch (error) {
-    await writeFailureHealth(store, health, windowName, error, now);
-    throw error;
-  }
-}
-
-export function snapshotStatus(snapshot, now = Date.now()) {
-  if (!snapshot?.fetchedAt) return "unavailable";
-  const ageMs = Math.max(0, now - new Date(snapshot.fetchedAt).valueOf());
-  if (ageMs <= UPDATE_INTERVAL_MS * 2) return "live";
-  if (ageMs <= STALE_AFTER_MS) return "cache";
+function classifyStatus(fetchedAt) {
+  if (!fetchedAt) return "unavailable";
+  const age = Date.now() - new Date(fetchedAt).valueOf();
+  if (Number.isNaN(age)) return "unavailable";
+  if (age <= LIVE_WINDOW_MS) return "live";
+  if (age <= STALE_AFTER_MS) return "cache";
   return "stale";
 }
 
-function publicHealth(health, snapshot, requestedWindow, storeKind, now) {
-  const fetchedAt = snapshot?.fetchedAt ? new Date(snapshot.fetchedAt).valueOf() : 0;
-  const cacheAgeMs = fetchedAt ? Math.max(0, now - fetchedAt) : null;
-  const windowHealth = health.windows?.[requestedWindow] || {};
-  return {
-    lastSuccessAt: windowHealth.lastSuccessAt || health.lastSuccessAt || null,
-    lastFailureAt: windowHealth.lastFailureAt || health.lastFailureAt || null,
-    lastError: windowHealth.lastError || health.lastError || null,
-    rawCount: snapshot?.rawCount ?? windowHealth.rawCount ?? 0,
-    validCount: snapshot?.validCount ?? windowHealth.validCount ?? 0,
-    cacheCount: snapshot?.articles?.length || 0,
-    cacheAgeMs,
-    stale: cacheAgeMs === null ? true : cacheAgeMs > STALE_AFTER_MS,
-    requestedWindow,
-    storage: storeKind || "none",
-  };
-}
+export function createNewsCache(env) {
+  const kv = env?.GLOBAL_PULSE_CACHE || null;
+  const storage = kv ? "kv" : "edge-cache";
 
-export async function getNewsPayload(env, requestedTime, {
-  force = false,
-  fetchImpl = fetch,
-  sleepImpl = sleep,
-  now = Date.now(),
-  waitUntil,
-} = {}) {
-  const requestedWindow = parseWindow(requestedTime === "1h" ? "1d" : requestedTime);
-  const store = resolveStore(env);
-  let snapshot = await readJson(store, snapshotKey(requestedWindow));
-  let health = { ...emptyHealth(), ...(await readJson(store, HEALTH_KEY) || {}) };
-  const ageMs = snapshot?.fetchedAt ? now - new Date(snapshot.fetchedAt).valueOf() : Infinity;
-  const lastAttempt = health.windows?.[requestedWindow]?.lastAttemptAt || health.lastAttemptAt;
-  const canRetry = !lastAttempt || now - new Date(lastAttempt).valueOf() >= MIN_RETRY_INTERVAL_MS;
-  let refreshFailed = false;
+  // Fallback in-memory store for local preview without KV binding.
+  const memory = globalThis.__xiaoNewsMemory || (globalThis.__xiaoNewsMemory = new Map());
 
-  if (!snapshot && canRetry) {
-    try {
-      const refreshed = await refreshWindow(env, requestedWindow, { fetchImpl, sleepImpl, now });
-      snapshot = refreshed.snapshot;
-      health = refreshed.health;
-    } catch {
-      refreshFailed = true;
-      health = await readHealth(env);
-    }
-  } else if (snapshot && force && canRetry) {
-    try {
-      const refreshed = await refreshWindow(env, requestedWindow, { fetchImpl, sleepImpl, now });
-      snapshot = refreshed.snapshot;
-      health = refreshed.health;
-    } catch {
-      refreshFailed = true;
-      health = await readHealth(env);
-    }
-  } else if (ageMs > UPDATE_INTERVAL_MS && canRetry && typeof waitUntil === "function") {
-    waitUntil(refreshWindow(env, requestedWindow, { fetchImpl, sleepImpl, now }).catch(() => undefined));
-  }
-
-  if (!snapshot?.articles?.length) {
-    return jsonResponse({
-      status: "unavailable",
-      articles: [],
-      fetchedAt: null,
-      health: publicHealth(health, null, requestedWindow, store?.kind, now),
-    }, { status: 503 });
-  }
-
-  const ageStatus = snapshotStatus(snapshot, now);
-  const lastFailureAt = health.windows?.[requestedWindow]?.lastFailureAt || health.lastFailureAt;
-  const failedAfterSnapshot = Boolean(
-    lastFailureAt
-    && new Date(lastFailureAt).valueOf() > new Date(snapshot.fetchedAt).valueOf()
-  );
-  return jsonResponse({
-    status: (refreshFailed || failedAfterSnapshot) && ageStatus === "live" ? "cache" : ageStatus,
-    articles: snapshot.articles,
-    fetchedAt: snapshot.fetchedAt,
-    health: publicHealth(health, snapshot, requestedWindow, store?.kind, now),
-  });
-}
-
-export async function getHealthPayload(env, now = Date.now()) {
-  const store = resolveStore(env);
-  const health = await readHealth(env);
-  const day = await readJson(store, snapshotKey("1d"));
-  const week = await readJson(store, snapshotKey("1w"));
-  return jsonResponse({
-    status: day || week ? "ok" : "unavailable",
-    generatedAt: isoTime(now),
-    storage: store?.kind || "none",
-    windows: {
-      "1d": day ? { fetchedAt: day.fetchedAt, status: snapshotStatus(day, now), rawCount: day.rawCount, validCount: day.validCount, cacheCount: day.articles.length } : null,
-      "1w": week ? { fetchedAt: week.fetchedAt, status: snapshotStatus(week, now), rawCount: week.rawCount, validCount: week.validCount, cacheCount: week.articles.length } : null,
+  const store = kv || {
+    async get(key, type) {
+      const value = memory.get(key);
+      if (value == null) return null;
+      return type === "json" ? JSON.parse(value) : value;
     },
-    lastSuccessAt: health.lastSuccessAt,
-    lastFailureAt: health.lastFailureAt,
-    lastError: health.lastError,
-  }, { status: day || week ? 200 : 503 });
-}
+    async put(key, value) {
+      memory.set(key, value);
+    },
+  };
 
-export const workerConstants = {
-  UPDATE_INTERVAL_MS,
-  STALE_AFTER_MS,
-  MIN_RETRY_INTERVAL_MS,
-  MIN_VALID_ARTICLES,
-};
+  async function readHealth() {
+    return (await readJson(store, CACHE_KEYS.health)) || emptyHealth(storage);
+  }
+
+  async function writeHealth(patch) {
+    const current = await readHealth();
+    const next = { ...current, ...patch, storage };
+    await writeJson(store, CACHE_KEYS.health, next);
+    return next;
+  }
+
+  async function readWindow(time) {
+    return readJson(store, CACHE_KEYS[time] || CACHE_KEYS["1d"]);
+  }
+
+  async function writeWindow(time, snapshot) {
+    await writeJson(store, CACHE_KEYS[time] || CACHE_KEYS["1d"], snapshot);
+  }
+
+  async function refreshWindow(time, { force = false } = {}) {
+    const cooldown = await readJson(store, CACHE_KEYS.cooldown);
+    if (!force && cooldown?.until && Date.now() < cooldown.until) {
+      return { ok: false, skipped: true, reason: "cooldown" };
+    }
+
+    try {
+      const checked = await fetchWithRetry(time);
+      const fetchedAt = nowIso();
+      const snapshot = {
+        status: "live",
+        articles: checked.articles,
+        fetchedAt,
+        health: {
+          lastSuccessAt: fetchedAt,
+          lastFailureAt: null,
+          lastError: null,
+          rawCount: checked.rawCount,
+          validCount: checked.validCount,
+          cacheCount: checked.validCount,
+          cacheAgeMs: 0,
+          stale: false,
+          requestedWindow: time,
+          storage,
+        },
+      };
+      await writeWindow(time, snapshot);
+      await writeHealth({
+        lastSuccessAt: fetchedAt,
+        lastFailureAt: null,
+        lastError: null,
+        rawCount: checked.rawCount,
+        validCount: checked.validCount,
+        cacheCount: checked.validCount,
+        cacheAgeMs: 0,
+        stale: false,
+        requestedWindow: time,
+      });
+      await writeJson(store, CACHE_KEYS.cooldown, { until: Date.now() + REFRESH_COOLDOWN_MS });
+      console.log(JSON.stringify({ event: "news_refresh_success", time, count: checked.validCount }));
+      return { ok: true, snapshot };
+    } catch (error) {
+      const failure = {
+        lastFailureAt: nowIso(),
+        lastError: {
+          code: error.code || error.name || "refresh_failed",
+          message: error.message || "refresh failed",
+        },
+        requestedWindow: time,
+      };
+      await writeHealth(failure);
+      await writeJson(store, CACHE_KEYS.cooldown, { until: Date.now() + REFRESH_COOLDOWN_MS });
+      console.log(JSON.stringify({ event: "news_refresh_failed", time, error: failure.lastError }));
+      return { ok: false, error: failure.lastError };
+    }
+  }
+
+  async function getNews(time, { force = false } = {}) {
+    if (force) await refreshWindow(time, { force: true });
+
+    let snapshot = await readWindow(time);
+    if (!snapshot && !force) {
+      await refreshWindow(time, { force: false });
+      snapshot = await readWindow(time);
+    }
+
+    if (!snapshot?.articles?.length) {
+      return {
+        status: 503,
+        body: {
+          status: "unavailable",
+          articles: [],
+          fetchedAt: null,
+          health: {
+            ...(await readHealth()),
+            requestedWindow: time,
+            storage,
+          },
+        },
+      };
+    }
+
+    const status = classifyStatus(snapshot.fetchedAt);
+    const age = snapshot.fetchedAt ? Date.now() - new Date(snapshot.fetchedAt).valueOf() : null;
+    const health = {
+      ...(snapshot.health || emptyHealth(storage)),
+      ...(await readHealth()),
+      cacheCount: snapshot.articles.length,
+      cacheAgeMs: age,
+      stale: status === "stale",
+      requestedWindow: time,
+      storage,
+    };
+
+    return {
+      status: 200,
+      body: {
+        status,
+        articles: snapshot.articles,
+        fetchedAt: snapshot.fetchedAt,
+        health,
+      },
+    };
+  }
+
+  async function getHealth() {
+    const health = await readHealth();
+    const windows = {};
+    for (const time of ["1d", "1w"]) {
+      const snapshot = await readWindow(time);
+      windows[time] = snapshot
+        ? {
+            status: classifyStatus(snapshot.fetchedAt),
+            fetchedAt: snapshot.fetchedAt,
+            count: snapshot.articles?.length || 0,
+          }
+        : null;
+    }
+    return {
+      status: classifyStatus(health.lastSuccessAt),
+      generatedAt: nowIso(),
+      storage,
+      windows,
+      lastSuccessAt: health.lastSuccessAt,
+      lastFailureAt: health.lastFailureAt,
+      lastError: health.lastError,
+    };
+  }
+
+  async function refreshAll() {
+    const results = {
+      "1d": await refreshWindow("1d"),
+      "1w": await refreshWindow("1w"),
+    };
+    console.log(JSON.stringify({ event: "scheduled_refresh_complete", results: {
+      "1d": Boolean(results["1d"].ok),
+      "1w": Boolean(results["1w"].ok),
+    } }));
+    return results;
+  }
+
+  return { getNews, getHealth, refreshAll, refreshWindow, storage };
+}

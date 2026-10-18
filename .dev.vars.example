@@ -1,0 +1,2 @@
+SESSION_SECRET=replace-with-long-random-string
+ADMIN_BOOTSTRAP_TOKEN=replace-with-one-time-bootstrap-token

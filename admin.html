@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>邀请管理｜XiaoColour</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css?v=7" />
+    <link rel="stylesheet" href="./auth.css?v=1" />
+  </head>
+  <body class="auth-body">
+    <main class="auth-card auth-card-wide">
+      <p class="auth-kicker">Admin</p>
+      <h1>邀请管理</h1>
+      <p class="auth-lead">仅管理员可生成 / 撤销邀请。无法在此查看其他用户私人内容。</p>
+
+      <section class="auth-panel">
+        <h2>初始化管理员（仅首次）</h2>
+        <form id="bootstrap-form" class="auth-form">
+          <label>引导令牌 <input name="bootstrapToken" type="password" required /></label>
+          <label>管理员邮箱 <input name="email" type="email" required /></label>
+          <label>显示名称 <input name="displayName" type="text" value="Admin" required /></label>
+          <label>密码（至少 10 位） <input name="password" type="password" required minlength="10" /></label>
+          <button type="submit">创建管理员</button>
+        </form>
+      </section>
+
+      <section class="auth-panel" id="invite-panel" hidden>
+        <h2>生成邀请</h2>
+        <form id="invite-form" class="auth-form inline">
+          <label>备注 <input name="note" type="text" maxlength="120" placeholder="可选" /></label>
+          <button type="submit">生成 7 天邀请</button>
+        </form>
+        <p id="fresh-invite" class="auth-message" hidden></p>
+        <h2>最近邀请</h2>
+        <ul id="invite-list" class="invite-list"></ul>
+        <p class="auth-links">
+          <a href="./index.html">返回空间</a>
+          ·
+          <button type="button" id="logout-btn" class="linkish">退出</button>
+        </p>
+      </section>
+
+      <p id="auth-message" class="auth-message" hidden></p>
+    </main>
+    <script type="module">
+      import { api, getMe } from "./auth-client.js";
+
+      let csrfToken = "";
+      const message = document.querySelector("#auth-message");
+      const invitePanel = document.querySelector("#invite-panel");
+      const list = document.querySelector("#invite-list");
+      const fresh = document.querySelector("#fresh-invite");
+
+      function showError(error) {
+        message.hidden = false;
+        message.textContent = error.message || String(error);
+      }
+
+      async function refreshInvites() {
+        const data = await api("/api/admin/invites");
+        list.innerHTML = "";
+        for (const invite of data.invites) {
+          const li = document.createElement("li");
+          const status = invite.revoked_at
+            ? "已撤销"
+            : invite.used_at
+              ? "已使用"
+              : "可用";
+          li.innerHTML = `<code>${invite.token_prefix}…</code> · ${status} · 过期 ${invite.expires_at.slice(0, 10)}`;
+          if (!invite.used_at && !invite.revoked_at) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = "撤销";
+            btn.addEventListener("click", async () => {
+              try {
+                await api(`/api/admin/invites/${invite.id}/revoke`, {
+                  method: "POST",
+                  csrfToken,
+                  body: {},
+                });
+                await refreshInvites();
+              } catch (error) {
+                showError(error);
+              }
+            });
+            li.append(" ", btn);
+          }
+          list.append(li);
+        }
+      }
+
+      async function boot() {
+        const me = await getMe();
+        if (me.authenticated && me.user?.role === "admin") {
+          csrfToken = me.csrfToken;
+          invitePanel.hidden = false;
+          await refreshInvites();
+        }
+      }
+
+      document.querySelector("#bootstrap-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        message.hidden = true;
+        const body = Object.fromEntries(new FormData(event.target).entries());
+        try {
+          const data = await api("/api/auth/bootstrap", { method: "POST", body });
+          csrfToken = data.csrfToken;
+          invitePanel.hidden = false;
+          message.hidden = false;
+          message.textContent = "管理员已创建并登录。";
+          await refreshInvites();
+        } catch (error) {
+          showError(error);
+        }
+      });
+
+      document.querySelector("#invite-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const body = Object.fromEntries(new FormData(event.target).entries());
+        try {
+          const data = await api("/api/admin/invites", { method: "POST", body, csrfToken });
+          fresh.hidden = false;
+          fresh.innerHTML = `邀请已创建（只显示一次）：<br /><a href="${data.invite.url}">${data.invite.url}</a>`;
+          await refreshInvites();
+        } catch (error) {
+          showError(error);
+        }
+      });
+
+      document.querySelector("#logout-btn").addEventListener("click", async () => {
+        try {
+          await api("/api/auth/logout", { method: "POST", csrfToken, body: {} });
+          location.href = "./login.html";
+        } catch (error) {
+          showError(error);
+        }
+      });
+
+      boot().catch(showError);
+    </script>
+  </body>
+</html>

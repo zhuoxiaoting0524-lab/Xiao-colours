@@ -18,11 +18,20 @@
       href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Gaegu:wght@400;700&family=Ma+Shan+Zheng&family=Patrick+Hand&family=Rock+Salt&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=6" />
-    <script src="./script.js?v=6" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=7" />
+    <link rel="stylesheet" href="./auth.css?v=1" />
+    <script type="module" src="./script.js?v=7"></script>
   </head>
   <body>
     <div class="paper-noise" aria-hidden="true"></div>
+    <div class="auth-bar" id="auth-bar">
+      <span id="auth-user-label">正在检查登录状态…</span>
+      <span class="auth-bar-actions">
+        <a href="./login.html" id="auth-login-link">登录</a>
+        <a href="./admin.html" id="auth-admin-link" hidden>邀请管理</a>
+        <button type="button" id="auth-logout-btn" hidden>退出</button>
+      </span>
+    </div>
 
     <svg class="svg-defs" aria-hidden="true" width="0" height="0">
       <defs>
@@ -136,6 +145,10 @@
             <span>Journal</span>
           </div>
         </header>
+        <div class="space-empty" data-empty-for="journal" hidden>
+          <p>你的 Journal 还是空白的。</p>
+          <p>第一阶段仅建立私人空间壳子，内容编辑稍后开放。</p>
+        </div>
 
         <aside class="year-rail" aria-label="年份">
           <button type="button" class="year-item" disabled>2024</button>
@@ -222,6 +235,10 @@
             <span>Gallery</span>
           </div>
         </header>
+        <div class="space-empty" data-empty-for="gallery" hidden>
+          <p>你的 Gallery 还是空白的。</p>
+          <p>照片上传将在后续阶段接入 R2。</p>
+        </div>
 
         <button class="page-nav page-nav-prev" type="button" aria-label="上一组" disabled>
           <svg viewBox="0 0 24 40" aria-hidden="true"><path d="M16.4 5.8 6.2 20.2 16.2 34.4" fill="none" /></svg>
@@ -277,6 +294,10 @@
             <span>Collections</span>
           </div>
         </header>
+        <div class="space-empty" data-empty-for="collections" hidden>
+          <p>你的 Collections 还是空白的。</p>
+          <p>收藏物件编辑将在后续阶段开放。</p>
+        </div>
 
         <div class="desktop" aria-label="私人收藏桌面">
           <div class="desk-item vinyl" aria-label="黑胶唱片（演示）">

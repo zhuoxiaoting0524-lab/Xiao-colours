@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登录｜XiaoColour</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css?v=7" />
+    <link rel="stylesheet" href="./auth.css?v=1" />
+  </head>
+  <body class="auth-body">
+    <main class="auth-card">
+      <p class="auth-kicker">XiaoColour</p>
+      <h1>登录</h1>
+      <p class="auth-lead">进入你的私人数字空间</p>
+      <form id="login-form" class="auth-form">
+        <label>邮箱 <input name="email" type="email" autocomplete="username" required /></label>
+        <label>密码 <input name="password" type="password" autocomplete="current-password" required minlength="10" /></label>
+        <button type="submit">登录</button>
+      </form>
+      <p id="auth-message" class="auth-message" hidden></p>
+      <p class="auth-links"><a href="./index.html">返回首页</a></p>
+    </main>
+    <script type="module">
+      import { api } from "./auth-client.js";
+      const form = document.querySelector("#login-form");
+      const message = document.querySelector("#auth-message");
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        message.hidden = true;
+        const data = Object.fromEntries(new FormData(form).entries());
+        try {
+          await api("/api/auth/login", { method: "POST", body: data });
+          location.href = "./index.html";
+        } catch (error) {
+          message.hidden = false;
+          message.textContent = error.message;
+        }
+      });
+    </script>
+  </body>
+</html>

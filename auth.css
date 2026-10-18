@@ -1,0 +1,140 @@
+.auth-body {
+  min-height: 100vh;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  background:
+    radial-gradient(ellipse 70% 50% at 20% 10%, rgba(200, 223, 184, 0.22), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(240, 200, 212, 0.16), transparent 50%),
+    #F9F9F7;
+  color: #1a1a1a;
+  font-family: "Patrick Hand", "Gaegu", "PingFang SC", sans-serif;
+}
+
+.auth-card {
+  width: min(420px, 100%);
+  padding: 1.75rem 1.5rem 1.5rem;
+  border: 1.5px solid rgba(26, 26, 26, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 252, 247, 0.92);
+  box-shadow: 0 16px 40px rgba(60, 50, 30, 0.08);
+}
+
+.auth-card-wide {
+  width: min(640px, 100%);
+}
+
+.auth-kicker {
+  margin: 0;
+  letter-spacing: 0.08em;
+  color: #7a7a72;
+  font-size: 0.95rem;
+}
+
+.auth-card h1 {
+  margin: 0.35rem 0 0.4rem;
+  font-family: "Caveat", "Gaegu", cursive;
+  font-size: 2.4rem;
+  font-weight: 700;
+}
+
+.auth-lead {
+  margin: 0 0 1.2rem;
+  color: #4a4a44;
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.auth-form.inline {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 1rem;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1.5px solid rgba(26, 26, 26, 0.18);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+}
+
+.auth-form button,
+.linkish {
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-form button {
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.auth-message {
+  margin-top: 1rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  background: rgba(240, 200, 212, 0.35);
+  word-break: break-all;
+}
+
+.auth-links {
+  margin: 1.1rem 0 0;
+  color: #6a6a62;
+}
+
+.auth-links a,
+.linkish {
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.auth-panel {
+  margin-top: 1.4rem;
+  padding-top: 1rem;
+  border-top: 1px dashed rgba(26, 26, 26, 0.15);
+}
+
+.auth-panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+}
+
+.invite-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.invite-list button {
+  margin-left: 0.4rem;
+  font: inherit;
+  border: 1px solid rgba(26, 26, 26, 0.2);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.1rem 0.55rem;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .auth-form.inline {
+    grid-template-columns: 1fr;
+  }
+}

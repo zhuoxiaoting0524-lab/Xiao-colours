@@ -19,16 +19,18 @@ pnpm install
 pnpm dev
 ```
 
-## 个人模块（第一阶段改版）
+## 个人模块
 
-个人主页已改为手绘艺术作品集风格：
+手绘 Welcome + Journal / Gallery / Collections。现已加入**邀请制多用户账户（第一阶段）**：
 
-- `index.html`：Welcome 首页 + Journal / Gallery / Collections 三个空间
-- `styles.css`：暖白背景、手绘线条、活页手帐、相纸横排、私人桌面
-- `script.js`：空间切换与淡入淡出
-- `demo/`：本地示例照片与物件素材（仅演示，不代表真实个人内容）
+- 密码：Web Crypto **PBKDF2-SHA-256**（600k 迭代）
+- Session：存 **D1**；Cookie `HttpOnly` + `Secure` + `SameSite=Lax`
+- 邀请：管理员生成，7 天有效，单次使用，可撤销
+- 每人独立空白 Journal / Gallery / Collections 壳子
+- Global Pulse 与其 KV **未改动**
+- R2 仅预留架构，本阶段不接上传
 
-本阶段只做入口切换与基础视觉，不包含复杂翻页、放大或物件弹窗。
+详见 `docs/MULTIUSER_PHASE1.md`。
 
 ## 文件说明
 
