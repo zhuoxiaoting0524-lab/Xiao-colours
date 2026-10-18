@@ -373,11 +373,22 @@ export async function handleAuthApi(request, env) {
       ).bind(session.user.id).first();
 
       let journalPageCount = 0;
+      let journalPagesReady = true;
       if (journal) {
-        const countRow = await db.prepare(
-          `SELECT COUNT(*) AS c FROM journal_pages WHERE user_id = ? AND journal_id = ?`,
-        ).bind(session.user.id, journal.id).first();
-        journalPageCount = Number(countRow?.c || 0);
+        try {
+          const countRow = await db.prepare(
+            `SELECT COUNT(*) AS c FROM journal_pages WHERE user_id = ? AND journal_id = ?`,
+          ).bind(session.user.id, journal.id).first();
+          journalPageCount = Number(countRow?.c || 0);
+        } catch (countError) {
+          // Missing migration / transient D1 errors must not break auth session UX.
+          journalPagesReady = false;
+          journalPageCount = 0;
+          console.error(JSON.stringify({
+            event: "journal_pages_count_failed",
+            message: String(countError?.message || countError),
+          }));
+        }
       }
 
       // Isolation: only current user's rows; no admin peek endpoint.
@@ -386,7 +397,12 @@ export async function handleAuthApi(request, env) {
         userId: session.user.id,
         spaces: {
           journal: journal
-            ? { ...journal, pageCount: journalPageCount, empty: journalPageCount === 0 }
+            ? {
+              ...journal,
+              pageCount: journalPageCount,
+              empty: journalPagesReady ? journalPageCount === 0 : true,
+              pagesReady: journalPagesReady,
+            }
             : null,
           gallery: gallery ? { ...gallery, items: [], empty: true } : null,
           collections: collections ? { ...collections, items: [], empty: true } : null,

@@ -244,6 +244,14 @@ export async function handleJournalApi(request, env) {
 
     return null;
   } catch (error) {
+    const msg = String(error?.message || "");
+    if (/no such table:\s*journal_pages/i.test(msg)) {
+      return errorJson(
+        503,
+        "schema_missing",
+        "Journal 数据表尚未迁移，请联系管理员执行 0002_journal_pages",
+      );
+    }
     const status = error.status || (error.code === "db_unavailable" ? 503 : 400);
     if (error.code === "unauthorized") return errorJson(401, error.code, error.message);
     if (error.code === "forbidden" || error.code === "csrf" || error.code === "csrf_origin") {

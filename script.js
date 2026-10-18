@@ -2,10 +2,8 @@ import { api, getMe, loginUrlForView, PRIVATE_VIEWS } from "./auth-client.js";
 import { mountJournal } from "./journal.js";
 
 /**
- * Unified site session:
- * - One HttpOnly cookie (`xc_session`, Path=/) shared by every page on this origin.
- * - Welcome + Global Pulse stay public.
- * - Journal requires login (no demo browsing). Gallery / Collections same gate.
+ * Unified site session with explicit auth status to prevent redirect loops.
+ * status: loading | authenticated | unauthenticated | error
  */
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -13,11 +11,15 @@ const views = [...document.querySelectorAll(".view")];
 const goButtons = document.querySelectorAll("[data-go]");
 
 let authState = {
+  status: "loading",
   authenticated: false,
   user: null,
   csrfToken: "",
   spaces: null,
+  errorMessage: "",
 };
+
+let loginRedirectQueued = false;
 
 function setView(name) {
   const next = views.find((view) => view.dataset.view === name);
@@ -26,8 +28,10 @@ function setView(name) {
   const current = views.find((view) => view.classList.contains("is-active"));
 
   const afterReveal = () => {
-    if (name === "journal" && authState.authenticated) {
-      mountJournal(authState);
+    if (name === "journal" && authState.status === "authenticated") {
+      mountJournal(authState).catch((error) => {
+        showAuthError(error?.message || "无法加载 Journal");
+      });
     }
   };
 
@@ -68,6 +72,31 @@ function syncLocationForView(name) {
   history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
+function showAuthError(message) {
+  const label = document.querySelector("#auth-user-label");
+  if (label) {
+    label.textContent = message;
+  }
+  let banner = document.querySelector("#auth-error-banner");
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "auth-error-banner";
+    banner.className = "auth-error-banner";
+    banner.innerHTML = `<span></span> <button type="button" id="auth-retry-btn">重试</button>`;
+    document.body.append(banner);
+    banner.querySelector("#auth-retry-btn")?.addEventListener("click", () => {
+      location.reload();
+    });
+  }
+  banner.querySelector("span").textContent = message;
+  banner.hidden = false;
+}
+
+function hideAuthError() {
+  const banner = document.querySelector("#auth-error-banner");
+  if (banner) banner.hidden = true;
+}
+
 function renderAuthBar() {
   const label = document.querySelector("#auth-user-label");
   const loginLink = document.querySelector("#auth-login-link");
@@ -75,7 +104,24 @@ function renderAuthBar() {
   const logoutBtn = document.querySelector("#auth-logout-btn");
   if (!label) return;
 
-  if (!authState.authenticated) {
+  if (authState.status === "loading") {
+    label.textContent = "正在检查登录状态…";
+    loginLink.hidden = true;
+    adminLink.hidden = true;
+    logoutBtn.hidden = true;
+    return;
+  }
+
+  if (authState.status === "error") {
+    label.textContent = authState.errorMessage || "登录状态检查失败";
+    loginLink.hidden = false;
+    adminLink.hidden = false;
+    adminLink.textContent = "管理员";
+    logoutBtn.hidden = true;
+    return;
+  }
+
+  if (authState.status !== "authenticated") {
     label.textContent = "未登录 · 私人空间需邀请注册";
     loginLink.hidden = false;
     adminLink.hidden = false;
@@ -84,6 +130,7 @@ function renderAuthBar() {
     return;
   }
 
+  hideAuthError();
   label.textContent = `${authState.user.displayName} · ${authState.user.email}`;
   loginLink.hidden = true;
   adminLink.hidden = authState.user.role !== "admin";
@@ -91,9 +138,8 @@ function renderAuthBar() {
 }
 
 function applyEmptyStates() {
-  const loggedIn = authState.authenticated;
+  const loggedIn = authState.status === "authenticated";
 
-  // Gallery / Collections still use shell empty copy until those modules ship.
   document.querySelectorAll('[data-empty-for="gallery"], [data-empty-for="collections"]').forEach((node) => {
     node.hidden = !loggedIn;
   });
@@ -107,8 +153,6 @@ function applyEmptyStates() {
       node.hidden = loggedIn;
     });
 
-  // Journal: always keep binder for logged-in users (blank paper + create CTA).
-  // Unauthenticated users never reach this view (login redirect).
   const journalBinder = document.querySelector(".view-journal .binder");
   const journalRail = document.querySelector(".view-journal .year-rail");
   const journalNav = document.querySelectorAll(".view-journal .page-nav");
@@ -119,11 +163,23 @@ function applyEmptyStates() {
   });
 }
 
+function redirectToLoginOnce(view) {
+  if (loginRedirectQueued) return false;
+  loginRedirectQueued = true;
+  location.assign(loginUrlForView(view));
+  return false;
+}
+
 async function requireAuthForPrivateView(target) {
   await authBoot;
-  if (authState.authenticated) return true;
-  location.href = loginUrlForView(target);
-  return false;
+  if (authState.status === "authenticated") return true;
+  if (authState.status === "loading") return false;
+  if (authState.status === "error") {
+    showAuthError(authState.errorMessage || "无法确认登录状态，请重试");
+    return false;
+  }
+  // Only confirmed unauthenticated may redirect to login.
+  return redirectToLoginOnce(target);
 }
 
 goButtons.forEach((button) => {
@@ -159,30 +215,72 @@ document.querySelector("#auth-logout-btn")?.addEventListener("click", async () =
 });
 
 async function boot() {
+  authState = {
+    status: "loading",
+    authenticated: false,
+    user: null,
+    csrfToken: "",
+    spaces: null,
+    errorMessage: "",
+  };
+  renderAuthBar();
+
   try {
     const me = await getMe();
-    authState = {
-      authenticated: Boolean(me.authenticated),
-      user: me.user,
-      csrfToken: me.csrfToken || "",
-      spaces: null,
-    };
-    if (authState.authenticated) {
-      const spaces = await api("/api/me/spaces");
-      authState.spaces = spaces.spaces;
+    if (!me.authenticated) {
+      authState = {
+        status: "unauthenticated",
+        authenticated: false,
+        user: null,
+        csrfToken: "",
+        spaces: null,
+        errorMessage: "",
+      };
+    } else {
+      authState = {
+        status: "authenticated",
+        authenticated: true,
+        user: me.user,
+        csrfToken: me.csrfToken || "",
+        spaces: null,
+        errorMessage: "",
+      };
+      // Spaces / journal metadata must NEVER demote an authenticated session.
+      try {
+        const spaces = await api("/api/me/spaces");
+        authState.spaces = spaces.spaces;
+      } catch (spacesError) {
+        console.warn("spaces load failed (session kept):", spacesError);
+        authState.spaces = null;
+        // Soft warning only — do not flip to unauthenticated / do not redirect.
+        showAuthError(spacesError?.message || "私人空间元数据加载失败，可稍后重试");
+      }
     }
-  } catch {
-    authState = { authenticated: false, user: null, csrfToken: "", spaces: null };
+  } catch (error) {
+    authState = {
+      status: "error",
+      authenticated: false,
+      user: null,
+      csrfToken: "",
+      spaces: null,
+      errorMessage: error?.message || "登录状态检查失败",
+    };
+    showAuthError(authState.errorMessage);
   }
+
   renderAuthBar();
   applyEmptyStates();
 
   const hashView = window.location.hash.replace(/^#/, "");
   if (PRIVATE_VIEWS.includes(hashView)) {
-    if (authState.authenticated) {
+    if (authState.status === "authenticated") {
       setView(hashView);
-    } else {
-      location.replace(loginUrlForView(hashView));
+    } else if (authState.status === "unauthenticated") {
+      redirectToLoginOnce(hashView);
+    } else if (authState.status === "error") {
+      // Stay on welcome with error — never loop to login on server/network errors.
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+      showAuthError(authState.errorMessage);
     }
   }
 }

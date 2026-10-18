@@ -371,7 +371,7 @@ function showError(error) {
 }
 
 export async function mountJournal(auth) {
-  if (!auth?.authenticated) return;
+  if (!auth?.authenticated && auth?.status !== "authenticated") return;
   csrfToken = auth.csrfToken || "";
   if (!mounted) {
     bindUi();
@@ -380,6 +380,11 @@ export async function mountJournal(auth) {
   try {
     await reload();
   } catch (error) {
+    // Never treat journal API failures as logout / never navigate away.
+    if (error?.code === "schema_missing") {
+      showError(new Error("手帐数据表尚未就绪（需执行 D1 迁移 0002_journal_pages）。登录状态仍然有效。"));
+      return;
+    }
     showError(error);
   }
 }

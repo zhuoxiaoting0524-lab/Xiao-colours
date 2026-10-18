@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>登录｜XiaoColour</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=7" />
-    <link rel="stylesheet" href="./auth.css?v=1" />
+    <link rel="stylesheet" href="./styles.css?v=10" />
+    <link rel="stylesheet" href="./auth.css?v=3" />
   </head>
   <body class="auth-body">
     <main class="auth-card">
@@ -26,13 +26,27 @@
       const form = document.querySelector("#login-form");
       const message = document.querySelector("#auth-message");
       const next = safeNextPath(qs("next"), "./index.html");
+      let redirecting = false;
 
-      // Already signed in → reuse the same site session, no second login.
+      function goNext() {
+        if (redirecting) return;
+        redirecting = true;
+        location.replace(next);
+      }
+
+      function show(text) {
+        message.hidden = false;
+        message.textContent = text;
+      }
+
+      // Already signed in → one-shot return. Failures must not loop.
       getMe()
         .then((me) => {
-          if (me.authenticated) location.replace(next);
+          if (me.authenticated) goNext();
         })
-        .catch(() => {});
+        .catch((error) => {
+          show(error?.message || "无法检查登录状态，请直接登录或返回首页");
+        });
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -40,10 +54,10 @@
         const data = Object.fromEntries(new FormData(form).entries());
         try {
           await api("/api/auth/login", { method: "POST", body: data });
-          location.href = next;
+          goNext();
         } catch (error) {
-          message.hidden = false;
-          message.textContent = error.message;
+          redirecting = false;
+          show(error.message);
         }
       });
     </script>
