@@ -1,0 +1,16 @@
+.git
+.git/**
+.github
+.github/**
+.wrangler
+.wrangler/**
+worker
+worker/**
+tests
+tests/**
+node_modules
+node_modules/**
+package.json
+pnpm-lock.yaml
+wrangler.jsonc
+README.md

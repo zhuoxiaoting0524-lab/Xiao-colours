@@ -2,6 +2,7 @@ import {
   CACHE_KEY,
   GDELT_API,
   GDELT_QUERY,
+  NEWS_API,
   USGS_FEEDS,
 } from "./config.js";
 import {
@@ -15,9 +16,10 @@ import { fetchGdeltJson } from "./gdelt-client.js";
 
 const REQUEST_TIMEOUT_MS = 40000;
 const GDELT_TIMEOUT_MS = 30000;
+const NEWS_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 const SEED_NEWS_URL = new URL("../data/news-cache.json", import.meta.url);
 
-function normalizeArticles(rawArticles, { rankedByRelevance = true } = {}) {
+export function normalizeArticles(rawArticles, { rankedByRelevance = true } = {}) {
   const deduped = new Map();
 
   for (const [index, raw] of (Array.isArray(rawArticles) ? rawArticles : []).entries()) {
@@ -67,7 +69,7 @@ function serializeSnapshot(snapshot) {
 
 function hydrateSnapshot(snapshot) {
   if (!Array.isArray(snapshot?.articles) || !snapshot.articles.length) return null;
-  return {
+  const hydrated = {
     ...snapshot,
     articles: snapshot.articles.map((article) => ({
       ...article,
@@ -81,6 +83,15 @@ function hydrateSnapshot(snapshot) {
     earthquakes: Array.isArray(snapshot.earthquakes) ? snapshot.earthquakes : [],
     fetchedAt: snapshot.fetchedAt ? new Date(snapshot.fetchedAt) : null,
   };
+  if (
+    hydrated.source !== "seed"
+    && hydrated.fetchedAt
+    && Date.now() - hydrated.fetchedAt.valueOf() > NEWS_STALE_AFTER_MS
+  ) {
+    hydrated.source = "stale";
+    hydrated.health = { ...(hydrated.health || {}), stale: true };
+  }
+  return hydrated;
 }
 
 function readBrowserCache(time) {
@@ -140,6 +151,69 @@ async function fetchGdelt(time, signal) {
   }
 }
 
+function serverNewsUrl(time, force) {
+  const url = new URL(NEWS_API, window.location.origin);
+  url.searchParams.set("time", time);
+  if (force) url.searchParams.set("refresh", "1");
+  return url;
+}
+
+async function fetchWorkerNews(time, signal, { force = false } = {}) {
+  const response = await fetch(serverNewsUrl(time, force), {
+    signal,
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
+  const contentType = response.headers.get("content-type") || "";
+  if (response.status === 404 || response.status === 405 || !contentType.includes("application/json")) {
+    return null;
+  }
+
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    const error = new Error("新闻服务返回了无法解析的数据");
+    error.name = "NewsServiceResponseError";
+    throw error;
+  }
+  if (!response.ok || !Array.isArray(payload?.articles)) {
+    const error = new Error(payload?.health?.lastError?.message || `新闻服务 HTTP ${response.status}`);
+    error.name = "NewsServiceResponseError";
+    error.status = response.status;
+    error.health = payload?.health || null;
+    throw error;
+  }
+  return payload;
+}
+
+async function fetchNews(time, signal, { force = false } = {}) {
+  const serverPayload = await fetchWorkerNews(time, signal, { force });
+  if (serverPayload) return { payload: serverPayload, transport: "worker" };
+
+  // Compatibility fallback for local static previews and deployments that have
+  // not yet enabled the Worker API. Production uses the shared Worker cache.
+  const directPayload = await fetchGdelt(time, signal);
+  return {
+    payload: {
+      status: "live",
+      articles: directPayload.articles || [],
+      fetchedAt: new Date().toISOString(),
+      health: {
+        lastSuccessAt: new Date().toISOString(),
+        lastFailureAt: null,
+        lastError: null,
+        rawCount: directPayload.articles?.length || 0,
+        validCount: directPayload.articles?.length || 0,
+        cacheCount: directPayload.articles?.length || 0,
+        stale: false,
+        storage: "browser-direct",
+      },
+    },
+    transport: "browser-direct",
+  };
+}
+
 async function readSeedSnapshot() {
   try {
     const response = await fetch(SEED_NEWS_URL, { cache: "no-store" });
@@ -153,6 +227,16 @@ async function readSeedSnapshot() {
       earthquakes: [],
       fetchedAt: newest > 0 ? new Date(newest) : null,
       source: "seed",
+      health: {
+        lastSuccessAt: newest > 0 ? new Date(newest).toISOString() : null,
+        lastFailureAt: null,
+        lastError: null,
+        rawCount: Array.isArray(seed.articles) ? seed.articles.length : 0,
+        validCount: articles.length,
+        cacheCount: articles.length,
+        stale: true,
+        storage: "bundled-snapshot",
+      },
     };
   } catch {
     return null;
@@ -178,7 +262,7 @@ export class GlobalPulseDataService {
     return seed;
   }
 
-  async load(time = "1d", { force = false } = {}) {
+  async load(time = "1d", { force = false, refreshUpstream = false } = {}) {
     if (!force && this.inFlight.has(time)) return this.inFlight.get(time);
     if (!force && this.memory.has(time)) return this.memory.get(time);
 
@@ -187,7 +271,7 @@ export class GlobalPulseDataService {
     const signal = this.controller.signal;
     const timeout = window.setTimeout(() => this.controller?.abort(), REQUEST_TIMEOUT_MS);
 
-    const request = this.#loadFresh(time, signal)
+    const request = this.#loadFresh(time, signal, { refreshUpstream })
       .finally(() => {
         window.clearTimeout(timeout);
         this.inFlight.delete(time);
@@ -197,26 +281,30 @@ export class GlobalPulseDataService {
     return request;
   }
 
-  async #loadFresh(time, signal) {
+  async #loadFresh(time, signal, { refreshUpstream = false } = {}) {
     const cached = this.getCached(time);
     const [newsResult, quakeResult] = await Promise.allSettled([
-      fetchGdelt(time, signal),
+      fetchNews(time, signal, { force: refreshUpstream }),
       fetchJson(USGS_FEEDS[time] || USGS_FEEDS["1d"], signal),
     ]);
 
-    const articles = newsResult.status === "fulfilled"
-      ? normalizeArticles(newsResult.value.articles)
+    const newsPayload = newsResult.status === "fulfilled" ? newsResult.value.payload : null;
+    const articles = newsPayload
+      ? normalizeArticles(newsPayload.articles)
       : [];
     const earthquakes = quakeResult.status === "fulfilled" && Array.isArray(quakeResult.value.features)
       ? quakeResult.value.features
       : (cached?.earthquakes || []);
 
     if (articles.length) {
+      const fetchedAt = newsPayload.fetchedAt ? new Date(newsPayload.fetchedAt) : new Date();
       const snapshot = {
         articles,
         earthquakes,
-        fetchedAt: new Date(),
-        source: "live",
+        fetchedAt: Number.isNaN(fetchedAt.valueOf()) ? new Date() : fetchedAt,
+        source: ["live", "cache", "stale"].includes(newsPayload.status) ? newsPayload.status : "live",
+        health: newsPayload.health || null,
+        transport: newsResult.value.transport,
         earthquakeStatus: quakeResult.status === "fulfilled" ? "live" : "cached",
       };
       this.memory.set(time, snapshot);
@@ -229,9 +317,12 @@ export class GlobalPulseDataService {
       const snapshot = {
         ...fallback,
         earthquakes,
-        source: fallback.source === "seed" ? "seed" : "cache",
+        source: fallback.source === "seed" ? "seed" : (fallback.source === "stale" ? "stale" : "cache"),
         earthquakeStatus: quakeResult.status === "fulfilled" ? "live" : "cached",
         error: newsResult.status === "rejected" ? newsResult.reason : new Error("新闻接口未返回结果"),
+        health: newsResult.status === "rejected" && newsResult.reason?.health
+          ? newsResult.reason.health
+          : fallback.health || null,
       };
       this.memory.set(time, snapshot);
       return snapshot;

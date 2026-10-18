@@ -126,10 +126,19 @@ export function TopFiveCard(article, rank) {
     </article>`;
 }
 
-export function TodayTopFive(container, topEvents) {
+export function TodayTopFive(container, topEvents, { availableCount = 0, dataStatus = "live" } = {}) {
   container.dataset.count = String(topEvents.length);
   if (!topEvents.length) {
-    container.innerHTML = '<div class="gp-empty-state"><p><strong>当前没有足够可靠的重大事件</strong>系统不会使用普通新闻或虚构内容补足五条。</p></div>';
+    const stale = ["stale", "seed"].includes(dataStatus);
+    const title = stale
+      ? "今日实时数据暂不可用"
+      : availableCount > 0 ? "当前没有新闻通过重大事件门槛" : "最近24小时暂无可用新闻";
+    const detail = stale
+      ? "过期缓存不会进入今日 TOP 5；历史新闻已移至独立区域。"
+      : availableCount > 0
+        ? `最近24小时仍有 ${availableCount} 条普通真实新闻，可在下方继续浏览。`
+        : "系统不会使用旧新闻或虚构内容补足五条。";
+    container.innerHTML = `<div class="gp-empty-state gp-empty-state--compact"><p><strong>${escapeHtml(title)}</strong>${escapeHtml(detail)}</p></div>`;
     return;
   }
   container.innerHTML = topEvents.map((article, index) => TopFiveCard(article, index + 1)).join("");
@@ -196,9 +205,15 @@ export function NewsFeed(container, articles) {
   bindImageFallbacks(container);
 }
 
-export function DailyBrief(container, topEvents) {
+export function DailyBrief(container, topEvents, { availableCount = 0, dataStatus = "live" } = {}) {
+  container.dataset.count = String(topEvents.length);
   if (!topEvents.length) {
-    container.innerHTML = '<p class="gp-related-empty">当前24小时内没有通过重要性门槛的事件。这里不会把普通摘要冒充为 AI 分析。</p>';
+    const stale = ["stale", "seed"].includes(dataStatus);
+    container.innerHTML = `<p class="gp-related-empty">${stale
+      ? "今日数据不可用，因此不生成今日简报；历史缓存不会冒充实时分析。"
+      : availableCount > 0
+        ? `最近24小时有 ${availableCount} 条普通新闻，但没有事件通过重大级别门槛。这里不会把普通摘要冒充为 AI 分析。`
+        : "最近24小时没有可用于简报的新闻。这里不会把旧内容冒充为今日分析。"}</p>`;
     return;
   }
 
@@ -289,7 +304,9 @@ export function LastUpdatedIndicator(element, fetchedAt, source) {
     element.textContent = "尚未更新";
     return;
   }
-  const prefix = source === "live" ? "实时更新" : "缓存时间";
+  const prefix = source === "live" ? "实时更新"
+    : ["stale", "seed"].includes(source) ? "历史缓存时间"
+      : "缓存时间";
   element.textContent = `${prefix} ${fullDateTime(fetchedAt)}`;
   element.title = fetchedAt.toISOString();
 }

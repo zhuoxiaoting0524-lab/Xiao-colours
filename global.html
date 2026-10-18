@@ -81,6 +81,21 @@
         </div>
       </section>
 
+      <details class="gp-data-health" id="gp-data-health">
+        <summary>
+          <span><i id="gp-health-dot" aria-hidden="true"></i>DATA HEALTH</span>
+          <strong id="gp-health-summary">正在读取新闻数据状态…</strong>
+        </summary>
+        <div class="gp-data-health__grid" aria-label="新闻数据健康检查">
+          <div><span>最近成功</span><strong id="gp-health-success">—</strong></div>
+          <div><span>最近失败</span><strong id="gp-health-failure">—</strong></div>
+          <div><span>原始 / 有效</span><strong id="gp-health-counts">— / —</strong></div>
+          <div><span>重大事件 / 缓存</span><strong id="gp-health-selection">— / —</strong></div>
+          <div><span>缓存状态</span><strong id="gp-health-cache">正在检查</strong></div>
+          <div><span>错误类型</span><strong id="gp-health-error">无</strong></div>
+        </div>
+      </details>
+
       <section class="gp-section gp-focus" aria-labelledby="gp-focus-title">
         <div class="gp-section-heading">
           <div>
@@ -257,6 +272,17 @@
         <div class="gp-load-more-wrap">
           <button class="gp-load-more" id="gp-load-more" type="button" hidden>查看更多新闻</button>
         </div>
+      </section>
+
+      <section class="gp-section gp-history" id="gp-history" aria-labelledby="gp-history-title" hidden>
+        <div class="gp-section-heading gp-section-heading--feed">
+          <div>
+            <p class="gp-section-index">ARCHIVE / STALE CACHE</p>
+            <h2 id="gp-history-title">历史缓存新闻</h2>
+          </div>
+          <p class="gp-history__note" id="gp-history-status">这些新闻已超过今日范围，仅作为历史记录展示。</p>
+        </div>
+        <div class="gp-news-grid gp-history__grid" id="gp-history-feed" aria-live="polite"></div>
       </section>
     </main>
 

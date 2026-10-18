@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "xiao-colours",
+  "main": "./worker/index.js",
+  "compatibility_date": "2026-10-18",
+  "workers_dev": true,
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+  // Production must bind a Workers KV namespace as GLOBAL_PULSE_CACHE.
+  // The Worker falls back to Cache API when the binding is absent, but KV is
+  // required for durable, globally shared last-successful-news persistence.
+}

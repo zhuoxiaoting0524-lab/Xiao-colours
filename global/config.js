@@ -1,5 +1,6 @@
 export const GDELT_API = "https://api.gdeltproject.org/api/v2/doc/doc";
 export const GDELT_CONTEXT_API = "https://api.gdeltproject.org/api/v2/context/context";
+export const NEWS_API = "/api/news";
 
 export const USGS_FEEDS = {
   "1h": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_hour.geojson",

@@ -1,12 +1,12 @@
 # XiaoColour
 
-一个纯 HTML、CSS 和 JavaScript 制作的综合性网站，无需安装任何构建依赖。
+一个以 HTML、CSS 和 JavaScript 为主的综合性网站。GLOBAL PULSE 由同域 Cloudflare Worker 提供新闻代理、定时更新、健康状态和持久缓存。
 
 网站包含个人主页与“GLOBAL PULSE 全球脉搏”实时新闻与情报中心。
 
 ## 本地查看
 
-直接双击 `index.html`，或在项目目录运行任意静态文件服务器即可。
+仅预览静态页面时可以直接打开 `index.html`。测试完整新闻服务时先安装依赖并运行 `pnpm dev`，然后访问 Wrangler 输出的本地地址；静态预览会保留浏览器直连 GDELT 的兼容降级，但生产环境应使用 Worker API。
 
 ## 文件说明
 
@@ -26,6 +26,10 @@
 - `global/news-page.js`：详情加载、事件摘要、来源对比、报道时间线与错误状态
 - `global/news-reader.js`：详情链接、事件定位和 GDELT Context 短片段适配
 - `global/map.js`：Leaflet 按需加载、图层、标记与事件弹窗
+- `worker/index.js`：同域新闻 API、静态资源分发与 Cloudflare Cron 入口
+- `worker/news-cache.js`：GDELT 校验、有限重试、健康记录及 KV/Cache API 存储
+- `wrangler.jsonc`：Cloudflare Worker、静态资源、定时任务和可观测性配置
+- `tests/news-stability.test.js`：实时、限流、过期缓存、空重大事件与恢复场景测试
 - `OPEN_SOURCE_NOTICES.md`：开源许可证、数据来源与署名说明
 
 页面中的年龄、年份和已生活天数会根据当前日期自动更新。
@@ -36,7 +40,11 @@
 - M4.5+ 地震：USGS GeoJSON 实时订阅源
 - 地图：Leaflet + OpenStreetMap
 
-页面每 15 分钟自动刷新，并在接口临时不可用时显示浏览器中最近一次成功更新的内容。对 GDELT 的请求至少间隔 5.5 秒，只使用官方支持 CORS 的 JSON 接口且不重复发起脚本请求，以降低公共接口限流造成的数据空白。若所选时间范围没有内容但存在最近 7 天的真实快照，页面会明确标注实际时间后继续展示该快照。新闻先按规范化 URL 去重，再使用标题词元重合度、字符相似度以及数据源实际提供的摘要聚合同一事件；被聚合的不同媒体报道会保留在新闻详情的“关联报道”中。所有新闻保留原始来源链接。
+Cloudflare Cron 每 15 分钟刷新 24 小时和 7 天新闻快照，用户打开页面时优先读取同域 Worker 的最近成功缓存，不再依赖每位访客直接请求 GDELT。上游返回 429、5xx、超时、空响应或格式错误时，系统最多重试两次，间隔 5.5 秒与 11 秒，并保留上一次有效缓存；一分钟冷却期内不会因重复刷新继续冲击失败接口。浏览器缓存只作为最后一级显示降级。
+
+新闻状态严格分为 `live`、`cache`、`stale` 和 `unavailable`。24 小时内的服务器缓存仍可参与今日筛选；超过 24 小时的内容只出现在“历史缓存新闻”，保留原始时间且不会冒充今日 TOP 5。普通新闻与重大事件使用独立结果集，因此重大事件为零不会清空普通新闻。页面的 DATA HEALTH 面板展示最近成功/失败、错误类型、原始/有效/缓存数量以及重大事件数量。
+
+新闻先按规范化 URL 去重，再使用标题词元重合度、字符相似度以及数据源实际提供的摘要聚合同一事件；被聚合的不同媒体报道会保留在新闻详情的“关联报道”中。所有新闻保留原始来源链接。
 
 “今日全球五大焦点”始终从最近 24 小时的独立事件中选择。候选新闻使用 GDELT `HybridRel` 相关性排序获取，再由本地规则综合事件影响信号（最高 30）、独立媒体域名数量（最高 25）、时效性（最高 15）、GDELT 相关性位次（最高 10）、跨地区信号（最高 10）和公共影响主题（最高 10）排序。页面不设置地区配额，也不会仅按发布时间选取；娱乐、体育、生活方式和明显地方性内容会被排除。卡片不展示缺乏上下文的总分，只在数据足够时显示“为什么值得关注”及可核对依据。合格事件不足五条时只显示实际数量。
 
@@ -54,13 +62,14 @@ TOP 5、60秒速览、普通新闻卡片和相关新闻默认进入 `global/news
 
 当前源码中没有蓝色 AI 悬浮助手组件或第三方聊天挂件脚本；网站自身的返回顶部按钮与状态提示均固定在右下角。若悬浮助手来自托管平台或浏览器注入，需要在其所属平台配置中调整停靠、最小化与关闭行为，不能通过本站源码安全控制跨域组件。
 
-## 部署
+## Cloudflare 部署
 
-这是静态网站，可以直接部署到 GitHub Pages、Netlify、Vercel 静态托管或普通 Web 服务器：
+1. 登录目标 Cloudflare 账号，安装依赖：`pnpm install`。
+2. 创建持久化缓存：`pnpm wrangler kv namespace create GLOBAL_PULSE_CACHE`。
+3. 将命令返回的 namespace `id` 添加到 `wrangler.jsonc` 的 `kv_namespaces`，binding 必须为 `GLOBAL_PULSE_CACHE`。不要把 API Token 或其他 Secret 写入仓库。
+4. 先运行 `pnpm test` 和 `pnpm wrangler deploy --dry-run`，再运行 `pnpm deploy`。
+5. 部署后验证 `/api/news?time=1d`、`/api/news/health` 和 `/global`；在 Cloudflare 控制台确认 Cron `*/15 * * * *` 与 Worker Logs 正常。
 
-1. 将仓库根目录作为静态发布目录。
-2. 确保 `index.html`、`global.html` 及其 CSS/JS 文件保持同级。
-3. 不需要环境变量，也不要在前端加入 API Key。
-4. 部署后检查托管平台是否允许访问 GDELT、USGS、unpkg 和 OpenStreetMap 资源。
+未绑定 KV 时 Worker 会临时使用 Cache API，方便本地调试，但该缓存不是可靠的跨机房持久存储，不能作为生产完成状态。详细运维与故障判断见 `GLOBAL_PULSE_OPERATIONS.md`。
 
 详细许可与署名信息见 `OPEN_SOURCE_NOTICES.md`。

@@ -1,0 +1,14 @@
+{
+  "name": "xiao-colours-global-pulse",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node --check worker/index.js && node --check worker/news-cache.js && node --check global.js && node --check global/data-service.js",
+    "dev": "wrangler dev --test-scheduled",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.45.0"
+  }
+}

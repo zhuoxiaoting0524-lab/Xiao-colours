@@ -47,6 +47,17 @@ const elements = {
   backToTop: document.querySelector("#gp-back-to-top"),
   toast: document.querySelector("#gp-toast"),
   utcClock: document.querySelector("#gp-utc-clock"),
+  healthDot: document.querySelector("#gp-health-dot"),
+  healthSummary: document.querySelector("#gp-health-summary"),
+  healthSuccess: document.querySelector("#gp-health-success"),
+  healthFailure: document.querySelector("#gp-health-failure"),
+  healthCounts: document.querySelector("#gp-health-counts"),
+  healthSelection: document.querySelector("#gp-health-selection"),
+  healthCache: document.querySelector("#gp-health-cache"),
+  healthError: document.querySelector("#gp-health-error"),
+  historySection: document.querySelector("#gp-history"),
+  historyFeed: document.querySelector("#gp-history-feed"),
+  historyStatus: document.querySelector("#gp-history-status"),
 };
 
 const state = {
@@ -56,8 +67,8 @@ const state = {
   earthquakes: [],
   fetchedAt: null,
   source: null,
+  health: null,
   loading: false,
-  usingStaleFallback: false,
   viewMode: "curated",
   visibleCount: 6,
   filters: {
@@ -83,12 +94,7 @@ const mapSection = new GlobalMapSection({
 });
 
 function getVisibleArticles() {
-  const filtered = filterArticles(state.articles, state.filters);
-  state.usingStaleFallback = false;
-  if (filtered.length || state.source === "live" || !state.articles.length) return filtered;
-  const recentSnapshot = filterArticles(state.articles, { ...state.filters, time: "1w" });
-  state.usingStaleFallback = recentSnapshot.length > 0;
-  return recentSnapshot;
+  return filterArticles(state.articles, state.filters);
 }
 
 function getOrderedArticles(articles) {
@@ -111,13 +117,54 @@ function updateTopPool(articles) {
   state.topEvents = selectTopEvents(state.topArticles, 5);
 }
 
+function healthTime(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? "—" : fullDateTime(date);
+}
+
+function renderHealth() {
+  const health = state.health || {};
+  const stale = ["stale", "seed"].includes(state.source) || health.stale;
+  const hasError = Boolean(health.lastError);
+  elements.healthDot.classList.toggle("is-live", state.source === "live");
+  elements.healthDot.classList.toggle("is-error", state.source === null || (stale && hasError));
+  elements.healthSummary.textContent = state.source === "live"
+    ? `实时数据正常 · ${health.validCount ?? state.articles.length} 条有效新闻`
+    : state.source === "cache"
+      ? `实时源暂不可用 · 正在使用 ${health.cacheCount ?? state.articles.length} 条服务器缓存`
+      : state.source
+        ? "今日数据已过期 · 历史新闻已单独标注"
+        : "当前没有可用新闻数据";
+  elements.healthSuccess.textContent = healthTime(health.lastSuccessAt || state.fetchedAt);
+  elements.healthFailure.textContent = healthTime(health.lastFailureAt);
+  elements.healthCounts.textContent = `${health.rawCount ?? "—"} / ${health.validCount ?? "—"}`;
+  elements.healthSelection.textContent = `${state.topEvents.length} / ${health.cacheCount ?? state.articles.length}`;
+  elements.healthCache.textContent = stale ? "已过期" : state.source === "live" ? "已更新" : state.source === "cache" ? "有效缓存" : "不可用";
+  elements.healthError.textContent = health.lastError
+    ? `${health.lastError.type || "unknown"}${health.lastError.status ? ` · HTTP ${health.lastError.status}` : ""}`
+    : "无";
+}
+
+function renderHistory() {
+  const historical = ["stale", "seed"].includes(state.source) && state.articles.length > 0;
+  elements.historySection.hidden = !historical;
+  if (!historical) {
+    elements.historyFeed.replaceChildren();
+    return;
+  }
+  const archive = getOrderedArticles(state.articles).slice(0, 6);
+  NewsFeed(elements.historyFeed, archive);
+  elements.historyStatus.textContent = `${state.fetchedAt ? fullDateTime(state.fetchedAt) : "未知时间"} 的最近成功内容；仅作历史记录，不参与今日 TOP 5。`;
+}
+
 function render() {
   const visible = getVisibleArticles();
   const ordered = getOrderedArticles(visible);
   const displayed = ordered.slice(0, state.visibleCount);
-  const briefPool = state.topArticles.length ? state.topArticles : visible;
-  TodayTopFive(elements.topStories, state.topEvents);
-  DailyBrief(elements.dailyBrief, state.topEvents);
+  const briefPool = state.topArticles;
+  TodayTopFive(elements.topStories, state.topEvents, { availableCount: state.topArticles.length, dataStatus: state.source });
+  DailyBrief(elements.dailyBrief, state.topEvents, { availableCount: state.topArticles.length, dataStatus: state.source });
   NewsFeed(elements.newsFeed, displayed);
   WorldBrief(elements.briefMetrics, briefPool);
   RelatedCoverage(elements.relatedCoverage, briefPool);
@@ -138,10 +185,12 @@ function render() {
   elements.mapRegionCount.textContent = String(mediaRegions.length);
   const regionLabel = state.filters.region === "all" ? "全球" : state.filters.region;
   elements.mapFilterSummary.textContent = `${regionLabel} · ${categoryLabel(state.filters.category)}`;
-  if (state.usingStaleFallback) {
-    setFeedState("当前时间范围没有可用新闻，实时接口暂不可用；以下展示最近成功快照中的真实内容，并保留其实际时间。");
-  } else if (state.source && state.source !== "live") {
-    setFeedState("当前展示最近成功的真实新闻快照，实际数据时间显示在页面顶部；系统不会将缓存内容标记为实时。");
+  renderHealth();
+  renderHistory();
+  if (["stale", "seed"].includes(state.source)) {
+    setFeedState("当前缓存已超过24小时，不再进入今日新闻列表。旧内容已移至下方“历史缓存新闻”，并保留原始发布时间。");
+  } else if (state.source === "cache") {
+    setFeedState("实时新闻源本次更新失败，当前继续显示24小时内的最近成功服务器缓存。");
   } else if (state.source === "live") {
     setFeedState("");
   }
@@ -170,6 +219,7 @@ function applySnapshot(snapshot, { announce = false } = {}) {
   state.earthquakes = snapshot.earthquakes || [];
   state.fetchedAt = snapshot.fetchedAt;
   state.source = snapshot.source;
+  state.health = snapshot.health || null;
   if (state.filters.time === "1d" || !state.topArticles.length) updateTopPool(snapshot.articles);
 
   NewsFilters(elements.region, state.articles, state.filters.region);
@@ -188,17 +238,18 @@ function applySnapshot(snapshot, { announce = false } = {}) {
     return;
   }
 
-  const cacheLabel = snapshot.source === "seed" ? "内置真实新闻快照" : "最近成功缓存";
+  const stale = ["stale", "seed"].includes(snapshot.source);
+  const cacheLabel = snapshot.source === "seed" ? "内置历史快照" : stale ? "过期服务器缓存" : "最近成功服务器缓存";
   GlobalPulseHeader({
     statusText: elements.statusText,
     statusDot: elements.statusDot,
     message: `实时新闻接口暂不可用，正在显示${cacheLabel}`,
-    type: "cached",
+    type: stale ? "error" : "cached",
   });
-  setFeedState(state.usingStaleFallback
-    ? `当前时间范围没有可用新闻，实时接口暂不可用；以下展示${cacheLabel}中的真实内容，并保留其实际时间。`
-    : `当前展示${cacheLabel}，实际数据时间显示在页面顶部；系统不会将缓存内容标记为实时。`);
-  if (announce) showToast("实时接口不可用，已保留最近成功内容");
+  setFeedState(stale
+    ? `当前${cacheLabel}已超过24小时，不会冒充今日新闻；旧内容仅在历史区域展示。`
+    : `当前展示${cacheLabel}，实际更新时间显示在页面顶部。`);
+  if (announce) showToast(stale ? "实时数据仍不可用，已保留历史内容" : "实时接口不可用，已保留有效缓存");
 }
 
 function renderLoadError(error) {
@@ -214,9 +265,12 @@ function renderLoadError(error) {
     : "当前没有可用新闻或缓存，请稍后点击“刷新数据”重试。");
 
   if (!state.articles.length) {
-    elements.topStories.innerHTML = '<div class="gp-empty-state"><p><strong>暂时无法加载焦点新闻</strong>请稍后重试。</p></div>';
-    elements.newsFeed.innerHTML = '<div class="gp-empty-state"><p><strong>暂时无法连接新闻数据源</strong>地图与其他页面不受影响。</p></div>';
+    elements.topStories.dataset.count = "0";
+    elements.topStories.innerHTML = '<div class="gp-empty-state gp-empty-state--compact"><p><strong>暂时无法加载焦点新闻</strong>请稍后使用“刷新数据”重试。</p></div>';
+    elements.newsFeed.innerHTML = '<div class="gp-empty-state gp-empty-state--compact"><p><strong>暂时无法连接新闻数据源</strong>地图与其他页面不受影响。</p></div>';
   }
+  state.health = error?.health || state.health;
+  renderHealth();
 }
 
 async function refreshTopPool() {
@@ -242,7 +296,7 @@ async function loadData({ announce = false } = {}) {
   });
 
   try {
-    const snapshot = await dataService.load(state.filters.time, { force: true });
+    const snapshot = await dataService.load(state.filters.time, { force: true, refreshUpstream: announce });
     if (loadId !== activeLoadId) return;
     applySnapshot(snapshot, { announce });
     if (state.filters.time !== "1d") void refreshTopPool();
