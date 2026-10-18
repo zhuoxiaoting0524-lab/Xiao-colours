@@ -3,7 +3,7 @@
 ## 密码与会话（明确方案）
 
 - **哈希算法**：Web Crypto `SubtleCrypto` 的 **PBKDF2-HMAC-SHA-256**
-- **迭代次数**：600,000（对齐 OWASP 对 PBKDF2-SHA256 的建议）
+- **迭代次数**：100,000（Cloudflare Workers SubtleCrypto 上限；平台强制上限）
 - **盐**：每密码 16 字节 CSPRNG 盐
 - **不**自行设计加密算法；仅调用平台已验证的 PBKDF2
 - **Session**：随机 32 字节令牌，只存 SHA-256 哈希到 **D1 `sessions` 表**

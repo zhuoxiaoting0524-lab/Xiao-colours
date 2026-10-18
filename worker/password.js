@@ -1,12 +1,12 @@
 /**
  * Password hashing via Web Crypto SubtleCrypto PBKDF2-SHA-256.
  * This uses the platform's verified PBKDF2 implementation — not a custom cipher.
- * Parameters follow current OWASP guidance for PBKDF2-HMAC-SHA-256.
+ * Cloudflare Workers caps SubtleCrypto PBKDF2 at 100_000 iterations — use the platform max.
  */
 import { base64UrlToBytes, bytesToBase64Url, timingSafeEqual } from "./crypto-util.js";
 
 export const PASSWORD_ALGO = "pbkdf2-sha256";
-export const PBKDF2_ITERATIONS = 600_000;
+export const PBKDF2_ITERATIONS = 100_000;
 const SALT_BYTES = 16;
 const KEY_BITS = 256;
 

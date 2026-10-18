@@ -23,7 +23,7 @@ pnpm dev
 
 手绘 Welcome + Journal / Gallery / Collections。现已加入**邀请制多用户账户（第一阶段）**：
 
-- 密码：Web Crypto **PBKDF2-SHA-256**（600k 迭代）
+- 密码：Web Crypto **PBKDF2-SHA-256**（100k 迭代（Cloudflare Workers 上限））
 - Session：存 **D1**；Cookie `HttpOnly` + `Secure` + `SameSite=Lax`
 - 邀请：管理员生成，7 天有效，单次使用，可撤销
 - 每人独立空白 Journal / Gallery / Collections 壳子
