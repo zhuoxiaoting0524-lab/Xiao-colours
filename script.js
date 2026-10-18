@@ -1,4 +1,12 @@
-import { api, getMe } from "./auth-client.js";
+import { api, getMe, loginUrlForView, PRIVATE_VIEWS } from "./auth-client.js";
+
+/**
+ * Unified site session:
+ * - One HttpOnly cookie (`xc_session`, Path=/) shared by every page on this origin.
+ * - Welcome + Global Pulse stay public.
+ * - Journal / Gallery / Collections reuse the same in-memory authState after one login;
+ *   refresh re-hydrates from `/api/auth/me` (cookie), no per-module login.
+ */
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const views = [...document.querySelectorAll(".view")];
@@ -20,6 +28,7 @@ function setView(name) {
   if (!current) {
     next.hidden = false;
     next.classList.add("is-active");
+    syncLocationForView(name);
     return;
   }
 
@@ -30,6 +39,7 @@ function setView(name) {
     next.hidden = false;
     void next.offsetWidth;
     next.classList.add("is-active");
+    syncLocationForView(name);
   };
 
   if (reducedMotion) {
@@ -38,6 +48,16 @@ function setView(name) {
   }
 
   window.setTimeout(reveal, 220);
+}
+
+function syncLocationForView(name) {
+  const url = new URL(window.location.href);
+  if (name === "welcome") {
+    url.hash = "";
+  } else if (PRIVATE_VIEWS.includes(name)) {
+    url.hash = name;
+  }
+  history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
 function renderAuthBar() {
@@ -79,19 +99,27 @@ function applyEmptyStates() {
     });
 }
 
+async function requireAuthForPrivateView(target) {
+  await authBoot;
+  if (authState.authenticated) return true;
+  location.href = loginUrlForView(target);
+  return false;
+}
+
 goButtons.forEach((button) => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async () => {
     const target = button.dataset.go;
     if (!target) return;
-    if (target !== "welcome" && !authState.authenticated) {
-      location.href = "./login.html";
+    if (target === "welcome") {
+      setView("welcome");
       return;
     }
+    if (!(await requireAuthForPrivateView(target))) return;
     setView(target);
   });
 });
 
-document.addEventListener("keydown", (event) => {
+document.addEventListener("keydown", async (event) => {
   if (event.key !== "Escape") return;
   const active = views.find((view) => view.classList.contains("is-active"));
   if (active && active.dataset.view !== "welcome") setView("welcome");
@@ -107,7 +135,7 @@ document.querySelector("#auth-logout-btn")?.addEventListener("click", async () =
   } catch {
     // Still clear local UI if session already gone.
   }
-  location.reload();
+  location.href = "./index.html";
 });
 
 async function boot() {
@@ -128,6 +156,15 @@ async function boot() {
   }
   renderAuthBar();
   applyEmptyStates();
+
+  const hashView = window.location.hash.replace(/^#/, "");
+  if (PRIVATE_VIEWS.includes(hashView)) {
+    if (authState.authenticated) {
+      setView(hashView);
+    } else {
+      location.replace(loginUrlForView(hashView));
+    }
+  }
 }
 
-boot();
+const authBoot = boot();

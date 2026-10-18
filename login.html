@@ -22,16 +22,25 @@
       <p class="auth-links"><a href="./index.html">返回首页</a></p>
     </main>
     <script type="module">
-      import { api } from "./auth-client.js";
+      import { api, getMe, qs, safeNextPath } from "./auth-client.js";
       const form = document.querySelector("#login-form");
       const message = document.querySelector("#auth-message");
+      const next = safeNextPath(qs("next"), "./index.html");
+
+      // Already signed in → reuse the same site session, no second login.
+      getMe()
+        .then((me) => {
+          if (me.authenticated) location.replace(next);
+        })
+        .catch(() => {});
+
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         message.hidden = true;
         const data = Object.fromEntries(new FormData(form).entries());
         try {
           await api("/api/auth/login", { method: "POST", body: data });
-          location.href = "./index.html";
+          location.href = next;
         } catch (error) {
           message.hidden = false;
           message.textContent = error.message;

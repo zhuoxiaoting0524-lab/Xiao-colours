@@ -26,3 +26,22 @@ export async function getMe() {
 export function qs(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
+
+/** Only allow same-site relative next targets (no open redirects). */
+export function safeNextPath(raw, fallback = "./index.html") {
+  if (typeof raw !== "string" || !raw) return fallback;
+  const value = raw.trim();
+  if (!value.startsWith("./") && !value.startsWith("/")) return fallback;
+  if (value.startsWith("//") || value.includes("://")) return fallback;
+  if (value.includes("\\") || /[\r\n]/.test(value)) return fallback;
+  return value;
+}
+
+export const PRIVATE_VIEWS = Object.freeze(["journal", "gallery", "collections"]);
+
+export function loginUrlForView(view) {
+  const next = PRIVATE_VIEWS.includes(view)
+    ? `./index.html#${view}`
+    : "./index.html";
+  return `./login.html?next=${encodeURIComponent(next)}`;
+}

@@ -8,6 +8,7 @@
 - **不**自行设计加密算法；仅调用平台已验证的 PBKDF2
 - **Session**：随机 32 字节令牌，只存 SHA-256 哈希到 **D1 `sessions` 表**
 - **Cookie**：`xc_session`，`HttpOnly` + `Secure`（HTTPS）+ `SameSite=Lax`
+- **统一会话**：全站共用同一 `Path=/` Cookie；Journal / Gallery / Collections 登录一次即可切换；Welcome 与 Global Pulse 保持公开
 - **CSRF**：会话内 `csrf_secret`，写操作必须带 `X-CSRF-Token`；并校验 `Origin`
 - **登录限流**：D1 `login_attempts`，同 IP+邮箱 15 分钟内失败 ≥ 8 次则 429
 - **密码重置**：管理员生成 2 小时一次性链接（本阶段无邮件服务）
