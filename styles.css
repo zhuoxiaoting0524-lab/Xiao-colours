@@ -1828,3 +1828,142 @@ a {
   border-radius: 999px;
   padding: 0.25rem 0.7rem;
 }
+
+
+/* ---------- Journal freeform editor ---------- */
+.journal-action-edit.is-active {
+  background: #2a2418;
+  color: #f7f1e6;
+}
+
+.journal-edit-toolbar {
+  position: absolute;
+  top: 3.4rem;
+  right: clamp(0.75rem, 3vw, 1.75rem);
+  z-index: 12;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  max-width: min(92vw, 360px);
+  padding: 0.45rem;
+  border-radius: 18px;
+  background: rgba(255, 250, 240, 0.94);
+  border: 1.5px solid rgba(90, 70, 40, 0.28);
+  box-shadow: 0 8px 22px rgba(50, 40, 20, 0.12);
+  font-family: var(--label);
+}
+
+.journal-edit-toolbar button {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px dashed rgba(90, 70, 40, 0.35);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.journal-edit-toolbar button.is-save {
+  border-style: solid;
+  background: #2a2418;
+  color: #f7f1e6;
+}
+
+.journal-edit-toolbar button.is-dirty {
+  box-shadow: 0 0 0 2px rgba(180, 90, 40, 0.35);
+}
+
+.binder.is-editing .page-nav {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.binder.is-editing [data-page-slot].is-edit-focus .page-stage {
+  outline: 2px dashed rgba(90, 70, 40, 0.35);
+  outline-offset: -6px;
+}
+
+.page-stage.is-editing-stage,
+.page-stage.is-editing-stage .page-layers {
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.page-layer {
+  pointer-events: none;
+}
+
+.binder.is-editing .page-layer {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.binder.is-editing .page-layer.is-selected {
+  cursor: move;
+}
+
+.layer-text {
+  width: 100%;
+  height: 100%;
+  font-family: var(--note);
+  line-height: 1.25;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 4%;
+  box-sizing: border-box;
+}
+
+.layer-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(40, 30, 20, 0.12);
+  pointer-events: none;
+  user-select: none;
+}
+
+.layer-frame {
+  position: absolute;
+  inset: -2px;
+  border: 1.5px solid rgba(50, 40, 25, 0.75);
+  box-shadow: 0 0 0 1px rgba(255, 250, 240, 0.7);
+  pointer-events: none;
+}
+
+.layer-frame .h {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: #f7f1e6;
+  border: 1.5px solid #2a2418;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.layer-frame .h-nw { left: -6px; top: -6px; cursor: nwse-resize; }
+.layer-frame .h-ne { right: -6px; top: -6px; cursor: nesw-resize; }
+.layer-frame .h-sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
+.layer-frame .h-se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+.layer-frame .h-rot {
+  left: 50%;
+  top: -28px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  cursor: grab;
+}
+
+@media (max-width: 640px) {
+  .journal-edit-toolbar {
+    top: auto;
+    bottom: 3.2rem;
+    right: 50%;
+    transform: translateX(50%);
+  }
+}

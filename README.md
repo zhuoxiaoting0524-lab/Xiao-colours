@@ -28,7 +28,7 @@ pnpm dev
 - 邀请：管理员生成，7 天有效，单次使用，可撤销
 - 每人独立空白 Journal / Gallery / Collections 壳子
 - Global Pulse 与其 KV **未改动**
-- R2 仅预留架构，本阶段不接上传
+- Journal 自由拼贴：文字/照片拖拽缩放旋转，内容写入 D1；照片存私有 R2 `xiao-colours-media`（需先在 Cloudflare 创建 bucket 并部署）
 
 详见 `docs/MULTIUSER_PHASE1.md`。
 

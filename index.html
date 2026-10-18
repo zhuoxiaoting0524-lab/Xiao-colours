@@ -18,9 +18,9 @@
       href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Gaegu:wght@400;700&family=Ma+Shan+Zheng&family=Patrick+Hand&family=Rock+Salt&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=10" />
+    <link rel="stylesheet" href="./styles.css?v=11" />
     <link rel="stylesheet" href="./auth.css?v=3" />
-    <script type="module" src="./script.js?v=10"></script>
+    <script type="module" src="./script.js?v=11"></script>
   </head>
   <body>
     <div class="paper-noise" aria-hidden="true"></div>
@@ -147,8 +147,19 @@
           <div class="journal-actions" hidden>
             <button type="button" class="journal-action" id="journal-add-page">＋ 新页</button>
             <button type="button" class="journal-action journal-action-danger" id="journal-delete-page">删除本页</button>
+            <button type="button" class="journal-action journal-action-edit" id="journal-edit-toggle">Edit</button>
           </div>
         </header>
+
+        <div class="journal-edit-toolbar" id="journal-edit-toolbar" hidden>
+          <button type="button" id="journal-tool-text">Text</button>
+          <button type="button" id="journal-tool-photo">Photo</button>
+          <button type="button" id="journal-tool-front">Front</button>
+          <button type="button" id="journal-tool-back">Back</button>
+          <button type="button" id="journal-tool-delete">Delete</button>
+          <button type="button" id="journal-tool-save" class="is-save">Save</button>
+          <input type="file" id="journal-photo-input" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
+        </div>
 
         <aside class="year-rail" id="journal-year-rail" aria-label="年份"></aside>
 

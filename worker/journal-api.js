@@ -1,5 +1,5 @@
 /**
- * Private Journal page APIs.
+ * Private Journal page + media APIs.
  * Every query is scoped by session.user.id — client-supplied userId is ignored.
  */
 import { nowIso, randomToken } from "./crypto-util.js";
@@ -12,7 +12,7 @@ import {
 } from "./http.js";
 import { assertCsrf, loadSession } from "./sessions.js";
 
-/** Canonical page coordinate space for future collage editor (paper-relative). */
+/** Canonical page coordinate space for collage editor (paper-relative). */
 export const PAGE_COORD = Object.freeze({
   space: "page",
   unit: "normalized",
@@ -20,6 +20,11 @@ export const PAGE_COORD = Object.freeze({
   width: 1000,
   height: 1400,
 });
+
+const MAX_LAYERS = 80;
+const MAX_TEXT_LEN = 4000;
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 export function blankContentJson() {
   return JSON.stringify({
@@ -45,15 +50,76 @@ async function requireSession(db, request, { csrf = false } = {}) {
   return session;
 }
 
+function clamp(n, min, max) {
+  return Math.min(max, Math.max(min, n));
+}
+
+function sanitizeContent(input) {
+  const coord = {
+    ...PAGE_COORD,
+    ...(input?.coord && typeof input.coord === "object" ? {
+      width: PAGE_COORD.width,
+      height: PAGE_COORD.height,
+      space: "page",
+      unit: "normalized",
+      origin: "top-left",
+    } : {}),
+  };
+  const rawLayers = Array.isArray(input?.layers) ? input.layers : [];
+  if (rawLayers.length > MAX_LAYERS) {
+    const error = new Error(`图层过多（最多 ${MAX_LAYERS}）`);
+    error.code = "too_many_layers";
+    error.status = 400;
+    throw error;
+  }
+  const layers = [];
+  for (const layer of rawLayers) {
+    if (!layer || typeof layer !== "object") continue;
+    const type = layer.type === "photo" ? "photo" : layer.type === "text" ? "text" : null;
+    if (!type) continue;
+    const id = String(layer.id || randomToken(10)).slice(0, 40);
+    const t = layer.transform || {};
+    const transform = {
+      x: clamp(Number(t.x) || 0, -200, coord.width + 200),
+      y: clamp(Number(t.y) || 0, -200, coord.height + 200),
+      w: clamp(Number(t.w) || 100, 40, coord.width * 1.5),
+      h: clamp(Number(t.h) || 100, 40, coord.height * 1.5),
+      rotate: clamp(Number(t.rotate) || 0, -180, 180),
+    };
+    const z = clamp(Math.trunc(Number(layer.z) || 1), 1, 10_000);
+    const payload = {};
+    if (type === "text") {
+      payload.text = String(layer.payload?.text ?? "文字").slice(0, MAX_TEXT_LEN);
+      payload.fontSize = clamp(Number(layer.payload?.fontSize) || 36, 16, 120);
+      payload.color = String(layer.payload?.color || "#2a2418").slice(0, 32);
+    } else {
+      const mediaId = String(layer.payload?.mediaId || "").slice(0, 40);
+      const r2Key = String(layer.payload?.r2Key || "").slice(0, 240);
+      if (!mediaId || !r2Key) continue;
+      payload.mediaId = mediaId;
+      payload.r2Key = r2Key;
+    }
+    layers.push({ id, type, z, transform, payload });
+  }
+  return {
+    version: 1,
+    coord,
+    background: { paper: "ruled" },
+    layers,
+  };
+}
+
 function parseContent(raw) {
   try {
     const data = JSON.parse(raw || "{}");
-    if (!data.coord) data.coord = PAGE_COORD;
-    if (!Array.isArray(data.layers)) data.layers = [];
-    if (!data.version) data.version = 1;
-    return data;
+    return sanitizeContent(data);
   } catch {
-    return { version: 1, coord: PAGE_COORD, background: { paper: "ruled" }, layers: [] };
+    return {
+      version: 1,
+      coord: { ...PAGE_COORD },
+      background: { paper: "ruled" },
+      layers: [],
+    };
   }
 }
 
@@ -138,6 +204,16 @@ async function renumberPositions(db, journalId, userId) {
   await db.batch([...toNegative, ...toFinal]);
 }
 
+function requireMediaBucket(env) {
+  if (!env?.MEDIA) {
+    const error = new Error("R2 尚未绑定（env.MEDIA）。请创建私有 bucket xiao-colours-media 并重新部署。");
+    error.code = "r2_unavailable";
+    error.status = 503;
+    throw error;
+  }
+  return env.MEDIA;
+}
+
 export async function handleJournalApi(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -173,6 +249,7 @@ export async function handleJournalApi(request, env) {
         coord: PAGE_COORD,
         years: (years.results || []).map((r) => r.year),
         pages: (rows.results || []).map(publicPage),
+        media: { storage: env.MEDIA ? "r2" : "r2_unconfigured", prefix: `users/${session.user.id}/` },
       });
     }
 
@@ -209,7 +286,65 @@ export async function handleJournalApi(request, env) {
       return json({ ok: true, page: publicPage(row) }, 201);
     }
 
-    // GET /api/me/journal/pages/:id
+    // POST /api/me/journal/media — private R2 upload
+    if (path === "/api/me/journal/media" && request.method === "POST") {
+      const session = await requireSession(db, request, { csrf: true });
+      const bucket = requireMediaBucket(env);
+      const contentType = (request.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+      if (!ALLOWED_IMAGE_TYPES.has(contentType)) {
+        return errorJson(400, "invalid_type", "仅支持 JPEG / PNG / WebP / GIF");
+      }
+      const bytes = new Uint8Array(await request.arrayBuffer());
+      if (!bytes.byteLength) return errorJson(400, "empty", "空文件");
+      if (bytes.byteLength > MAX_UPLOAD_BYTES) {
+        return errorJson(400, "too_large", "图片不能超过 5MB");
+      }
+      const id = randomToken(12);
+      const ext = contentType === "image/png" ? "png"
+        : contentType === "image/webp" ? "webp"
+          : contentType === "image/gif" ? "gif" : "jpg";
+      const r2Key = `users/${session.user.id}/journal/${id}.${ext}`;
+      await bucket.put(r2Key, bytes, {
+        httpMetadata: { contentType },
+        customMetadata: { userId: session.user.id, mediaId: id },
+      });
+      const createdAt = nowIso();
+      await db.prepare(
+        `INSERT INTO media_objects
+          (id, user_id, space, r2_key, content_type, byte_size, created_at)
+         VALUES (?, ?, 'journal', ?, ?, ?, ?)`,
+      ).bind(id, session.user.id, r2Key, contentType, bytes.byteLength, createdAt).run();
+      return json({
+        ok: true,
+        media: {
+          id,
+          r2Key,
+          contentType,
+          byteSize: bytes.byteLength,
+          url: `/api/me/journal/media/${id}`,
+        },
+      }, 201);
+    }
+
+    // GET /api/me/journal/media/:id — authenticated private fetch
+    const mediaMatch = path.match(/^\/api\/me\/journal\/media\/([^/]+)$/);
+    if (mediaMatch && request.method === "GET") {
+      const session = await requireSession(db, request);
+      const bucket = requireMediaBucket(env);
+      const mediaId = decodeURIComponent(mediaMatch[1]);
+      const row = await db.prepare(
+        `SELECT * FROM media_objects WHERE id = ? AND user_id = ? AND space = 'journal'`,
+      ).bind(mediaId, session.user.id).first();
+      if (!row) return errorJson(404, "not_found", "媒体不存在");
+      const obj = await bucket.get(row.r2_key);
+      if (!obj) return errorJson(404, "not_found", "媒体文件不存在");
+      const headers = new Headers();
+      headers.set("content-type", row.content_type || obj.httpMetadata?.contentType || "application/octet-stream");
+      headers.set("cache-control", "private, max-age=3600");
+      headers.set("x-content-type-options", "nosniff");
+      return new Response(obj.body, { status: 200, headers });
+    }
+
     const pageMatch = path.match(/^\/api\/me\/journal\/pages\/([^/]+)$/);
     if (pageMatch && request.method === "GET") {
       const session = await requireSession(db, request);
@@ -218,6 +353,41 @@ export async function handleJournalApi(request, env) {
         `SELECT * FROM journal_pages WHERE id = ? AND user_id = ?`,
       ).bind(pageId, session.user.id).first();
       if (!row) return errorJson(404, "not_found", "页面不存在");
+      return json({ ok: true, page: publicPage(row) });
+    }
+
+    if (pageMatch && request.method === "PATCH") {
+      const session = await requireSession(db, request, { csrf: true });
+      const pageId = decodeURIComponent(pageMatch[1]);
+      const existing = await db.prepare(
+        `SELECT * FROM journal_pages WHERE id = ? AND user_id = ?`,
+      ).bind(pageId, session.user.id).first();
+      if (!existing) return errorJson(404, "not_found", "页面不存在");
+
+      const body = await readJsonBody(request, { maxBytes: 512_000 });
+      const content = sanitizeContent(body.content || body);
+      // Ensure photo layers reference media owned by this user
+      for (const layer of content.layers) {
+        if (layer.type !== "photo") continue;
+        const media = await db.prepare(
+          `SELECT id, r2_key FROM media_objects WHERE id = ? AND user_id = ? AND space = 'journal'`,
+        ).bind(layer.payload.mediaId, session.user.id).first();
+        if (!media || media.r2_key !== layer.payload.r2Key) {
+          return errorJson(400, "invalid_media", "照片资源无效或不属于当前用户");
+        }
+      }
+
+      const updatedAt = nowIso();
+      await db.prepare(
+        `UPDATE journal_pages SET content_json = ?, updated_at = ? WHERE id = ? AND user_id = ?`,
+      ).bind(JSON.stringify(content), updatedAt, pageId, session.user.id).run();
+      await db.prepare(
+        `UPDATE journals SET updated_at = ? WHERE id = ? AND user_id = ?`,
+      ).bind(updatedAt, existing.journal_id, session.user.id).run();
+
+      const row = await db.prepare(
+        `SELECT * FROM journal_pages WHERE id = ? AND user_id = ?`,
+      ).bind(pageId, session.user.id).first();
       return json({ ok: true, page: publicPage(row) });
     }
 
@@ -258,6 +428,8 @@ export async function handleJournalApi(request, env) {
       return errorJson(403, error.code, error.message);
     }
     if (error.code === "conflict") return errorJson(409, error.code, error.message);
+    if (error.code === "r2_unavailable") return errorJson(503, error.code, error.message);
+    if (error.code === "too_many_layers") return errorJson(400, error.code, error.message);
     console.error(JSON.stringify({ event: "journal_api_error", code: error.code, message: error.message }));
     return errorJson(status, error.code || "error", error.message || "请求失败");
   }

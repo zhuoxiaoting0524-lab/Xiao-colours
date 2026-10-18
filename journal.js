@@ -1,20 +1,24 @@
 /**
- * Interactive Journal: flip, add/delete pages, year filter.
+ * Interactive Journal: flip, add/delete pages, year filter, freeform edit mode.
  * Page layers use paper-relative coords (see content.coord), not viewport.
  */
-import { api } from "./auth-client.js";
+import { api, PAGE_COORD } from "./auth-client.js";
+import { createEditor } from "./journal-editor.js";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const singleMq = window.matchMedia("(max-width: 640px)");
 
 let csrfToken = "";
 let allYears = [];
-let pages = []; // filtered list in display order
-let yearFilter = null; // null = all years
-let cursor = 0; // index into `pages` (left page of spread, or single current)
+let pages = [];
+let yearFilter = null;
+let cursor = 0;
 let flipping = false;
 let mounted = false;
 let touchStartX = 0;
+let editMode = false;
+let editor = null;
+let focusSlot = "left"; // which page is being edited in a spread
 
 function $(sel, root = document) {
   return root.querySelector(sel);
@@ -49,11 +53,11 @@ function clampCursor() {
 }
 
 function canPrev() {
-  return total() > 0 && cursor > 0;
+  return !editMode && total() > 0 && cursor > 0;
 }
 
 function canGoNext() {
-  if (!total()) return false;
+  if (editMode || !total()) return false;
   if (isSingle()) return cursor < total() - 1;
   return cursor + 2 < total();
 }
@@ -83,12 +87,45 @@ function clearSlot(slotEl) {
   if (createBtn) createBtn.hidden = true;
   slotEl.dataset.pageId = "";
   slotEl.classList.toggle("is-blank-slot", true);
+  slotEl.classList.remove("is-edit-focus");
 }
 
-/**
- * Render page content into a paper stage.
- * Layers are positioned in % of the stage (mapped from normalized coord space).
- */
+function renderLayerRead(layersRoot, layer, coord, stageEl) {
+  const el = document.createElement("div");
+  el.className = `page-layer page-layer-${layer.type || "unknown"}`;
+  el.dataset.layerId = layer.id || "";
+  const t = layer.transform || {};
+  const x = Number(t.x || 0);
+  const y = Number(t.y || 0);
+  const w = Number(t.w || 0);
+  const h = Number(t.h || 0);
+  const rot = Number(t.rotate || 0);
+  el.style.left = `${(x / coord.width) * 100}%`;
+  el.style.top = `${(y / coord.height) * 100}%`;
+  el.style.width = `${(w / coord.width) * 100}%`;
+  el.style.height = `${(h / coord.height) * 100}%`;
+  el.style.transform = `rotate(${rot}deg)`;
+  el.style.zIndex = String(layer.z || 1);
+
+  if (layer.type === "text") {
+    const text = document.createElement("div");
+    text.className = "layer-text";
+    text.textContent = layer.payload?.text || "";
+    const stageH = stageEl.getBoundingClientRect().height || 400;
+    text.style.fontSize = `${((Number(layer.payload?.fontSize) || 36) / coord.height) * stageH}px`;
+    text.style.color = layer.payload?.color || "#2a2418";
+    el.append(text);
+  } else if (layer.type === "photo" && layer.payload?.mediaId) {
+    const img = document.createElement("img");
+    img.className = "layer-photo";
+    img.alt = "";
+    img.loading = "lazy";
+    img.src = `/api/me/journal/media/${encodeURIComponent(layer.payload.mediaId)}`;
+    el.append(img);
+  }
+  layersRoot.append(el);
+}
+
 function renderPageInto(slotEl, page, { showCreate = false } = {}) {
   clearSlot(slotEl);
   const layers = $("[data-page-layers]", slotEl);
@@ -105,28 +142,13 @@ function renderPageInto(slotEl, page, { showCreate = false } = {}) {
   slotEl.dataset.pageId = page.id;
   slotEl.classList.toggle("is-blank-slot", false);
 
-  const coord = page.content?.coord || { width: 1000, height: 1400 };
+  const coord = page.content?.coord || PAGE_COORD;
   stage.style.setProperty("--page-coord-w", String(coord.width));
   stage.style.setProperty("--page-coord-h", String(coord.height));
 
-  // Future collage layers: map x/y/w/h from page coords → % of stage
-  for (const layer of page.content?.layers || []) {
-    const el = document.createElement("div");
-    el.className = `page-layer page-layer-${layer.type || "unknown"}`;
-    el.dataset.layerId = layer.id || "";
-    const t = layer.transform || {};
-    const x = Number(t.x || 0);
-    const y = Number(t.y || 0);
-    const w = Number(t.w || 0);
-    const h = Number(t.h || 0);
-    const rot = Number(t.rotate || 0);
-    el.style.left = `${(x / coord.width) * 100}%`;
-    el.style.top = `${(y / coord.height) * 100}%`;
-    el.style.width = `${(w / coord.width) * 100}%`;
-    el.style.height = `${(h / coord.height) * 100}%`;
-    el.style.transform = `rotate(${rot}deg)`;
-    el.style.zIndex = String(layer.z || 1);
-    layers.append(el);
+  const sorted = [...(page.content?.layers || [])].sort((a, b) => (a.z || 1) - (b.z || 1));
+  for (const layer of sorted) {
+    renderLayerRead(layers, layer, coord, stage);
   }
 
   if (folio) {
@@ -141,13 +163,34 @@ function updateNav() {
   const counter = $("#journal-counter");
   const actions = $(".journal-actions");
   const del = $("#journal-delete-page");
+  const editBtn = $("#journal-edit-toggle");
   if (prev) prev.disabled = !canPrev() || flipping;
   if (next) next.disabled = !canGoNext() || flipping;
   if (counter) counter.textContent = counterLabel();
   if (actions) actions.hidden = false;
-  if (del) del.disabled = !total() || flipping;
+  if (del) del.disabled = !total() || flipping || editMode;
+  if (editBtn) {
+    editBtn.hidden = !total();
+    editBtn.textContent = editMode ? "Done" : "Edit";
+    editBtn.classList.toggle("is-active", editMode);
+  }
   binder()?.classList.toggle("is-empty-journal", total() === 0);
   binder()?.classList.toggle("is-single-mode", isSingle());
+  binder()?.classList.toggle("is-editing", editMode);
+  const toolbar = $("#journal-edit-toolbar");
+  if (toolbar) toolbar.hidden = !editMode;
+}
+
+function focusedPage() {
+  if (!total()) return null;
+  if (isSingle()) return pages[cursor] || null;
+  if (focusSlot === "right" && pages[cursor + 1]) return pages[cursor + 1];
+  return pages[cursor] || null;
+}
+
+function focusedSlotEl() {
+  if (isSingle()) return $('[data-page-slot="left"]');
+  return $(`[data-page-slot="${focusSlot}"]`);
 }
 
 function paint() {
@@ -159,7 +202,6 @@ function paint() {
   if (!total()) {
     renderPageInto(left, null, { showCreate: true });
     renderPageInto(right, null, { showCreate: false });
-    // Keep both blank pages visible as the open binder
     left.hidden = false;
     right.hidden = isSingle();
     updateNav();
@@ -171,12 +213,26 @@ function paint() {
     renderPageInto(right, null);
     left.hidden = false;
     right.hidden = true;
+    focusSlot = "left";
   } else {
     renderPageInto(left, pages[cursor] || null);
     renderPageInto(right, pages[cursor + 1] || null);
     left.hidden = false;
     right.hidden = false;
   }
+
+  if (editMode && editor) {
+    const slot = focusedSlotEl();
+    const page = focusedPage();
+    document.querySelectorAll("[data-page-slot]").forEach((el) => {
+      el.classList.toggle("is-edit-focus", el === slot);
+    });
+    if (slot && page) {
+      editor.attach(slot, page);
+      editor.enter();
+    }
+  }
+
   updateNav();
 }
 
@@ -192,7 +248,10 @@ function renderYearRail() {
   allBtn.className = `year-item${active === null ? " is-active" : ""}`;
   allBtn.textContent = "全部";
   if (active === null) allBtn.setAttribute("aria-current", "true");
-  allBtn.addEventListener("click", () => selectYear(null));
+  allBtn.addEventListener("click", () => {
+    if (editMode) return;
+    selectYear(null);
+  });
   rail.append(allBtn);
 
   for (const y of years) {
@@ -201,7 +260,10 @@ function renderYearRail() {
     btn.className = `year-item${active === y ? " is-active" : ""}`;
     btn.textContent = String(y);
     if (active === y) btn.setAttribute("aria-current", "true");
-    btn.addEventListener("click", () => selectYear(y));
+    btn.addEventListener("click", () => {
+      if (editMode) return;
+      selectYear(y);
+    });
     rail.append(btn);
   }
 }
@@ -217,7 +279,6 @@ async function reload() {
   const data = await api(`/api/me/journal/pages${qs}`);
   pages = data.pages || [];
   allYears = data.years || [];
-  // If filtering a year with no pages, keep filter but show empty binder
   renderYearRail();
   paint();
 }
@@ -228,7 +289,7 @@ async function waitFlip(ms) {
 }
 
 async function animateFlip(direction) {
-  if (reducedMotion || isSingle()) return;
+  if (reducedMotion || isSingle() || editMode) return;
   const overlay = $("#journal-flip");
   const sheet = $(".flip-sheet", overlay);
   if (!overlay || !sheet) return;
@@ -271,13 +332,11 @@ async function goNext() {
 }
 
 function focusedPageId() {
-  if (!total()) return null;
-  if (isSingle()) return pages[cursor]?.id || null;
-  // prefer right page if present, else left
-  return pages[cursor + 1]?.id || pages[cursor]?.id || null;
+  return focusedPage()?.id || null;
 }
 
 async function addPage() {
+  if (editMode) return;
   const body = {};
   if (yearFilter) body.year = yearFilter;
   const data = await api("/api/me/journal/pages", {
@@ -286,12 +345,10 @@ async function addPage() {
     body,
   });
   await reload();
-  // jump to the new page (last in current filter if year matches)
   const idx = pages.findIndex((p) => p.id === data.page.id);
   if (idx >= 0) {
     cursor = isSingle() ? idx : idx - (idx % 2);
   } else {
-    // new page may be outside year filter
     yearFilter = null;
     await reload();
     const idx2 = pages.findIndex((p) => p.id === data.page.id);
@@ -301,6 +358,7 @@ async function addPage() {
 }
 
 async function deleteFocused() {
+  if (editMode) return;
   const id = focusedPageId();
   if (!id) return;
   const ok = window.confirm("确定删除这一页手帐吗？此操作不可撤销。");
@@ -314,22 +372,113 @@ async function deleteFocused() {
   paint();
 }
 
+async function enterEdit() {
+  if (!total()) return;
+  const page = focusedPage();
+  if (!page) return;
+  editMode = true;
+  paint();
+}
+
+async function exitEdit({ saveFirst = false } = {}) {
+  if (saveFirst && editor?.dirty) {
+    await editor.save();
+    await reload();
+  } else if (editor?.dirty) {
+    const keep = window.confirm("有未保存的更改。先保存再退出？\n确定=保存，取消=丢弃");
+    if (keep) {
+      await editor.save();
+    }
+    await reload();
+  }
+  editor?.exit();
+  editMode = false;
+  paint();
+}
+
+function showError(error) {
+  console.error(error);
+  window.alert(error.message || String(error));
+}
+
+function ensureEditor() {
+  if (editor) return editor;
+  editor = createEditor({
+    getCsrf: () => csrfToken,
+    onDirty: () => {
+      const saveBtn = $("#journal-tool-save");
+      if (saveBtn) saveBtn.classList.toggle("is-dirty", editor.dirty);
+    },
+    onSaved: (page) => {
+      const idx = pages.findIndex((p) => p.id === page.id);
+      if (idx >= 0) pages[idx] = page;
+    },
+    onError: showError,
+  });
+  return editor;
+}
+
 function bindUi() {
+  ensureEditor();
+
   $("#journal-prev")?.addEventListener("click", () => goPrev());
   $("#journal-next")?.addEventListener("click", () => goNext());
   $("#journal-add-page")?.addEventListener("click", () => addPage().catch(showError));
   $("#journal-delete-page")?.addEventListener("click", () => deleteFocused().catch(showError));
+  $("#journal-edit-toggle")?.addEventListener("click", () => {
+    if (editMode) exitEdit({ saveFirst: false }).catch(showError);
+    else enterEdit().catch(showError);
+  });
+
+  $("#journal-tool-text")?.addEventListener("click", () => {
+    ensureEditor().addText();
+  });
+  $("#journal-tool-photo")?.addEventListener("click", () => {
+    const input = $("#journal-photo-input");
+    input?.click();
+  });
+  $("#journal-photo-input")?.addEventListener("change", async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      await ensureEditor().addPhoto(file);
+    } catch (error) {
+      showError(error);
+    }
+  });
+  $("#journal-tool-front")?.addEventListener("click", () => ensureEditor().bringFront());
+  $("#journal-tool-back")?.addEventListener("click", () => ensureEditor().sendBack());
+  $("#journal-tool-delete")?.addEventListener("click", () => ensureEditor().deleteSelected());
+  $("#journal-tool-save")?.addEventListener("click", () => {
+    ensureEditor().save().then(() => {
+      window.alert("已保存");
+    }).catch(showError);
+  });
+
   binder()?.addEventListener("click", (event) => {
     const btn = event.target.closest("[data-create-first]");
     if (!btn) return;
     addPage().catch(showError);
   });
 
+  // Pick which page of a spread to edit
+  binder()?.addEventListener("pointerdown", (event) => {
+    if (!editMode || isSingle()) return;
+    const slot = event.target.closest("[data-page-slot]");
+    if (!slot || !slot.dataset.pageId) return;
+    const which = slot.dataset.pageSlot;
+    if (which !== focusSlot) {
+      focusSlot = which;
+      paint();
+    }
+  });
+
   const root = $("#view-journal");
   root?.addEventListener(
     "touchstart",
     (event) => {
-      if (!isSingle()) return;
+      if (!isSingle() || editMode) return;
       touchStartX = event.changedTouches[0]?.clientX || 0;
     },
     { passive: true },
@@ -337,7 +486,7 @@ function bindUi() {
   root?.addEventListener(
     "touchend",
     (event) => {
-      if (!isSingle()) return;
+      if (!isSingle() || editMode) return;
       const x = event.changedTouches[0]?.clientX || 0;
       const dx = x - touchStartX;
       if (Math.abs(dx) < 48) return;
@@ -355,6 +504,13 @@ function bindUi() {
   document.addEventListener("keydown", (event) => {
     const view = $("#view-journal");
     if (!view || view.hidden || !view.classList.contains("is-active")) return;
+    if (editMode) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        exitEdit().catch(showError);
+      }
+      return;
+    }
     if (event.key === "ArrowLeft") {
       event.preventDefault();
       goPrev();
@@ -363,11 +519,6 @@ function bindUi() {
       goNext();
     }
   });
-}
-
-function showError(error) {
-  console.error(error);
-  window.alert(error.message || String(error));
 }
 
 export async function mountJournal(auth) {
@@ -380,7 +531,6 @@ export async function mountJournal(auth) {
   try {
     await reload();
   } catch (error) {
-    // Never treat journal API failures as logout / never navigate away.
     if (error?.code === "schema_missing") {
       showError(new Error("手帐数据表尚未就绪（需执行 D1 迁移 0002_journal_pages）。登录状态仍然有效。"));
       return;
@@ -390,5 +540,7 @@ export async function mountJournal(auth) {
 }
 
 export function unmountJournal() {
-  // keep listeners; state cleared on next mount via reload
+  editor?.destroy();
+  editor = null;
+  editMode = false;
 }
