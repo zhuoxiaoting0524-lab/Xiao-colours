@@ -536,8 +536,11 @@ a {
   font-size: 1rem;
   color: var(--muted);
   letter-spacing: 0.04em;
-  cursor: default;
+  cursor: pointer;
   opacity: 0.7;
+  background: none;
+  border: 0;
+  padding: 0;
 }
 
 .year-item.is-active {
@@ -848,6 +851,182 @@ a {
   font-size: 0.95rem;
   color: var(--muted);
 }
+
+/* ---------- Journal interactive (phase 2) ---------- */
+.journal-actions {
+  position: absolute;
+  top: 0.85rem;
+  right: clamp(0.75rem, 3vw, 1.75rem);
+  display: inline-flex;
+  gap: 0.55rem;
+  z-index: 8;
+}
+
+.journal-action {
+  font-family: var(--label);
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: rgba(255, 252, 245, 0.88);
+  border: 1px solid rgba(120, 100, 70, 0.28);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(60, 50, 30, 0.08);
+}
+
+.journal-action:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.journal-action-danger {
+  color: #7a3a2a;
+}
+
+.journal-spread {
+  display: contents;
+}
+
+.page-stage {
+  /* Paper-local coordinate root for future collage layers.
+     --page-coord-w / --page-coord-h mirror content.coord (default 1000×1400). */
+  --page-coord-w: 1000;
+  --page-coord-h: 1400;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.page-layers {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.page-layer {
+  position: absolute;
+  transform-origin: center center;
+  box-sizing: border-box;
+}
+
+.page-folio {
+  position: absolute;
+  left: 10%;
+  bottom: 6%;
+  z-index: 3;
+  font-family: var(--label);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.create-first-page {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  transform: translate(-50%, -50%);
+  font-family: var(--label);
+  font-size: clamp(0.95rem, 2vw, 1.15rem);
+  color: var(--ink);
+  background: rgba(255, 252, 245, 0.92);
+  border: 1.5px dashed rgba(90, 70, 40, 0.45);
+  border-radius: 999px;
+  padding: 0.7rem 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(60, 50, 30, 0.1);
+}
+
+.create-first-page:hover {
+  border-style: solid;
+}
+
+.binder.is-empty-journal .page-left .page-stage,
+.binder.is-empty-journal .page-right .page-stage {
+  /* keep ruled blank paper look */
+}
+
+.flip-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  perspective: 1800px;
+}
+
+.flip-sheet {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  transform-style: preserve-3d;
+}
+
+.flip-sheet.flip-next {
+  right: 0;
+  transform-origin: left center;
+}
+
+.flip-sheet.flip-prev {
+  left: 0;
+  transform-origin: right center;
+}
+
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 17px,
+      rgba(120, 100, 70, 0.04) 17px,
+      rgba(120, 100, 70, 0.04) 18px
+    ),
+    #f4ebda;
+  border: 1px solid rgba(180, 160, 130, 0.45);
+  box-shadow: inset 0 0 24px rgba(80, 60, 30, 0.06);
+}
+
+.flip-back {
+  transform: rotateY(180deg);
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 17px,
+      rgba(120, 100, 70, 0.04) 17px,
+      rgba(120, 100, 70, 0.04) 18px
+    ),
+    var(--paper);
+}
+
+.flip-sheet.flip-next.is-flipping {
+  animation: journal-flip-next 0.52s ease-in-out forwards;
+}
+
+.flip-sheet.flip-prev.is-flipping {
+  animation: journal-flip-prev 0.52s ease-in-out forwards;
+}
+
+@keyframes journal-flip-next {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(-180deg); }
+}
+
+@keyframes journal-flip-prev {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(180deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-sheet.flip-next.is-flipping,
+  .flip-sheet.flip-prev.is-flipping {
+    animation: none;
+  }
+}
+
 
 /* ---------- Gallery ---------- */
 .view-gallery {
@@ -1453,9 +1632,19 @@ a {
     transform: translateX(-50%);
   }
 
-  .page-nav {
+  .view-gallery .page-nav {
     display: none;
   }
+
+  .view-journal .page-nav {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    opacity: 0.85;
+  }
+
+  .view-journal .page-nav-prev { left: 0.15rem; }
+  .view-journal .page-nav-next { right: 0.15rem; }
 
   .binder {
     width: min(420px, 92vw);
@@ -1463,6 +1652,33 @@ a {
     max-height: none;
     aspect-ratio: 1.35 / 1;
   }
+
+  .binder.is-single-mode {
+    grid-template-columns: 1fr;
+    aspect-ratio: 0.72 / 1;
+    max-height: min(72vh, 560px);
+  }
+
+  .binder.is-single-mode .page-right {
+    display: none;
+  }
+
+  .binder.is-single-mode .binder-spine,
+  .binder.is-single-mode .binder-rings {
+    display: none;
+  }
+
+  .binder.is-single-mode .page-left {
+    border-radius: 4px;
+  }
+
+  .journal-actions {
+    top: auto;
+    bottom: 0.35rem;
+    right: 50%;
+    transform: translateX(50%);
+  }
+
 
   .page-note {
     font-size: 0.95rem;

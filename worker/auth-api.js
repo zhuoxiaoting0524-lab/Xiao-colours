@@ -372,12 +372,22 @@ export async function handleAuthApi(request, env) {
         `SELECT id, created_at AS createdAt, updated_at AS updatedAt FROM collections WHERE user_id = ?`,
       ).bind(session.user.id).first();
 
+      let journalPageCount = 0;
+      if (journal) {
+        const countRow = await db.prepare(
+          `SELECT COUNT(*) AS c FROM journal_pages WHERE user_id = ? AND journal_id = ?`,
+        ).bind(session.user.id, journal.id).first();
+        journalPageCount = Number(countRow?.c || 0);
+      }
+
       // Isolation: only current user's rows; no admin peek endpoint.
       return json({
         ok: true,
         userId: session.user.id,
         spaces: {
-          journal: journal ? { ...journal, entries: [], empty: true } : null,
+          journal: journal
+            ? { ...journal, pageCount: journalPageCount, empty: journalPageCount === 0 }
+            : null,
           gallery: gallery ? { ...gallery, items: [], empty: true } : null,
           collections: collections ? { ...collections, items: [], empty: true } : null,
         },

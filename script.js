@@ -1,11 +1,11 @@
 import { api, getMe, loginUrlForView, PRIVATE_VIEWS } from "./auth-client.js";
+import { mountJournal } from "./journal.js";
 
 /**
  * Unified site session:
  * - One HttpOnly cookie (`xc_session`, Path=/) shared by every page on this origin.
  * - Welcome + Global Pulse stay public.
- * - Journal / Gallery / Collections reuse the same in-memory authState after one login;
- *   refresh re-hydrates from `/api/auth/me` (cookie), no per-module login.
+ * - Journal requires login (no demo browsing). Gallery / Collections same gate.
  */
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -25,10 +25,17 @@ function setView(name) {
 
   const current = views.find((view) => view.classList.contains("is-active"));
 
+  const afterReveal = () => {
+    if (name === "journal" && authState.authenticated) {
+      mountJournal(authState);
+    }
+  };
+
   if (!current) {
     next.hidden = false;
     next.classList.add("is-active");
     syncLocationForView(name);
+    afterReveal();
     return;
   }
 
@@ -40,6 +47,7 @@ function setView(name) {
     void next.offsetWidth;
     next.classList.add("is-active");
     syncLocationForView(name);
+    afterReveal();
   };
 
   if (reducedMotion) {
@@ -84,19 +92,31 @@ function renderAuthBar() {
 
 function applyEmptyStates() {
   const loggedIn = authState.authenticated;
-  document.querySelectorAll("[data-empty-for]").forEach((node) => {
+
+  // Gallery / Collections still use shell empty copy until those modules ship.
+  document.querySelectorAll('[data-empty-for="gallery"], [data-empty-for="collections"]').forEach((node) => {
     node.hidden = !loggedIn;
   });
 
-  // Hide demo filler when the signed-in user's spaces are empty shells.
-  document.querySelectorAll(".view-journal .binder, .view-gallery .gallery-strip, .view-gallery .gallery-dots, .view-collections .desktop")
+  document.querySelectorAll(".view-gallery .gallery-strip, .view-gallery .gallery-dots, .view-collections .desktop")
     .forEach((node) => {
       node.hidden = loggedIn;
     });
-  document.querySelectorAll(".view-journal .year-rail, .view-journal .page-nav, .view-gallery .page-nav")
+  document.querySelectorAll(".view-gallery .page-nav")
     .forEach((node) => {
       node.hidden = loggedIn;
     });
+
+  // Journal: always keep binder for logged-in users (blank paper + create CTA).
+  // Unauthenticated users never reach this view (login redirect).
+  const journalBinder = document.querySelector(".view-journal .binder");
+  const journalRail = document.querySelector(".view-journal .year-rail");
+  const journalNav = document.querySelectorAll(".view-journal .page-nav");
+  if (journalBinder) journalBinder.hidden = false;
+  if (journalRail) journalRail.hidden = false;
+  journalNav.forEach((node) => {
+    node.hidden = false;
+  });
 }
 
 async function requireAuthForPrivateView(target) {

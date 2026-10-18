@@ -1,4 +1,5 @@
 import { handleAuthApi } from "./auth-api.js";
+import { handleJournalApi } from "./journal-api.js";
 import { createNewsCache } from "./news-cache.js";
 import { errorJson, json } from "./http.js";
 
@@ -10,11 +11,16 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Personal auth + spaces APIs (D1). Never touch Global Pulse KV here.
+    // Personal auth + spaces + journal APIs (D1). Never touch Global Pulse KV here.
     if (url.pathname.startsWith("/api/auth")
       || url.pathname.startsWith("/api/admin")
       || url.pathname.startsWith("/api/me")) {
       try {
+        if (url.pathname.startsWith("/api/me/journal")) {
+          const journalResponse = await handleJournalApi(request, env);
+          if (journalResponse) return journalResponse;
+          return errorJson(404, "not_found", "接口不存在");
+        }
         const authResponse = await handleAuthApi(request, env);
         if (authResponse) return authResponse;
         return errorJson(404, "not_found", "接口不存在");

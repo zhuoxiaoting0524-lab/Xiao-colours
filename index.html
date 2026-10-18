@@ -18,9 +18,9 @@
       href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Gaegu:wght@400;700&family=Ma+Shan+Zheng&family=Patrick+Hand&family=Rock+Salt&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=8" />
+    <link rel="stylesheet" href="./styles.css?v=9" />
     <link rel="stylesheet" href="./auth.css?v=2" />
-    <script type="module" src="./script.js?v=8"></script>
+    <script type="module" src="./script.js?v=9"></script>
   </head>
   <body>
     <div class="paper-noise" aria-hidden="true"></div>
@@ -144,26 +144,22 @@
             </svg>
             <span>Journal</span>
           </div>
+          <div class="journal-actions" hidden>
+            <button type="button" class="journal-action" id="journal-add-page">＋ 新页</button>
+            <button type="button" class="journal-action journal-action-danger" id="journal-delete-page">删除本页</button>
+          </div>
         </header>
-        <div class="space-empty" data-empty-for="journal" hidden>
-          <p>你的 Journal 还是空白的。</p>
-          <p>第一阶段仅建立私人空间壳子，内容编辑稍后开放。</p>
-        </div>
 
-        <aside class="year-rail" aria-label="年份">
-          <button type="button" class="year-item" disabled>2024</button>
-          <button type="button" class="year-item" disabled>2025</button>
-          <button type="button" class="year-item is-active" aria-current="true">2026</button>
-        </aside>
+        <aside class="year-rail" id="journal-year-rail" aria-label="年份"></aside>
 
-        <button class="page-nav page-nav-prev" type="button" aria-label="上一页" disabled>
+        <button class="page-nav page-nav-prev" id="journal-prev" type="button" aria-label="上一页" disabled>
           <svg viewBox="0 0 24 40" aria-hidden="true"><path d="M16.4 5.8 6.2 20.2 16.2 34.4" fill="none" /></svg>
         </button>
-        <button class="page-nav page-nav-next" type="button" aria-label="下一页" disabled>
+        <button class="page-nav page-nav-next" id="journal-next" type="button" aria-label="下一页" disabled>
           <svg viewBox="0 0 24 40" aria-hidden="true"><path d="M7.6 5.8 17.8 20.1 7.8 34.4" fill="none" /></svg>
         </button>
 
-        <div class="binder" aria-label="手帐内页">
+        <div class="binder" id="journal-binder" aria-label="手帐内页">
           <div class="binder-spine" aria-hidden="true"></div>
           <div class="binder-rings" aria-hidden="true">
             <span class="ring"><i></i></span>
@@ -171,48 +167,32 @@
             <span class="ring"><i></i></span>
           </div>
 
-          <article class="page page-left">
-            <div class="page-grain" aria-hidden="true"></div>
-            <div class="tape tape-a" aria-hidden="true"></div>
-            <div class="tape tape-b" aria-hidden="true"></div>
-            <figure class="page-photo">
-              <img src="./demo/photos/field.jpg" alt="演示：田野风景照片" width="400" height="400" loading="lazy" />
-            </figure>
-            <p class="demo-chip">DEMO</p>
-            <svg class="page-doodle page-flower" viewBox="0 0 48 56" aria-hidden="true">
-              <path d="M24 52c1-14 2-26 4-36" fill="none" />
-              <path d="M27 28c-7-2-11-7-10-13 7 1 11 6 10 13Z" fill="none" />
-              <path d="M29 22c6-3 9-8 7-13-6 2-9 7-7 13Z" fill="none" />
-              <circle cx="30" cy="12" r="4.5" fill="none" />
-            </svg>
-            <svg class="page-doodle page-cat" viewBox="0 0 56 40" aria-hidden="true">
-              <path d="M8.4 24.2c0-10 8-16.2 18-16s18 6.4 17.8 16.2C43.8 32.4 36 36.4 26.4 36.2S8.4 32 8.4 24.2Z" fill="none" />
-              <path d="M14.2 12.2 19.4 18.6M38.2 12 33 18.4" fill="none" />
-              <circle cx="20.2" cy="22.4" r="1.3" />
-              <circle cx="32.4" cy="22.2" r="1.3" />
-              <path d="M24.2 26.4c1.1 1.6 3.2 1.5 4.2-.1" fill="none" />
-            </svg>
-          </article>
+          <div class="journal-spread" id="journal-spread">
+            <article class="page page-left" data-page-slot="left">
+              <div class="page-stage" data-page-stage>
+                <div class="page-grain" aria-hidden="true"></div>
+                <div class="page-layers" data-page-layers></div>
+                <button type="button" class="create-first-page" data-create-first hidden>＋ Create First Page</button>
+                <span class="page-folio" data-page-folio hidden></span>
+              </div>
+            </article>
 
-          <article class="page page-right">
-            <div class="page-grain" aria-hidden="true"></div>
-            <time class="page-date" datetime="2026-10-18">Oct. 18 2026</time>
-            <p class="page-note">
-              <span class="demo-inline">演示内容</span><br />
-              示例手帐页 · 仅供版式预览<br />
-              照片与文字皆为占位素材
-            </p>
-            <figure class="page-photo page-photo-small">
-              <img src="./demo/photos/coffee.jpg" alt="演示：咖啡照片" width="300" height="300" loading="lazy" />
-            </figure>
-            <svg class="page-doodle page-cd" viewBox="0 0 48 48" aria-hidden="true">
-              <circle cx="24" cy="24" r="17.5" fill="none" />
-              <circle cx="24" cy="24" r="6.2" fill="none" />
-              <circle cx="24" cy="24" r="2" />
-              <path d="M30 16.5c2.4 1.2 4.2 3.4 4.6 5.8" fill="none" />
-            </svg>
-            <span class="page-counter">01 / 12</span>
-          </article>
+            <article class="page page-right" data-page-slot="right">
+              <div class="page-stage" data-page-stage>
+                <div class="page-grain" aria-hidden="true"></div>
+                <div class="page-layers" data-page-layers></div>
+                <span class="page-folio" data-page-folio hidden></span>
+                <span class="page-counter" id="journal-counter">0 / 0</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="flip-overlay" id="journal-flip" hidden aria-hidden="true">
+            <div class="flip-sheet">
+              <div class="flip-face flip-front"></div>
+              <div class="flip-face flip-back"></div>
+            </div>
+          </div>
         </div>
       </section>
 
