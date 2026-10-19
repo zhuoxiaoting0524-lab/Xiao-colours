@@ -28,7 +28,7 @@ pnpm dev
 - 邀请：管理员生成，7 天有效，单次使用，可撤销
 - 每人独立空白 Journal / Gallery / Collections 壳子
 - Global Pulse 与其 KV **未改动**
-- Journal 自由拼贴：文字/照片拖拽缩放旋转，内容写入 D1；照片存私有 R2 `xiao-colours-media`（需先在 Cloudflare 创建 bucket 并部署）
+- Journal 自由拼贴：文字/照片拖拽缩放旋转，内容写入 D1；照片存私有 R2 `xiao-colours-media`：先在 Cloudflare 创建同名私有 bucket，再在 wrangler.jsonc 加上 MEDIA 绑定后重新部署；未绑定时文字编辑仍可用，Photo 会提示 R2 未配置
 
 详见 `docs/MULTIUSER_PHASE1.md`。
 

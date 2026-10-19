@@ -23,12 +23,6 @@
       "migrations_dir": "migrations"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "MEDIA",
-      "bucket_name": "xiao-colours-media"
-    }
-  ],
   "triggers": {
     "crons": ["*/15 * * * *"]
   },
