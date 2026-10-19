@@ -1,6 +1,6 @@
 import { api, getMe, loginUrlForView, PRIVATE_VIEWS } from "./auth-client.js";
 import { mountJournal } from "./journal.js?v=14";
-import { mountGallery } from "./gallery.js?v=15";
+import { mountGallery } from "./gallery.js?v=16";
 
 /**
  * Unified site session with explicit auth status to prevent redirect loops.
@@ -35,7 +35,9 @@ function setView(name) {
       });
     }
     if (name === "gallery" && authState.status === "authenticated") {
-      mountGallery();
+      mountGallery(authState).catch((error) => {
+        showAuthError(error?.message || "无法加载 Gallery");
+      });
     }
   };
 

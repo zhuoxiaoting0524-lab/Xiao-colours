@@ -1,4 +1,5 @@
 import { handleAuthApi } from "./auth-api.js";
+import { handleGalleryApi } from "./gallery-api.js";
 import { handleJournalApi } from "./journal-api.js";
 import { createNewsCache } from "./news-cache.js";
 import { errorJson, json } from "./http.js";
@@ -16,6 +17,11 @@ export default {
       || url.pathname.startsWith("/api/admin")
       || url.pathname.startsWith("/api/me")) {
       try {
+        if (url.pathname.startsWith("/api/me/gallery")) {
+          const galleryResponse = await handleGalleryApi(request, env);
+          if (galleryResponse) return galleryResponse;
+          return errorJson(404, "not_found", "接口不存在");
+        }
         if (url.pathname.startsWith("/api/me/journal")) {
           const journalResponse = await handleJournalApi(request, env);
           if (journalResponse) return journalResponse;

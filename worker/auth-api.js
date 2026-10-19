@@ -391,6 +391,23 @@ export async function handleAuthApi(request, env) {
         }
       }
 
+      let galleryItemCount = 0;
+      let galleryItemsReady = true;
+      if (gallery) {
+        try {
+          const countRow = await db.prepare(
+            `SELECT COUNT(*) AS c FROM gallery_items WHERE user_id = ? AND gallery_id = ?`,
+          ).bind(session.user.id, gallery.id).first();
+          galleryItemCount = Number(countRow?.c || 0);
+        } catch (countError) {
+          galleryItemsReady = false;
+          console.error(JSON.stringify({
+            event: "gallery_items_count_failed",
+            message: String(countError?.message || countError),
+          }));
+        }
+      }
+
       // Isolation: only current user's rows; no admin peek endpoint.
       return json({
         ok: true,
@@ -404,11 +421,21 @@ export async function handleAuthApi(request, env) {
               pagesReady: journalPagesReady,
             }
             : null,
-          gallery: gallery ? { ...gallery, items: [], empty: true } : null,
+          gallery: gallery
+            ? {
+              ...gallery,
+              itemCount: galleryItemCount,
+              empty: galleryItemsReady ? galleryItemCount === 0 : true,
+              itemsReady: galleryItemsReady,
+            }
+            : null,
           collections: collections ? { ...collections, items: [], empty: true } : null,
         },
         // Future media: R2 keys will be scoped under users/{userId}/...
-        media: { storage: "r2_planned", prefix: `users/${session.user.id}/` },
+        media: {
+          storage: env.MEDIA ? "r2" : "r2_unconfigured",
+          prefix: `users/${session.user.id}/`,
+        },
       });
     }
 

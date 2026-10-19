@@ -26,9 +26,22 @@ pnpm dev
 - 密码：Web Crypto **PBKDF2-SHA-256**（100k 迭代（Cloudflare Workers 上限））
 - Session：存 **D1**；Cookie `HttpOnly` + `Secure` + `SameSite=Lax`
 - 邀请：管理员生成，7 天有效，单次使用，可撤销
-- 每人独立空白 Journal / Gallery / Collections 壳子
+- 每人独立的 Journal / Gallery / Collections 私人空间
 - Global Pulse 与其 KV **未改动**
 - Journal 自由拼贴：文字/照片拖拽缩放旋转，内容写入 D1；照片存私有 R2 `xiao-colours-media`：先在 Cloudflare 创建同名私有 bucket，再在 wrangler.jsonc 加上 MEDIA 绑定后重新部署；未绑定时文字编辑仍可用，Photo 会提示 R2 未配置
+- Gallery 真实相册：登录用户可以批量上传、编辑标题与分类、替换或删除自己的照片；元数据写入 D1，原图存入同一个私有 R2 `xiao-colours-media`，图片接口会按当前登录用户做权限隔离
+
+Gallery 上线前请确保 Cloudflare 已创建私有 R2 bucket：
+
+> 当前 Cloudflare 账户尚未启用 R2。控制台显示免费额度为每月 10GB，但启用属于持续订阅，超出免费额度会计费，必须由账户所有者确认后再操作。
+
+```bash
+wrangler r2 bucket create xiao-colours-media
+wrangler d1 migrations apply DB --remote
+wrangler deploy
+```
+
+`0003_gallery_items.sql` 是 Gallery 必需的新增迁移。实时环境缺少该迁移时，页面会明确提示而不会退回演示图片。
 
 详见 `docs/MULTIUSER_PHASE1.md`。
 
