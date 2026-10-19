@@ -1,5 +1,5 @@
 import { api, getMe, loginUrlForView, PRIVATE_VIEWS } from "./auth-client.js";
-import { mountJournal } from "./journal.js?v=12";
+import { mountJournal } from "./journal.js?v=13";
 
 /**
  * Unified site session with explicit auth status to prevent redirect loops.

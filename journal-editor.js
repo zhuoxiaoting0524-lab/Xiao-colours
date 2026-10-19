@@ -2,7 +2,7 @@
  * Freeform scrapbook editor for a single journal page stage.
  * Coordinates are paper-relative (PAGE_COORD 1000×1400).
  */
-import { api, uploadBytes, PAGE_COORD } from "./auth-client.js?v=12";
+import { api, uploadBytes, PAGE_COORD } from "./auth-client.js?v=13";
 
 function uid() {
   return `L${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
@@ -12,7 +12,7 @@ function clamp(n, a, b) {
   return Math.min(b, Math.max(a, n));
 }
 
-export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
+export function createEditor({ getCsrf, onDirty, onSaved, onError, onTextSync }) {
   let active = false;
   let pageId = null;
   let stageEl = null;
@@ -20,8 +20,9 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
   let layers = [];
   let selectedId = null;
   let dirty = false;
-  let pointer = null; // { mode, layerId, startX, startY, orig }
+  let pointer = null;
   let editingTextId = null;
+  let suppressBlur = false;
 
   function setDirty(v) {
     dirty = v;
@@ -49,53 +50,87 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
     el.style.top = `${(t.y / PAGE_COORD.height) * 100}%`;
     el.style.width = `${(t.w / PAGE_COORD.width) * 100}%`;
     el.style.height = `${(t.h / PAGE_COORD.height) * 100}%`;
-    el.style.transform = `rotate(${t.rotate || 0}deg)`;
+    // Keep rotation 0 while typing so caret/IME work reliably.
+    const rot = editingTextId === layer.id ? 0 : (t.rotate || 0);
+    el.style.transform = `rotate(${rot}deg)`;
     el.style.zIndex = String(layer.z || 1);
+  }
+
+  function syncToolbarText() {
+    const layer = layers.find((l) => l.id === (editingTextId || selectedId));
+    const value = layer?.type === "text" ? (layer.payload?.text || "") : "";
+    onTextSync?.(value, Boolean(layer && layer.type === "text"));
+  }
+
+  function commitTextEdit(nextValue) {
+    if (!editingTextId) return;
+    const layer = layers.find((l) => l.id === editingTextId);
+    const id = editingTextId;
+    editingTextId = null;
+    if (layer && layer.type === "text") {
+      const value = String(nextValue ?? layer.payload?.text ?? "").replace(/\u00a0/g, " ");
+      layer.payload.text = (value.trim() ? value : "写点什么…").slice(0, 4000);
+      setDirty(true);
+    }
+    suppressBlur = true;
+    paint();
+    suppressBlur = false;
+    syncToolbarText();
   }
 
   function renderLayerContent(el, layer) {
     el.innerHTML = "";
-    el.className = `page-layer page-layer-${layer.type}${selectedId === layer.id ? " is-selected" : ""}`;
+    el.className = `page-layer page-layer-${layer.type}${selectedId === layer.id ? " is-selected" : ""}${editingTextId === layer.id ? " is-text-editing" : ""}`;
     el.dataset.layerId = layer.id;
     applyDomTransform(el, layer);
 
     if (layer.type === "text") {
-      const text = document.createElement("div");
-      text.className = "layer-text";
-      text.textContent = layer.payload?.text || "写点什么…";
       const stageH = stageEl.getBoundingClientRect().height || 400;
-      text.style.fontSize = `${((Number(layer.payload?.fontSize) || 36) / PAGE_COORD.height) * stageH}px`;
-      text.style.color = layer.payload?.color || "#2a2418";
+      const fontPx = ((Number(layer.payload?.fontSize) || 36) / PAGE_COORD.height) * stageH;
+
       if (editingTextId === layer.id) {
-        text.contentEditable = "true";
-        text.spellcheck = false;
-        text.classList.add("is-typing");
-        text.addEventListener("pointerdown", (e) => e.stopPropagation());
-        text.addEventListener("keydown", (e) => {
+        const area = document.createElement("textarea");
+        area.className = "layer-text-input";
+        area.value = layer.payload?.text === "写点什么…" ? "" : (layer.payload?.text || "");
+        area.placeholder = "在这里打字…";
+        area.spellcheck = false;
+        area.style.fontSize = `${fontPx}px`;
+        area.style.color = layer.payload?.color || "#2a2418";
+        area.addEventListener("pointerdown", (e) => e.stopPropagation());
+        area.addEventListener("click", (e) => e.stopPropagation());
+        area.addEventListener("keydown", (e) => {
+          e.stopPropagation();
           if (e.key === "Escape") {
             e.preventDefault();
-            text.blur();
+            commitTextEdit(area.value);
           }
-          // Allow Enter for newlines; stop editor shortcuts
-          e.stopPropagation();
         });
-        text.addEventListener("blur", () => {
-          const value = (text.innerText || "").replace(/\u00a0/g, " ").trimEnd();
-          layer.payload.text = (value || "写点什么…").slice(0, 4000);
-          editingTextId = null;
+        area.addEventListener("input", () => {
+          layer.payload.text = area.value.slice(0, 4000);
           setDirty(true);
-          paint();
+          onTextSync?.(area.value, true);
         });
-        queueMicrotask(() => {
-          text.focus();
-          const range = document.createRange();
-          range.selectNodeContents(text);
-          const sel = window.getSelection();
-          sel.removeAllRanges();
-          sel.addRange(range);
+        area.addEventListener("blur", () => {
+          if (suppressBlur) return;
+          // Delay so toolbar clicks can run first
+          setTimeout(() => {
+            if (editingTextId === layer.id) commitTextEdit(area.value);
+          }, 120);
         });
+        el.append(area);
+        setTimeout(() => {
+          if (!area.isConnected) return;
+          area.focus();
+          area.setSelectionRange(area.value.length, area.value.length);
+        }, 30);
+      } else {
+        const text = document.createElement("div");
+        text.className = "layer-text";
+        text.textContent = layer.payload?.text || "写点什么…";
+        text.style.fontSize = `${fontPx}px`;
+        text.style.color = layer.payload?.color || "#2a2418";
+        el.append(text);
       }
-      el.append(text);
     } else if (layer.type === "photo") {
       const img = document.createElement("img");
       img.className = "layer-photo";
@@ -105,7 +140,7 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
       el.append(img);
     }
 
-    if (active && selectedId === layer.id) {
+    if (active && selectedId === layer.id && editingTextId !== layer.id) {
       const frame = document.createElement("div");
       frame.className = "layer-frame";
       frame.innerHTML = `
@@ -121,15 +156,23 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
 
   function paint() {
     if (!layersRoot) return;
+    suppressBlur = true;
     layersRoot.innerHTML = "";
     for (const layer of sortedLayers()) {
       const el = document.createElement("div");
       renderLayerContent(el, layer);
       layersRoot.append(el);
     }
+    suppressBlur = false;
+    syncToolbarText();
   }
 
   function select(id) {
+    if (editingTextId && editingTextId !== id) {
+      const area = layersRoot?.querySelector(".layer-text-input");
+      commitTextEdit(area?.value);
+      return;
+    }
     selectedId = id;
     paint();
   }
@@ -139,9 +182,9 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
   }
 
   function beginTextEdit(layerId) {
+    selectedId = layerId;
     editingTextId = layerId;
-    select(layerId);
-    paint();
+    paint(); // single paint — do not call select() (that re-painted and killed focus)
   }
 
   function addText() {
@@ -149,12 +192,25 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
       id: uid(),
       type: "text",
       z: maxZ() + 1,
-      transform: { x: 180, y: 220, w: 420, h: 160, rotate: -2 },
-      payload: { text: "写点什么…", fontSize: 42, color: "#2a2418" },
+      transform: { x: 180, y: 220, w: 520, h: 200, rotate: 0 },
+      payload: { text: "", fontSize: 42, color: "#2a2418" },
     };
     layers.push(layer);
     setDirty(true);
     beginTextEdit(layer.id);
+  }
+
+  function applyToolbarText(value) {
+    const layer = layers.find((l) => l.id === (editingTextId || selectedId));
+    if (!layer || layer.type !== "text") return;
+    layer.payload.text = String(value || "").slice(0, 4000);
+    setDirty(true);
+    if (editingTextId === layer.id) {
+      const area = layersRoot?.querySelector(".layer-text-input");
+      if (area && area.value !== layer.payload.text) area.value = layer.payload.text;
+    } else {
+      paint();
+    }
   }
 
   async function addPhoto(file) {
@@ -175,12 +231,14 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
       payload: { mediaId: media.id, r2Key: media.r2Key },
     };
     layers.push(layer);
-    select(layer.id);
+    selectedId = layer.id;
+    paint();
     setDirty(true);
   }
 
   function deleteSelected() {
     if (!selectedId) return;
+    if (editingTextId === selectedId) editingTextId = null;
     layers = layers.filter((l) => l.id !== selectedId);
     selectedId = null;
     paint();
@@ -206,6 +264,8 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
 
   function onPointerDown(event) {
     if (!active) return;
+    if (event.target.closest?.(".layer-text-input")) return;
+
     const handle = event.target.closest?.("[data-handle]");
     const layerEl = event.target.closest?.(".page-layer");
     if (handle && layerEl) {
@@ -214,7 +274,9 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
       const id = layerEl.dataset.layerId;
       const layer = layers.find((l) => l.id === id);
       if (!layer) return;
-      select(id);
+      if (editingTextId) commitTextEdit(layersRoot?.querySelector(".layer-text-input")?.value);
+      selectedId = id;
+      paint();
       const pt = clientToPage(event.clientX, event.clientY);
       pointer = {
         mode: handle.dataset.handle === "rot" ? "rotate" : "resize",
@@ -229,17 +291,15 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
     }
     if (layerEl) {
       const id = layerEl.dataset.layerId;
-      if (editingTextId && editingTextId === id) return;
-      if (event.target.closest?.(".layer-text.is-typing")) return;
+      if (editingTextId === id) return;
       event.preventDefault();
       const layer = layers.find((l) => l.id === id);
       if (!layer) return;
-      // Finish any other text edit first
       if (editingTextId && editingTextId !== id) {
-        const activeType = stageEl.querySelector(".layer-text.is-typing");
-        activeType?.blur();
+        commitTextEdit(layersRoot?.querySelector(".layer-text-input")?.value);
       }
-      select(id);
+      selectedId = id;
+      paint();
       const pt = clientToPage(event.clientX, event.clientY);
       pointer = {
         mode: "drag",
@@ -251,14 +311,17 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
       stageEl.setPointerCapture?.(event.pointerId);
       return;
     }
-    // click empty paper
     if (event.target === stageEl || event.target.classList?.contains("page-grain") || event.target.classList?.contains("page-layers")) {
-      select(null);
+      if (editingTextId) commitTextEdit(layersRoot?.querySelector(".layer-text-input")?.value);
+      else {
+        selectedId = null;
+        paint();
+      }
     }
   }
 
   function onPointerMove(event) {
-    if (!pointer) return;
+    if (!pointer || editingTextId) return;
     const layer = layers.find((l) => l.id === pointer.layerId);
     if (!layer) return;
     const pt = clientToPage(event.clientX, event.clientY);
@@ -304,6 +367,7 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
     const layer = layers.find((l) => l.id === layerEl.dataset.layerId);
     if (!layer || layer.type !== "text") return;
     event.preventDefault();
+    event.stopPropagation();
     beginTextEdit(layer.id);
   }
 
@@ -326,11 +390,20 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
 
   async function save() {
     if (!pageId) throw new Error("没有可保存的页面");
+    if (editingTextId) {
+      commitTextEdit(layersRoot?.querySelector(".layer-text-input")?.value);
+    }
     const content = {
       version: 1,
       coord: { ...PAGE_COORD },
       background: { paper: "ruled" },
-      layers: sortedLayers(),
+      layers: sortedLayers().map((l) => ({
+        ...l,
+        payload: {
+          ...l.payload,
+          text: l.type === "text" ? (l.payload.text || "写点什么…") : l.payload?.text,
+        },
+      })),
     };
     const data = await api(`/api/me/journal/pages/${encodeURIComponent(pageId)}`, {
       method: "PATCH",
@@ -340,19 +413,14 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
     layers = data.page.content.layers || [];
     setDirty(false);
     onSaved?.(data.page);
+    paint();
     return data.page;
   }
 
   return {
-    get active() {
-      return active;
-    },
-    get dirty() {
-      return dirty;
-    },
-    get pageId() {
-      return pageId;
-    },
+    get active() { return active; },
+    get dirty() { return dirty; },
+    get pageId() { return pageId; },
     attach(slotEl, page) {
       unbindStage();
       pageId = page?.id || null;
@@ -360,6 +428,7 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
       layersRoot = slotEl?.querySelector?.("[data-page-layers]") || null;
       layers = structuredClone(page?.content?.layers || []);
       selectedId = null;
+      editingTextId = null;
       setDirty(false);
       if (stageEl) bindStage();
       paint();
@@ -370,6 +439,7 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
       paint();
     },
     exit() {
+      if (editingTextId) commitTextEdit(layersRoot?.querySelector(".layer-text-input")?.value);
       active = false;
       selectedId = null;
       pointer = null;
@@ -379,6 +449,8 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
     },
     addText,
     addPhoto,
+    applyToolbarText,
+    beginTextEdit,
     deleteSelected,
     bringFront,
     sendBack,

@@ -1977,3 +1977,45 @@ a {
   -webkit-user-select: text;
   user-select: text;
 }
+
+
+.layer-text-input {
+  display: block;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4%;
+  border: 1.5px solid rgba(90, 70, 40, 0.45);
+  border-radius: 4px;
+  resize: none;
+  background: rgba(255, 252, 245, 0.92);
+  font-family: var(--note);
+  line-height: 1.25;
+  color: #2a2418;
+  outline: none;
+  pointer-events: auto;
+  -webkit-user-select: text;
+  user-select: text;
+  caret-color: #2a2418;
+  z-index: 5;
+  position: relative;
+}
+
+.page-layer.is-text-editing {
+  z-index: 50 !important;
+}
+
+.journal-text-draft {
+  flex: 1 1 100%;
+  min-height: 3.2rem;
+  margin-top: 0.2rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 12px;
+  border: 1.5px dashed rgba(90, 70, 40, 0.35);
+  background: rgba(255, 252, 245, 0.96);
+  font-family: var(--note);
+  font-size: 1rem;
+  color: var(--ink);
+  resize: vertical;
+}

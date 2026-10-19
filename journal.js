@@ -2,8 +2,8 @@
  * Interactive Journal: flip, add/delete pages, year filter, freeform edit mode.
  * Page layers use paper-relative coords (see content.coord), not viewport.
  */
-import { api, PAGE_COORD } from "./auth-client.js?v=12";
-import { createEditor } from "./journal-editor.js?v=12";
+import { api, PAGE_COORD } from "./auth-client.js?v=13";
+import { createEditor } from "./journal-editor.js?v=13";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const singleMq = window.matchMedia("(max-width: 640px)");
@@ -414,6 +414,12 @@ function ensureEditor() {
       if (idx >= 0) pages[idx] = page;
     },
     onError: showError,
+    onTextSync: (value, enabled) => {
+      const draft = $("#journal-text-draft");
+      if (!draft) return;
+      draft.hidden = !enabled;
+      if (enabled && document.activeElement !== draft) draft.value = value || "";
+    },
   });
   return editor;
 }
@@ -432,6 +438,17 @@ function bindUi() {
 
   $("#journal-tool-text")?.addEventListener("click", () => {
     ensureEditor().addText();
+    const draft = $("#journal-text-draft");
+    if (draft) {
+      draft.hidden = false;
+      setTimeout(() => draft.focus(), 40);
+    }
+  });
+  $("#journal-text-draft")?.addEventListener("input", (event) => {
+    ensureEditor().applyToolbarText(event.target.value);
+  });
+  $("#journal-text-draft")?.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
   });
   $("#journal-tool-photo")?.addEventListener("click", () => {
     const input = $("#journal-photo-input");
