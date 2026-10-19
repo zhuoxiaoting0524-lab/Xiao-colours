@@ -2,7 +2,7 @@
  * Freeform scrapbook editor for a single journal page stage.
  * Coordinates are paper-relative (PAGE_COORD 1000×1400).
  */
-import { api, uploadBytes, PAGE_COORD } from "./auth-client.js?v=13";
+import { api, uploadBytes, PAGE_COORD } from "./auth-client.js?v=14";
 
 function uid() {
   return `L${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
@@ -389,7 +389,7 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError, onTextSync })
   }
 
   async function save() {
-    if (!pageId) throw new Error("没有可保存的页面");
+    if (!pageId) throw new Error("没有可保存的页面：请先点 Edit，并选中一页纸（点一下左页或右页）");
     if (editingTextId) {
       commitTextEdit(layersRoot?.querySelector(".layer-text-input")?.value);
     }

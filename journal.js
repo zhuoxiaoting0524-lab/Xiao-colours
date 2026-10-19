@@ -2,8 +2,8 @@
  * Interactive Journal: flip, add/delete pages, year filter, freeform edit mode.
  * Page layers use paper-relative coords (see content.coord), not viewport.
  */
-import { api, PAGE_COORD } from "./auth-client.js?v=13";
-import { createEditor } from "./journal-editor.js?v=13";
+import { api, PAGE_COORD } from "./auth-client.js?v=14";
+import { createEditor } from "./journal-editor.js?v=14";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const singleMq = window.matchMedia("(max-width: 640px)");
@@ -19,6 +19,7 @@ let touchStartX = 0;
 let editMode = false;
 let editor = null;
 let focusSlot = "left"; // which page is being edited in a spread
+let editAttachedPageId = null;
 
 function $(sel, root = document) {
   return root.querySelector(sel);
@@ -193,6 +194,28 @@ function focusedSlotEl() {
   return $(`[data-page-slot="${focusSlot}"]`);
 }
 
+function attachEditorToFocus({ force = false } = {}) {
+  ensureEditor();
+  const slot = focusedSlotEl();
+  const page = focusedPage();
+  if (!slot || !page) return false;
+
+  document.querySelectorAll("[data-page-slot]").forEach((el) => {
+    el.classList.toggle("is-edit-focus", el === slot);
+  });
+
+  // Do not wipe in-progress edits by re-attaching the same page.
+  if (!force && editAttachedPageId === page.id && editor?.pageId === page.id) {
+    editor.enter();
+    return true;
+  }
+
+  editor.attach(slot, page);
+  editAttachedPageId = page.id;
+  editor.enter();
+  return true;
+}
+
 function paint() {
   clampCursor();
   const left = $('[data-page-slot="left"]');
@@ -209,28 +232,39 @@ function paint() {
   }
 
   if (isSingle()) {
-    renderPageInto(left, pages[cursor]);
-    renderPageInto(right, null);
-    left.hidden = false;
-    right.hidden = true;
     focusSlot = "left";
+    // While editing, keep editor DOM — do not rebuild the focused page from server snapshot.
+    if (!(editMode && editor && editAttachedPageId === pages[cursor]?.id)) {
+      renderPageInto(left, pages[cursor]);
+    } else {
+      left.dataset.pageId = pages[cursor].id;
+      left.classList.toggle("is-blank-slot", false);
+      left.hidden = false;
+    }
+    right.hidden = true;
+    left.hidden = false;
   } else {
-    renderPageInto(left, pages[cursor] || null);
-    renderPageInto(right, pages[cursor + 1] || null);
+    const leftPage = pages[cursor] || null;
+    const rightPage = pages[cursor + 1] || null;
+    const editingLeft = editMode && editor && focusSlot === "left" && editAttachedPageId === leftPage?.id;
+    const editingRight = editMode && editor && focusSlot === "right" && editAttachedPageId === rightPage?.id;
+
+    if (!editingLeft) renderPageInto(left, leftPage);
+    else {
+      left.dataset.pageId = leftPage.id;
+      left.classList.toggle("is-blank-slot", false);
+    }
+    if (!editingRight) renderPageInto(right, rightPage);
+    else {
+      right.dataset.pageId = rightPage?.id || "";
+      right.classList.toggle("is-blank-slot", !rightPage);
+    }
     left.hidden = false;
     right.hidden = false;
   }
 
-  if (editMode && editor) {
-    const slot = focusedSlotEl();
-    const page = focusedPage();
-    document.querySelectorAll("[data-page-slot]").forEach((el) => {
-      el.classList.toggle("is-edit-focus", el === slot);
-    });
-    if (slot && page) {
-      editor.attach(slot, page);
-      editor.enter();
-    }
+  if (editMode) {
+    attachEditorToFocus({ force: false });
   }
 
   updateNav();
@@ -373,11 +407,25 @@ async function deleteFocused() {
 }
 
 async function enterEdit() {
-  if (!total()) return;
+  if (!total()) {
+    showError(new Error("请先新增一页手帐，再开始编辑"));
+    return;
+  }
   const page = focusedPage();
-  if (!page) return;
+  if (!page) {
+    showError(new Error("当前没有可编辑的页面"));
+    return;
+  }
   editMode = true;
+  ensureEditor();
+  // Force attach once when entering edit.
+  editAttachedPageId = null;
   paint();
+  if (!attachEditorToFocus({ force: true })) {
+    editMode = false;
+    updateNav();
+    showError(new Error("无法进入编辑：页面未就绪"));
+  }
 }
 
 async function exitEdit({ saveFirst = false } = {}) {
@@ -393,6 +441,7 @@ async function exitEdit({ saveFirst = false } = {}) {
   }
   editor?.exit();
   editMode = false;
+  editAttachedPageId = null;
   paint();
 }
 
@@ -436,12 +485,21 @@ function bindUi() {
     else enterEdit().catch(showError);
   });
 
-  $("#journal-tool-text")?.addEventListener("click", () => {
-    ensureEditor().addText();
-    const draft = $("#journal-text-draft");
-    if (draft) {
-      draft.hidden = false;
-      setTimeout(() => draft.focus(), 40);
+  $("#journal-tool-text")?.addEventListener("click", async () => {
+    try {
+      if (!editMode) await enterEdit();
+      if (!attachEditorToFocus({ force: false })) {
+        showError(new Error("请先选中一页手帐纸，再添加文字"));
+        return;
+      }
+      ensureEditor().addText();
+      const draft = $("#journal-text-draft");
+      if (draft) {
+        draft.hidden = false;
+        setTimeout(() => draft.focus(), 40);
+      }
+    } catch (error) {
+      showError(error);
     }
   });
   $("#journal-text-draft")?.addEventListener("input", (event) => {
@@ -467,10 +525,22 @@ function bindUi() {
   $("#journal-tool-front")?.addEventListener("click", () => ensureEditor().bringFront());
   $("#journal-tool-back")?.addEventListener("click", () => ensureEditor().sendBack());
   $("#journal-tool-delete")?.addEventListener("click", () => ensureEditor().deleteSelected());
-  $("#journal-tool-save")?.addEventListener("click", () => {
-    ensureEditor().save().then(() => {
+  $("#journal-tool-save")?.addEventListener("click", async () => {
+    try {
+      if (!editMode) await enterEdit();
+      if (!attachEditorToFocus({ force: false })) {
+        throw new Error("请先打开一页手帐，再保存");
+      }
+      await ensureEditor().save();
+      // Merge saved content into local pages cache without full remount wipe.
+      const savedId = ensureEditor().pageId;
+      const data = await api(`/api/me/journal/pages/${encodeURIComponent(savedId)}`);
+      const idx = pages.findIndex((p) => p.id === savedId);
+      if (idx >= 0) pages[idx] = data.page;
       window.alert("已保存");
-    }).catch(showError);
+    } catch (error) {
+      showError(error);
+    }
   });
 
   binder()?.addEventListener("click", (event) => {
@@ -482,12 +552,23 @@ function bindUi() {
   // Pick which page of a spread to edit
   binder()?.addEventListener("pointerdown", (event) => {
     if (!editMode || isSingle()) return;
+    if (event.target.closest(".layer-text-input, .journal-edit-toolbar, #journal-text-draft")) return;
     const slot = event.target.closest("[data-page-slot]");
     if (!slot || !slot.dataset.pageId) return;
     const which = slot.dataset.pageSlot;
     if (which !== focusSlot) {
-      focusSlot = which;
-      paint();
+      // Switching page: ask to save dirty work first.
+      const switchPage = async () => {
+        if (editor?.dirty) {
+          const keep = window.confirm("换页前保存当前页的修改？\n确定=保存，取消=丢弃");
+          if (keep) await editor.save();
+        }
+        focusSlot = which;
+        editAttachedPageId = null;
+        paint();
+        attachEditorToFocus({ force: true });
+      };
+      switchPage().catch(showError);
     }
   });
 
