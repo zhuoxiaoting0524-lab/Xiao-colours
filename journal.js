@@ -2,8 +2,8 @@
  * Interactive Journal: flip, add/delete pages, year filter, freeform edit mode.
  * Page layers use paper-relative coords (see content.coord), not viewport.
  */
-import { api, PAGE_COORD } from "./auth-client.js";
-import { createEditor } from "./journal-editor.js";
+import { api, PAGE_COORD } from "./auth-client.js?v=12";
+import { createEditor } from "./journal-editor.js?v=12";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const singleMq = window.matchMedia("(max-width: 640px)");

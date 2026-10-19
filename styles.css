@@ -1967,3 +1967,13 @@ a {
     transform: translateX(50%);
   }
 }
+
+
+.layer-text.is-typing {
+  outline: 1.5px dashed rgba(90, 70, 40, 0.45);
+  outline-offset: 2px;
+  cursor: text;
+  background: rgba(255, 252, 245, 0.55);
+  -webkit-user-select: text;
+  user-select: text;
+}

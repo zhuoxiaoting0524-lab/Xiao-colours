@@ -2,7 +2,7 @@
  * Freeform scrapbook editor for a single journal page stage.
  * Coordinates are paper-relative (PAGE_COORD 1000×1400).
  */
-import { api, uploadBytes, PAGE_COORD } from "./auth-client.js";
+import { api, uploadBytes, PAGE_COORD } from "./auth-client.js?v=12";
 
 function uid() {
   return `L${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
@@ -21,6 +21,7 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
   let selectedId = null;
   let dirty = false;
   let pointer = null; // { mode, layerId, startX, startY, orig }
+  let editingTextId = null;
 
   function setDirty(v) {
     dirty = v;
@@ -61,12 +62,39 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
     if (layer.type === "text") {
       const text = document.createElement("div");
       text.className = "layer-text";
-      text.textContent = layer.payload?.text || "文字";
-      text.style.fontSize = `${(Number(layer.payload?.fontSize) || 36) / PAGE_COORD.height * 100}%`;
-      // Use px relative to stage height for readable text
+      text.textContent = layer.payload?.text || "写点什么…";
       const stageH = stageEl.getBoundingClientRect().height || 400;
       text.style.fontSize = `${((Number(layer.payload?.fontSize) || 36) / PAGE_COORD.height) * stageH}px`;
       text.style.color = layer.payload?.color || "#2a2418";
+      if (editingTextId === layer.id) {
+        text.contentEditable = "true";
+        text.spellcheck = false;
+        text.classList.add("is-typing");
+        text.addEventListener("pointerdown", (e) => e.stopPropagation());
+        text.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            text.blur();
+          }
+          // Allow Enter for newlines; stop editor shortcuts
+          e.stopPropagation();
+        });
+        text.addEventListener("blur", () => {
+          const value = (text.innerText || "").replace(/\u00a0/g, " ").trimEnd();
+          layer.payload.text = (value || "写点什么…").slice(0, 4000);
+          editingTextId = null;
+          setDirty(true);
+          paint();
+        });
+        queueMicrotask(() => {
+          text.focus();
+          const range = document.createRange();
+          range.selectNodeContents(text);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        });
+      }
       el.append(text);
     } else if (layer.type === "photo") {
       const img = document.createElement("img");
@@ -110,6 +138,12 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
     return layers.find((l) => l.id === selectedId) || null;
   }
 
+  function beginTextEdit(layerId) {
+    editingTextId = layerId;
+    select(layerId);
+    paint();
+  }
+
   function addText() {
     const layer = {
       id: uid(),
@@ -119,8 +153,8 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
       payload: { text: "写点什么…", fontSize: 42, color: "#2a2418" },
     };
     layers.push(layer);
-    select(layer.id);
     setDirty(true);
+    beginTextEdit(layer.id);
   }
 
   async function addPhoto(file) {
@@ -194,10 +228,17 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
       return;
     }
     if (layerEl) {
-      event.preventDefault();
       const id = layerEl.dataset.layerId;
+      if (editingTextId && editingTextId === id) return;
+      if (event.target.closest?.(".layer-text.is-typing")) return;
+      event.preventDefault();
       const layer = layers.find((l) => l.id === id);
       if (!layer) return;
+      // Finish any other text edit first
+      if (editingTextId && editingTextId !== id) {
+        const activeType = stageEl.querySelector(".layer-text.is-typing");
+        activeType?.blur();
+      }
       select(id);
       const pt = clientToPage(event.clientX, event.clientY);
       pointer = {
@@ -262,11 +303,8 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
     if (!layerEl) return;
     const layer = layers.find((l) => l.id === layerEl.dataset.layerId);
     if (!layer || layer.type !== "text") return;
-    const next = window.prompt("编辑文字", layer.payload.text || "");
-    if (next === null) return;
-    layer.payload.text = next.slice(0, 4000);
-    paint();
-    setDirty(true);
+    event.preventDefault();
+    beginTextEdit(layer.id);
   }
 
   function bindStage() {
@@ -335,6 +373,7 @@ export function createEditor({ getCsrf, onDirty, onSaved, onError }) {
       active = false;
       selectedId = null;
       pointer = null;
+      editingTextId = null;
       stageEl?.classList.remove("is-editing-stage");
       paint();
     },
