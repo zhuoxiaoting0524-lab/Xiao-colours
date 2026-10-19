@@ -18,9 +18,9 @@
       href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Gaegu:wght@400;700&family=Ma+Shan+Zheng&family=Patrick+Hand&family=Rock+Salt&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=14" />
+    <link rel="stylesheet" href="./styles.css?v=15" />
     <link rel="stylesheet" href="./auth.css?v=3" />
-    <script type="module" src="./script.js?v=14"></script>
+    <script type="module" src="./script.js?v=15"></script>
   </head>
   <body>
     <div class="paper-noise" aria-hidden="true"></div>
@@ -227,43 +227,108 @@
             <span>Gallery</span>
           </div>
         </header>
-        <div class="space-empty" data-empty-for="gallery" hidden>
-          <p>你的 Gallery 还是空白的。</p>
-          <p>照片上传将在后续阶段接入 R2。</p>
-        </div>
+        <main class="gallery-shell">
+          <header class="gallery-intro">
+            <div>
+              <p class="gallery-kicker">A quiet archive of little moments</p>
+              <h2>Pieces of life,<br /><em>kept softly.</em></h2>
+            </div>
+            <div class="gallery-intro-note">
+              <p>像翻阅一本没有固定顺序的相册，慢慢看，也可以只停留在喜欢的一张。</p>
+              <span>当前为版式样片，不代表 xiao 的私人照片。</span>
+            </div>
+          </header>
 
-        <button class="page-nav page-nav-prev" type="button" aria-label="上一组" disabled>
-          <svg viewBox="0 0 24 40" aria-hidden="true"><path d="M16.4 5.8 6.2 20.2 16.2 34.4" fill="none" /></svg>
-        </button>
-        <button class="page-nav page-nav-next" type="button" aria-label="下一组" disabled>
-          <svg viewBox="0 0 24 40" aria-hidden="true"><path d="M7.6 5.8 17.8 20.1 7.8 34.4" fill="none" /></svg>
-        </button>
+          <div class="gallery-toolbar" aria-label="照片筛选">
+            <div class="gallery-filters" role="group" aria-label="按主题筛选">
+              <button type="button" class="gallery-filter is-active" data-gallery-filter="all" aria-pressed="true">All</button>
+              <button type="button" class="gallery-filter" data-gallery-filter="places" aria-pressed="false">Places</button>
+              <button type="button" class="gallery-filter" data-gallery-filter="nature" aria-pressed="false">Nature</button>
+              <button type="button" class="gallery-filter" data-gallery-filter="moments" aria-pressed="false">Moments</button>
+            </div>
+            <p class="gallery-count" aria-live="polite"><span id="gallery-count">10</span> little memories</p>
+          </div>
 
-        <div class="gallery-strip" aria-label="照片横排">
-          <figure class="print print-1 ratio-portrait">
-            <img src="./demo/photos/coast.jpg" alt="演示照片 01" width="350" height="450" loading="lazy" />
-          </figure>
-          <figure class="print print-2 ratio-landscape">
-            <img src="./demo/photos/street.jpg" alt="演示照片 02" width="400" height="300" loading="lazy" />
-            <figcaption>Shot #03 · DEMO</figcaption>
-          </figure>
-          <figure class="print print-3 ratio-portrait">
-            <img src="./demo/photos/bloom.jpg" alt="演示照片 03" width="350" height="450" loading="lazy" />
-          </figure>
-          <figure class="print print-4 ratio-square">
-            <img src="./demo/photos/window.jpg" alt="演示照片 04" width="350" height="400" loading="lazy" />
-          </figure>
-          <figure class="print print-5 ratio-landscape">
-            <img src="./demo/photos/night.jpg" alt="演示照片 05" width="400" height="300" loading="lazy" />
-          </figure>
-          <figure class="print print-6 ratio-portrait">
-            <img src="./demo/photos/polaroid1.jpg" alt="演示照片 06" width="300" height="360" loading="lazy" />
-          </figure>
-        </div>
+          <div class="gallery-grid" id="gallery-grid" aria-label="照片墙">
+            <button class="gallery-card gallery-card-tall" type="button" data-gallery-category="places" data-gallery-src="./demo/photos/coast.jpg" data-gallery-title="Coast · Demo 01" data-gallery-note="版式样片，不代表 xiao 的私人内容。">
+              <span class="gallery-photo"><img src="./demo/photos/coast.jpg" alt="海岸风景版式样片" width="700" height="900" loading="eager" /></span>
+              <span class="gallery-caption"><b>Coast</b><small>somewhere by the sea</small></span>
+              <i>DEMO</i>
+            </button>
 
-        <div class="gallery-dots" aria-hidden="true">
-          <i class="is-active"></i><i></i><i></i><i></i><i></i><i></i>
-        </div>
+            <button class="gallery-card gallery-card-wide" type="button" data-gallery-category="places" data-gallery-src="./demo/photos/street.jpg" data-gallery-title="Street · Demo 02" data-gallery-note="版式样片，不代表 xiao 的私人内容。">
+              <span class="gallery-photo"><img src="./demo/photos/street.jpg" alt="街道风景版式样片" width="800" height="600" loading="lazy" /></span>
+              <span class="gallery-caption"><b>On the way</b><small>an ordinary afternoon</small></span>
+              <i>DEMO</i>
+            </button>
+
+            <button class="gallery-card gallery-card-note" type="button" data-gallery-category="moments" data-gallery-src="./demo/photos/coffee.jpg" data-gallery-title="Coffee · Demo 03" data-gallery-note="版式样片，不代表 xiao 的私人内容。">
+              <span class="gallery-photo"><img src="./demo/photos/coffee.jpg" alt="咖啡与桌面版式样片" width="700" height="700" loading="lazy" /></span>
+              <span class="gallery-caption"><b>Slow morning</b><small>coffee, paper, sunlight</small></span>
+              <i>DEMO</i>
+            </button>
+
+            <button class="gallery-card gallery-card-square" type="button" data-gallery-category="nature" data-gallery-src="./demo/photos/bloom.jpg" data-gallery-title="Bloom · Demo 04" data-gallery-note="版式样片，不代表 xiao 的私人内容。">
+              <span class="gallery-photo"><img src="./demo/photos/bloom.jpg" alt="花朵版式样片" width="700" height="700" loading="lazy" /></span>
+              <span class="gallery-caption"><b>In bloom</b><small>tiny signs of spring</small></span>
+              <i>DEMO</i>
+            </button>
+
+            <button class="gallery-card gallery-card-window" type="button" data-gallery-category="moments" data-gallery-src="./demo/photos/window.jpg" data-gallery-title="Window · Demo 05" data-gallery-note="版式样片，不代表 xiao 的私人内容。">
+              <span class="gallery-photo"><img src="./demo/photos/window.jpg" alt="窗边光影版式样片" width="700" height="820" loading="lazy" /></span>
+              <span class="gallery-caption"><b>Window light</b><small>a room holding its breath</small></span>
+              <i>DEMO</i>
+            </button>
+
+            <button class="gallery-card gallery-card-night" type="button" data-gallery-category="places" data-gallery-src="./demo/photos/night.jpg" data-gallery-title="Night · Demo 06" data-gallery-note="版式样片，不代表 xiao 的私人内容。">
+              <span class="gallery-photo"><img src="./demo/photos/night.jpg" alt="夜色版式样片" width="800" height="600" loading="lazy" /></span>
+              <span class="gallery-caption"><b>After dark</b><small>the city turns quiet</small></span>
+              <i>DEMO</i>
+            </button>
+
+            <button class="gallery-card gallery-card-polaroid" type="button" data-gallery-category="moments" data-gallery-src="./demo/photos/polaroid1.jpg" data-gallery-title="Snapshot · Demo 07" data-gallery-note="版式样片，不代表 xiao 的私人内容。">
+              <span class="gallery-photo"><img src="./demo/photos/polaroid1.jpg" alt="拍立得版式样片" width="600" height="720" loading="lazy" /></span>
+              <span class="gallery-caption"><b>Snapshot</b><small>keep this one</small></span>
+              <i>DEMO</i>
+            </button>
+
+            <button class="gallery-card gallery-card-meadow" type="button" data-gallery-category="nature" data-gallery-src="./demo/photos/meadow.jpg" data-gallery-title="Meadow · Demo 08" data-gallery-note="版式样片，不代表 xiao 的私人内容。">
+              <span class="gallery-photo"><img src="./demo/photos/meadow.jpg" alt="草地版式样片" width="800" height="600" loading="lazy" /></span>
+              <span class="gallery-caption"><b>Soft green</b><small>the long way home</small></span>
+              <i>DEMO</i>
+            </button>
+
+            <button class="gallery-card gallery-card-small" type="button" data-gallery-category="moments" data-gallery-src="./demo/photos/polaroid2.jpg" data-gallery-title="Small thing · Demo 09" data-gallery-note="版式样片，不代表 xiao 的私人内容。">
+              <span class="gallery-photo"><img src="./demo/photos/polaroid2.jpg" alt="生活片段版式样片" width="600" height="720" loading="lazy" /></span>
+              <span class="gallery-caption"><b>Small thing</b><small>worth remembering</small></span>
+              <i>DEMO</i>
+            </button>
+
+            <button class="gallery-card gallery-card-last" type="button" data-gallery-category="nature" data-gallery-src="./demo/photos/field.jpg" data-gallery-title="Field · Demo 10" data-gallery-note="版式样片，不代表 xiao 的私人内容。">
+              <span class="gallery-photo"><img src="./demo/photos/field.jpg" alt="田野版式样片" width="800" height="600" loading="lazy" /></span>
+              <span class="gallery-caption"><b>Open field</b><small>air, light, and time</small></span>
+              <i>DEMO</i>
+            </button>
+          </div>
+
+          <div class="gallery-no-results" id="gallery-no-results" hidden>
+            <span aria-hidden="true">✦</span>
+            <p>这一页暂时没有照片。</p>
+          </div>
+        </main>
+
+        <dialog class="gallery-lightbox" id="gallery-lightbox" aria-labelledby="gallery-lightbox-title">
+          <form method="dialog"><button class="gallery-lightbox-close" value="close" aria-label="关闭照片">×</button></form>
+          <button class="gallery-lightbox-nav is-prev" type="button" data-gallery-prev aria-label="上一张">←</button>
+          <figure>
+            <div class="gallery-lightbox-photo"><img id="gallery-lightbox-image" alt="" /></div>
+            <figcaption>
+              <p id="gallery-lightbox-title"></p>
+              <span id="gallery-lightbox-note"></span>
+            </figcaption>
+          </figure>
+          <button class="gallery-lightbox-nav is-next" type="button" data-gallery-next aria-label="下一张">→</button>
+        </dialog>
       </section>
 
       <!-- ========== COLLECTIONS ========== -->

@@ -1,5 +1,6 @@
 import { api, getMe, loginUrlForView, PRIVATE_VIEWS } from "./auth-client.js";
 import { mountJournal } from "./journal.js?v=14";
+import { mountGallery } from "./gallery.js?v=15";
 
 /**
  * Unified site session with explicit auth status to prevent redirect loops.
@@ -32,6 +33,9 @@ function setView(name) {
       mountJournal(authState).catch((error) => {
         showAuthError(error?.message || "无法加载 Journal");
       });
+    }
+    if (name === "gallery" && authState.status === "authenticated") {
+      mountGallery();
     }
   };
 
@@ -140,18 +144,13 @@ function renderAuthBar() {
 function applyEmptyStates() {
   const loggedIn = authState.status === "authenticated";
 
-  document.querySelectorAll('[data-empty-for="gallery"], [data-empty-for="collections"]').forEach((node) => {
+  document.querySelectorAll('[data-empty-for="collections"]').forEach((node) => {
     node.hidden = !loggedIn;
   });
 
-  document.querySelectorAll(".view-gallery .gallery-strip, .view-gallery .gallery-dots, .view-collections .desktop")
-    .forEach((node) => {
-      node.hidden = loggedIn;
-    });
-  document.querySelectorAll(".view-gallery .page-nav")
-    .forEach((node) => {
-      node.hidden = loggedIn;
-    });
+  document.querySelectorAll(".view-collections .desktop").forEach((node) => {
+    node.hidden = loggedIn;
+  });
 
   const journalBinder = document.querySelector(".view-journal .binder");
   const journalRail = document.querySelector(".view-journal .year-rail");
