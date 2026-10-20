@@ -58,7 +58,14 @@ export function safeNextPath(raw, fallback = "./index.html") {
   return value;
 }
 
-export const PRIVATE_VIEWS = Object.freeze(["journal", "gallery", "collections"]);
+export const PRIVATE_VIEWS = Object.freeze([
+  "notes",
+  "days",
+  "footprints",
+  "journal",
+  "gallery",
+  "collections",
+]);
 
 export function loginUrlForView(view) {
   const next = PRIVATE_VIEWS.includes(view)

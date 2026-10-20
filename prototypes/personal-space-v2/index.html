@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow"><meta name="description" content="XiaoColour 私人空间视觉原型">
+  <title>XiaoColour — Personal Space Preview</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.15.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body data-route="home">
+  <div class="preview-badge">LOCAL PROTOTYPE · 不连接正式数据</div>
+  <header class="topbar">
+    <button class="brand" data-route="home"><b>Xiao</b><i>Colour</i></button>
+    <nav><button data-route="notes">Little Notes</button><button data-route="days">My Days</button><button data-route="footprints">Footprints</button></nav>
+    <div class="top-actions"><a href="../../global.html" target="_blank">Global Pulse ↗</a><button id="account" aria-expanded="false">xiao</button></div>
+    <div class="account-pop" id="account-pop" hidden><b>账户区域保持原样</b><span>原型不会读取或修改登录信息。</span></div>
+  </header>
+
+  <main id="app" tabindex="-1">
+    <section class="screen home active" data-screen="home">
+      <div class="glow one"></div><div class="glow two"></div><div class="orbit"></div>
+      <div class="hero"><p class="overline">PRIVATE SPACE · 2026</p><h1><b>Xiao</b><i>Colour</i></h1><p>A clear space for notes, days, and places.</p></div>
+      <div class="portals">
+        <button class="portal p-notes" data-route="notes"><small>01</small><span class="icon note-icon"><i></i><i></i><i></i></span><strong>Little Notes<em>私人便签墙</em></strong><b>↗</b></button>
+        <button class="portal p-days" data-route="days"><small>02</small><span class="icon day-icon">20</span><strong>My Days<em>私人生活日历</em></strong><b>↗</b></button>
+        <button class="portal p-map" data-route="footprints"><small>03</small><span class="icon map-icon"><i></i><i></i></span><strong>Footprints<em>私人足迹地图</em></strong><b>↗</b></button>
+      </div>
+    </section>
+
+    <section class="screen module" data-screen="notes">
+      <header class="module-head"><button class="back" data-route="home">← Home</button><div><span><p class="overline">01 · PRIVATE NOTES</p><h2>Little Notes</h2></span><p>把此刻需要记住的事情，轻轻放在这里。</p></div></header>
+      <div class="toolbar"><label class="search">⌕ <input id="note-search" type="search" placeholder="搜索便签"></label><span class="counter"><b id="note-count">0</b> notes</span><button class="primary" id="add-note">＋ 新增便签</button></div>
+      <div class="note-wall" id="note-wall"></div><p class="empty" id="note-empty" hidden>没有找到相关便签。</p>
+    </section>
+
+    <section class="screen module" data-screen="days">
+      <header class="module-head"><button class="back" data-route="home">← Home</button><div><span><p class="overline">02 · LIFE PLANNER</p><h2>My Days</h2></span><span class="switch"><button class="active" data-view="week">Week</button><button data-view="month">Month</button></span></div></header>
+      <div class="calendar-layout">
+        <section class="calendar-main">
+          <div class="calendar-title"><span><p>OCTOBER</p><h3>20 — 26, 2026</h3></span><span><button>←</button><button>→</button></span></div>
+          <div class="week" id="week"></div><div class="month" id="month" hidden></div>
+          <div class="today-head"><span><p id="day-label">TODAY · TUE</p><h3 id="day-title">October 20</h3></span><button class="primary" id="add-task">＋ Add task</button></div>
+          <div class="tasks" id="tasks"></div>
+        </section>
+        <aside class="upcoming"><p class="overline">COMING UP</p><h3>Important dates</h3><div class="dates"><article><time>24 OCT</time><b>Project review<small>4 days</small></b></article><article><time>02 NOV</time><b>Quiet weekend<small>13 days</small></b></article><article><time>18 NOV</time><b>Travel day<small>29 days</small></b></article></div><button class="under">＋ Add important date</button><div class="progress"><span>THIS WEEK <b>5 / 8</b></span><i><u></u></i><small>完成一点，也留一点呼吸。</small></div></aside>
+      </div>
+    </section>
+
+    <section class="screen module map-module" data-screen="footprints">
+      <header class="module-head compact"><button class="back" data-route="home">← Home</button><div><span><p class="overline">03 · PERSONAL MAP</p><h2>Footprints</h2></span><span class="legend"><i></i>去过 <i></i>想去</span></div></header>
+      <div class="map-layout">
+        <aside class="place-panel"><label class="search">⌕ <input id="place-search" type="search" placeholder="搜索地点"></label><div class="filters"><button class="active" data-filter="all">全部</button><button data-filter="visited">去过</button><button data-filter="wish">想去</button></div><div id="place-list" class="place-list"></div><button class="primary full" id="add-place">＋ 添加足迹</button></aside>
+        <div class="map-stage" id="map-stage">
+          <div class="real-map" id="footprints-map" aria-label="真实可交互世界地图"></div>
+          <div class="map-status" id="map-loading"><span></span><b>正在加载真实地图</b><small>OpenFreeMap · OpenStreetMap</small></div>
+          <div class="map-status map-error" id="map-error" hidden><b>地图暂时无法加载</b><small id="map-error-message">请检查网络连接后重试。</small><button type="button" id="retry-map">重新加载地图</button></div>
+          <button class="world-view" id="world-view" type="button">世界视角</button>
+          <span class="map-help">拖动与滚轮缩放 · 点击标记查看详情</span>
+          <article class="place-detail" id="place-detail" hidden></article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="note-dialog" class="dialog"><form id="note-form"><header><span><p class="overline">LITTLE NOTE</p><h3 id="note-dialog-title">打开便签</h3></span><button type="button" data-close="note-dialog">×</button></header><input id="note-title" class="large-input" maxlength="70" placeholder="便签标题"><textarea id="note-body" rows="8" maxlength="800" placeholder="写下一点什么…"></textarea><div class="colors"><button class="active" type="button" data-color="ivory"></button><button type="button" data-color="sage"></button><button type="button" data-color="blue"></button><button type="button" data-color="rose"></button></div><p class="hint" id="note-meta"></p><footer><button class="danger" id="delete-note" type="button">删除</button><span></span><button type="button" data-close="note-dialog">取消</button><button class="primary" type="submit">保存</button></footer></form></dialog>
+  <dialog id="task-dialog" class="dialog small"><form id="task-form"><header><span><p class="overline">MY DAYS</p><h3 id="task-dialog-title">编辑任务</h3></span><button type="button" data-close="task-dialog">×</button></header><label>任务<input id="task-title" required maxlength="80"></label><label>时间<input id="task-time" type="time"></label><label>标签<select id="task-tag"><option>Personal</option><option>Study</option><option>Health</option><option>Home</option></select></label><footer><button class="danger" id="delete-task" type="button">删除</button><span></span><button type="button" data-close="task-dialog">取消</button><button class="primary" type="submit">保存</button></footer></form></dialog>
+  <dialog id="place-dialog" class="dialog small"><form id="place-form"><header><span><p class="overline">FOOTPRINTS</p><h3>添加足迹</h3></span><button type="button" data-close="place-dialog">×</button></header><label>地点<select id="place-name"><option>Reykjavík</option><option>Seoul</option><option>Marrakech</option></select></label><label>状态<select id="place-status"><option value="wish">想去</option><option value="visited">去过</option></select></label><label>一句记录<textarea id="place-note" rows="4" maxlength="180"></textarea></label><footer><span></span><span></span><button type="button" data-close="place-dialog">取消</button><button class="primary" type="submit">添加</button></footer></form></dialog>
+  <script type="module" src="./app.js"></script>
+</body></html>
