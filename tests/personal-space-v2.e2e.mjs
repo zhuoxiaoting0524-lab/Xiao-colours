@@ -110,6 +110,45 @@ const aliceNote = await request("/api/me/notes", {
 });
 assert(aliceNote.status === 201 && aliceNote.data.note?.pinned, "Alice creates pinned note");
 
+const updatedAliceNote = await request(`/api/me/notes/${aliceNote.data.note.id}`, {
+  method: "PATCH",
+  cookie: alice.cookie,
+  csrfToken: alice.csrf,
+  body: {
+    title: "Alice private note updated",
+    body: "Alice can edit and save this note.",
+    color: "blue",
+    pinned: false,
+  },
+});
+assert(
+  updatedAliceNote.response.ok
+    && updatedAliceNote.data.note?.title === "Alice private note updated"
+    && updatedAliceNote.data.note?.color === "blue"
+    && !updatedAliceNote.data.note?.pinned,
+  "Alice edits note content and color",
+);
+
+const disposableNote = await request("/api/me/notes", {
+  method: "POST",
+  cookie: alice.cookie,
+  csrfToken: alice.csrf,
+  body: { title: "Disposable note", body: "Delete after testing.", color: "rose" },
+});
+assert(disposableNote.status === 201, "Alice creates a disposable note");
+const deleteDisposableNote = await request(`/api/me/notes/${disposableNote.data.note.id}`, {
+  method: "DELETE",
+  cookie: alice.cookie,
+  csrfToken: alice.csrf,
+  body: {},
+});
+assert(deleteDisposableNote.response.ok, "Alice deletes own note");
+const afterDeleteNotes = await request("/api/me/notes", { cookie: alice.cookie });
+assert(
+  !afterDeleteNotes.data.notes.some((note) => note.id === disposableNote.data.note.id),
+  "deleted note no longer appears",
+);
+
 const bobNote = await request("/api/me/notes", {
   method: "POST",
   cookie: bob.cookie,
@@ -119,7 +158,12 @@ const bobNote = await request("/api/me/notes", {
 assert(bobNote.status === 201, "Bob creates own note");
 
 const aliceNotes = await request("/api/me/notes?search=Alice&sort=updated_desc", { cookie: alice.cookie });
-assert(aliceNotes.data.notes.length === 1 && aliceNotes.data.notes[0].id === aliceNote.data.note.id, "Alice search returns only own note");
+assert(
+  aliceNotes.data.notes.length === 1
+    && aliceNotes.data.notes[0].id === aliceNote.data.note.id
+    && aliceNotes.data.notes[0].color === "blue",
+  "Alice search returns only own note with saved color",
+);
 const bobNotes = await request("/api/me/notes", { cookie: bob.cookie });
 assert(bobNotes.data.notes.length === 1 && bobNotes.data.notes[0].id === bobNote.data.note.id, "Bob list excludes Alice note");
 
@@ -191,7 +235,10 @@ const relogin = await request("/api/auth/login", {
 assert(relogin.response.ok, "Alice logs in again");
 const persistedNotes = await request("/api/me/notes", { cookie: relogin.cookie });
 const persistedTasks = await request("/api/me/days/tasks?from=2026-10-20&to=2027-01-19", { cookie: relogin.cookie });
-assert(persistedNotes.data.notes.some((note) => note.id === aliceNote.data.note.id), "note persists after relogin");
+assert(
+  persistedNotes.data.notes.some((note) => note.id === aliceNote.data.note.id && note.color === "blue"),
+  "edited note and selected color persist after relogin",
+);
 assert(persistedTasks.data.tasks.length === 12, "tasks persist after relogin");
 
 const unauthNotes = await request("/api/me/notes");

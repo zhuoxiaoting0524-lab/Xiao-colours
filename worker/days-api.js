@@ -339,6 +339,13 @@ export async function handleDaysApi(request, env) {
       : await handleImportantDates(request, db, session, path);
     return response;
   } catch (error) {
+    if (/no such table: (day_tasks|important_dates)/.test(String(error?.message || ""))) {
+      return errorJson(
+        503,
+        "schema_missing",
+        "My Days 数据表尚未初始化。请由管理员完成第二阶段数据库迁移后重试。",
+      );
+    }
     const status = error.status || (error.code === "db_unavailable" ? 503 : 400);
     if (error.code === "unauthorized") return errorJson(401, error.code, error.message);
     if (error.code === "csrf" || error.code === "csrf_origin") {

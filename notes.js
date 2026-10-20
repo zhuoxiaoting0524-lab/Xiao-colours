@@ -78,8 +78,13 @@ async function loadNotes() {
 }
 
 function syncColors() {
-  $$('[data-note-color]').forEach((button) => {
-    button.classList.toggle("active", button.dataset.noteColor === selectedColor);
+  const dialog = $("#note-dialog");
+  if (dialog) dialog.dataset.noteColor = selectedColor;
+  $$('.colors button[data-note-color]').forEach((button) => {
+    const selected = button.dataset.noteColor === selectedColor;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-pressed", String(selected));
+    button.textContent = selected ? "✓" : "";
   });
 }
 
@@ -168,7 +173,7 @@ export async function mountNotes(authState, options = {}) {
       searchTimer = window.setTimeout(loadNotes, 260);
     });
     $("#note-sort").addEventListener("change", loadNotes);
-    $$('[data-note-color]').forEach((button) => button.addEventListener("click", () => {
+    $$('.colors button[data-note-color]').forEach((button) => button.addEventListener("click", () => {
       selectedColor = button.dataset.noteColor;
       syncColors();
     }));

@@ -53,6 +53,19 @@ body>.paper-noise,body>.auth-bar,body>.svg-defs,body>#app{display:none!important
 .note{position:relative}
 .note-pin{position:absolute;right:17px;top:15px;color:var(--muted);font-size:12px}
 .note-options{display:flex;justify-content:space-between;align-items:center}
+.colors button{position:relative;width:34px;height:34px;border:1px solid rgba(23,25,22,.25);box-shadow:inset 0 0 0 3px rgba(255,255,255,.4);color:#293029;font-size:14px;font-weight:750;transition:transform .16s ease,outline-color .16s ease}
+.colors [data-note-color=ivory]{background:#fff1d8}
+.colors [data-note-color=sage]{background:#cddfc7}
+.colors [data-note-color=blue]{background:#cfe2ea}
+.colors [data-note-color=rose]{background:#efd0d8}
+.colors button:hover{transform:translateY(-2px)}
+.colors button.active{outline:2px solid var(--ink);outline-offset:3px}
+#note-dialog form{transition:background-color .2s ease}
+#note-dialog[data-note-color=ivory] form{background:#fff8e9}
+#note-dialog[data-note-color=sage] form{background:#e2ecde}
+#note-dialog[data-note-color=blue] form{background:#e0edf2}
+#note-dialog[data-note-color=rose] form{background:#f5e2e7}
+#note-dialog input,#note-dialog textarea{transition:background-color .2s ease}
 .pin-toggle{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;gap:7px!important;margin:0!important}
 .pin-toggle input{width:auto!important}
 .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
