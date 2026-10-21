@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XiaoColour｜Personal Workspace Preview</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Gaegu:wght@400;700&family=Ma+Shan+Zheng&family=Patrick+Hand&family=Rock+Salt&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="./preview.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+
+    <!-- Public Welcome (kept, then enter mock workspace) -->
+    <section class="welcome" id="welcome-view">
+      <p class="welcome-kicker">Preview only · 不覆盖正式网站</p>
+      <h1 class="welcome-brand">XiaoColour</h1>
+      <p class="welcome-lead">登录后的私人工作区布局预览</p>
+      <button type="button" class="welcome-cta" id="enter-workspace">进入 Personal Workspace</button>
+      <p class="welcome-note">左侧导航 + 右侧工作区 · 可切换模块 · 含手机抽屉</p>
+    </section>
+
+    <!-- Personal Workspace shell -->
+    <div class="shell" id="workspace" hidden>
+      <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
+
+      <aside class="sidebar" id="sidebar" aria-label="模块导航">
+        <div class="sidebar-top">
+          <button type="button" class="sidebar-close" id="sidebar-close" aria-label="关闭导航">×</button>
+          <p class="brand">XiaoColour</p>
+          <p class="brand-sub">Personal Workspace</p>
+        </div>
+
+        <nav class="nav-main">
+          <button type="button" class="nav-item is-active" data-panel="overview">
+            <span class="nav-mark" aria-hidden="true"></span>
+            Overview
+          </button>
+          <button type="button" class="nav-item" data-panel="notes">
+            <span class="nav-mark" aria-hidden="true"></span>
+            Little Notes
+          </button>
+          <button type="button" class="nav-item" data-panel="days">
+            <span class="nav-mark" aria-hidden="true"></span>
+            My Days
+          </button>
+          <button type="button" class="nav-item" data-panel="footprints">
+            <span class="nav-mark" aria-hidden="true"></span>
+            Footprints
+          </button>
+        </nav>
+
+        <div class="nav-footer">
+          <a class="nav-link" href="/global.html" target="_blank" rel="noopener">Global Pulse</a>
+          <button type="button" class="nav-link" id="btn-settings">账户设置</button>
+          <button type="button" class="nav-link" id="btn-logout">退出登录</button>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <button type="button" class="menu-btn" id="menu-btn" aria-label="打开导航">☰</button>
+          <div class="topbar-title">
+            <h2 id="panel-title">Overview</h2>
+            <p id="panel-desc">今天的生活首页</p>
+          </div>
+          <div class="topbar-user">
+            <span>Admin</span>
+            <button type="button" class="ghost-btn" id="back-welcome">返回 Welcome</button>
+          </div>
+        </header>
+
+        <main class="main" id="main">
+          <!-- OVERVIEW -->
+          <section class="panel is-active" id="panel-overview" data-panel="overview">
+            <div class="overview-grid">
+              <article class="block block-date">
+                <p class="block-label">Today</p>
+                <h3 id="overview-date">—</h3>
+                <p class="block-soft" id="overview-greet">准备开始这一天</p>
+              </article>
+
+              <article class="block">
+                <div class="block-head">
+                  <h3>今日待办</h3>
+                  <button type="button" class="text-btn" data-go="days">打开 My Days</button>
+                </div>
+                <ul class="todo-list" id="overview-todos"></ul>
+                <p class="empty" id="overview-todos-empty" hidden>今天还没有待办</p>
+              </article>
+
+              <article class="block">
+                <div class="block-head">
+                  <h3>重要日期</h3>
+                </div>
+                <ul class="plain-list" id="overview-dates"></ul>
+              </article>
+
+              <article class="block">
+                <div class="block-head">
+                  <h3>最近便签</h3>
+                  <button type="button" class="text-btn" data-go="notes">全部便签</button>
+                </div>
+                <div class="note-chips" id="overview-notes"></div>
+              </article>
+
+              <article class="block">
+                <div class="block-head">
+                  <h3>最近足迹</h3>
+                  <button type="button" class="text-btn" data-go="footprints">打开地图</button>
+                </div>
+                <ul class="plain-list" id="overview-footprints"></ul>
+              </article>
+
+              <article class="block block-quick">
+                <h3>快速新增</h3>
+                <div class="quick-row">
+                  <button type="button" class="quick-btn" data-quick="note">＋ 便签</button>
+                  <button type="button" class="quick-btn" data-quick="task">＋ 任务</button>
+                  <button type="button" class="quick-btn" data-quick="place">＋ 地点</button>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <!-- NOTES -->
+          <section class="panel" id="panel-notes" data-panel="notes" hidden>
+            <div class="notes-layout">
+              <div class="notes-main">
+                <div class="tools-row">
+                  <input type="search" id="notes-search" placeholder="搜索便签…" />
+                  <button type="button" class="solid-btn" id="notes-add">＋ 新便签</button>
+                </div>
+                <div class="notes-grid" id="notes-grid"></div>
+                <p class="empty" id="notes-empty" hidden>还没有便签，点右上角新增一条</p>
+              </div>
+              <aside class="side-panel" id="notes-editor" hidden>
+                <div class="side-panel-head">
+                  <h3>编辑便签</h3>
+                  <button type="button" class="icon-btn" id="notes-close" aria-label="关闭">×</button>
+                </div>
+                <label class="field">标题 <input id="note-title" type="text" maxlength="80" /></label>
+                <label class="field">内容 <textarea id="note-body" rows="8"></textarea></label>
+                <label class="field">颜色
+                  <select id="note-color">
+                    <option value="cream">暖白</option>
+                    <option value="green">浅绿</option>
+                    <option value="pink">浅粉</option>
+                    <option value="blue">浅蓝</option>
+                  </select>
+                </label>
+                <label class="check"><input type="checkbox" id="note-pin" /> 置顶</label>
+                <div class="side-actions">
+                  <button type="button" class="solid-btn" id="note-save">保存</button>
+                  <button type="button" class="ghost-btn danger" id="note-delete">删除</button>
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          <!-- DAYS -->
+          <section class="panel" id="panel-days" data-panel="days" hidden>
+            <div class="days-layout">
+              <div class="days-main">
+                <div class="tools-row">
+                  <div class="seg" role="group" aria-label="视图切换">
+                    <button type="button" class="seg-btn is-active" data-cal="week">周视图</button>
+                    <button type="button" class="seg-btn" data-cal="month">月历</button>
+                  </div>
+                  <button type="button" class="solid-btn" id="task-add">＋ 新任务</button>
+                </div>
+
+                <div class="week-strip" id="week-strip"></div>
+                <div class="month-grid" id="month-grid" hidden></div>
+
+                <div class="block tight">
+                  <div class="block-head">
+                    <h3 id="day-tasks-title">当日待办</h3>
+                  </div>
+                  <ul class="todo-list editable" id="day-tasks"></ul>
+                  <p class="empty" id="day-tasks-empty" hidden>这一天还没有任务</p>
+                </div>
+              </div>
+
+              <aside class="side-rail">
+                <article class="block tight">
+                  <h3>重要日期</h3>
+                  <ul class="plain-list" id="days-dates"></ul>
+                </article>
+                <aside class="side-panel compact" id="task-editor" hidden>
+                  <div class="side-panel-head">
+                    <h3>编辑任务</h3>
+                    <button type="button" class="icon-btn" id="task-close" aria-label="关闭">×</button>
+                  </div>
+                  <label class="field">任务 <input id="task-title" type="text" maxlength="120" /></label>
+                  <label class="field">日期 <input id="task-date" type="date" /></label>
+                  <div class="side-actions">
+                    <button type="button" class="solid-btn" id="task-save">保存</button>
+                    <button type="button" class="ghost-btn danger" id="task-delete">删除</button>
+                  </div>
+                </aside>
+              </aside>
+            </div>
+          </section>
+
+          <!-- FOOTPRINTS -->
+          <section class="panel" id="panel-footprints" data-panel="footprints" hidden>
+            <div class="map-layout">
+              <div class="map-tools">
+                <input type="search" id="place-search" placeholder="搜索地点…" />
+                <select id="place-filter">
+                  <option value="all">全部</option>
+                  <option value="cafe">咖啡</option>
+                  <option value="park">公园</option>
+                  <option value="travel">旅行</option>
+                </select>
+                <button type="button" class="ghost-btn" id="places-toggle">收起列表</button>
+                <button type="button" class="solid-btn" id="place-add">＋ 地点</button>
+              </div>
+              <div class="map-body">
+                <div id="map" class="map-canvas" role="img" aria-label="足迹地图"></div>
+                <aside class="places-drawer is-open" id="places-drawer">
+                  <h3>地点</h3>
+                  <ul class="places-list" id="places-list"></ul>
+                </aside>
+                <aside class="place-detail" id="place-detail" hidden>
+                  <button type="button" class="icon-btn detail-close" id="place-detail-close" aria-label="关闭">×</button>
+                  <h3 id="place-detail-title">—</h3>
+                  <p id="place-detail-meta" class="block-soft"></p>
+                  <p id="place-detail-note"></p>
+                </aside>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" hidden></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script type="module" src="./preview.js"></script>
+  </body>
+</html>
