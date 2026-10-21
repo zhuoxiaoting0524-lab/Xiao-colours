@@ -403,7 +403,8 @@ export async function mountDays(authState, options = {}) {
   notify = options.notify || notify;
   if (!mounted) {
     mounted = true;
-    $("#home-day-icon").textContent = String(new Date().getDate());
+    const dayIcon = $("#home-day-icon");
+    if (dayIcon) dayIcon.textContent = String(new Date().getDate());
     $("#calendar-prev").addEventListener("click", () => changePeriod(-1));
     $("#calendar-next").addEventListener("click", () => changePeriod(1));
     $$('[data-calendar-view]').forEach((button) => button.addEventListener("click", async () => {

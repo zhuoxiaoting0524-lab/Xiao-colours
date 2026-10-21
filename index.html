@@ -20,10 +20,11 @@
     />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.15.0/dist/maplibre-gl.css" />
     <link rel="stylesheet" href="./styles.css?v=16" />
-    <link rel="stylesheet" href="./personal-space.css?v=30" />
+    <link rel="stylesheet" href="./personal-space.css?v=31" />
+    <link rel="stylesheet" href="./workspace-shell.css?v=1" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=30"></script>
+    <script type="module" src="./personal-space.js?v=31"></script>
   </head>
   <body>
     <div class="paper-noise" aria-hidden="true"></div>
@@ -36,104 +37,182 @@
       </span>
     </div>
 
-    <div id="personal-space-v2">
-      <header class="topbar">
-        <button class="brand" type="button" data-route="home" aria-label="返回 XiaoColour 首页"><b>Xiao</b><i>Colour</i></button>
-        <nav aria-label="私人模块">
-          <button type="button" data-route="notes">Little Notes</button>
-          <button type="button" data-route="days">My Days</button>
-          <button type="button" data-route="footprints">Footprints</button>
-        </nav>
-        <div class="top-actions">
-          <a href="./global.html">Global Pulse ↗</a>
-          <button id="personal-account" type="button" aria-expanded="false" aria-label="账户菜单">···</button>
+    <div id="personal-space-v2" data-shell="welcome">
+      <span id="home-day-icon" hidden aria-hidden="true">20</span>
+
+      <!-- Public Welcome (logged-out / brand landing) -->
+      <section class="screen home active" data-screen="home" aria-label="XiaoColour 首页">
+        <div class="welcome-glow" aria-hidden="true"></div>
+        <div class="ws-welcome">
+          <p class="ws-kicker">Welcome</p>
+          <h1 class="ws-brand">XiaoColour</h1>
+          <p class="ws-lead">私人便签、日子与足迹的安静空间</p>
+          <div class="ws-welcome-actions">
+            <button class="ws-cta" type="button" data-route="overview" id="welcome-enter">进入工作区</button>
+            <a class="ws-link" href="./login.html" id="personal-auth-login-link">登录</a>
+            <a class="ws-link" href="./global.html">Global Pulse ↗</a>
+          </div>
+          <p class="ws-welcome-hint" id="personal-auth-user-detail">登录后可使用 Overview、Little Notes、My Days 与 Footprints。</p>
+          <a class="ws-admin" href="./admin.html" id="personal-auth-admin-link" hidden>邀请管理</a>
         </div>
-        <div class="account-pop" id="personal-account-pop" hidden>
-          <b id="personal-auth-user-label">正在检查登录状态…</b>
-          <span id="personal-auth-user-detail">Welcome 与 Global Pulse 可公开访问。</span>
-          <div class="account-actions">
-            <a href="./login.html" id="personal-auth-login-link">登录</a>
-            <a href="./admin.html" id="personal-auth-admin-link" hidden>邀请管理</a>
-            <button type="button" id="personal-auth-logout-btn" hidden>退出登录</button>
-          </div>
-        </div>
-      </header>
+      </section>
 
-      <div class="app-notice" id="personal-app-notice" role="status" aria-live="polite" hidden></div>
-
-      <main id="personal-app" tabindex="-1">
-        <section class="screen home active" data-screen="home" aria-label="XiaoColour 首页">
-          <div class="glow one" aria-hidden="true"></div><div class="glow two" aria-hidden="true"></div><div class="orbit" aria-hidden="true"></div>
-          <div class="hero">
-            <p class="overline">PRIVATE SPACE · 2026</p>
-            <h1><b>Xiao</b><i>Colour</i></h1>
-            <p>A clear space for notes, days, and places.</p>
+      <!-- Logged-in workspace shell -->
+      <div class="ws-shell" id="ws-shell" hidden>
+        <div class="ws-backdrop" id="ws-backdrop" hidden></div>
+        <aside class="ws-sidebar" id="ws-sidebar" aria-label="模块导航">
+          <div class="ws-sidebar-top">
+            <button type="button" class="ws-sidebar-close" id="ws-sidebar-close" aria-label="关闭导航">×</button>
+            <button type="button" class="ws-brand-btn" data-route="overview">XiaoColour</button>
+            <p class="ws-brand-sub">Personal Workspace</p>
           </div>
-          <div class="portals">
-            <button class="portal p-notes" type="button" data-route="notes"><small>01</small><span class="icon note-icon" aria-hidden="true"><i></i><i></i><i></i></span><strong>Little Notes<em>私人便签墙</em></strong><b>↗</b></button>
-            <button class="portal p-days" type="button" data-route="days"><small>02</small><span class="icon day-icon" id="home-day-icon" aria-hidden="true">20</span><strong>My Days<em>私人生活日历</em></strong><b>↗</b></button>
-            <button class="portal p-map" type="button" data-route="footprints"><small>03</small><span class="icon map-icon" aria-hidden="true"><i></i><i></i></span><strong>Footprints<em>私人足迹地图</em></strong><b>↗</b></button>
+          <nav class="ws-nav">
+            <button type="button" class="ws-nav-item" data-route="overview"><span class="ws-nav-mark" aria-hidden="true"></span>Overview</button>
+            <button type="button" class="ws-nav-item" data-route="notes"><span class="ws-nav-mark" aria-hidden="true"></span>Little Notes</button>
+            <button type="button" class="ws-nav-item" data-route="days"><span class="ws-nav-mark" aria-hidden="true"></span>My Days</button>
+            <button type="button" class="ws-nav-item" data-route="footprints"><span class="ws-nav-mark" aria-hidden="true"></span>Footprints</button>
+          </nav>
+          <div class="ws-nav-footer">
+            <a class="ws-nav-link" href="./global.html">Global Pulse</a>
+            <button type="button" class="ws-nav-link" id="personal-account" aria-expanded="false">账户设置</button>
+            <button type="button" class="ws-nav-link" id="personal-auth-logout-btn" hidden>退出登录</button>
           </div>
-        </section>
-
-        <section class="screen module" data-screen="notes" aria-label="Little Notes">
-          <header class="module-head"><button class="back" type="button" data-route="home">← Home</button><div><span><p class="overline">01 · PRIVATE NOTES</p><h2>Little Notes</h2></span><p>把此刻需要记住的事情，轻轻放在这里。</p></div></header>
-          <div class="toolbar note-toolbar">
-            <label class="search">⌕ <input id="note-search" type="search" placeholder="搜索便签" autocomplete="off"></label>
-            <label class="sort-label">排序 <select id="note-sort"><option value="updated_desc">最近更新</option><option value="created_desc">最新创建</option><option value="created_asc">最早创建</option></select></label>
-            <span class="counter"><b id="note-count">0</b> notes</span>
-            <button class="primary" id="add-note" type="button">＋ 新增便签</button>
-          </div>
-          <p class="inline-status" id="notes-status" role="status" aria-live="polite">正在读取你的便签…</p>
-          <div class="note-wall" id="note-wall"></div>
-          <div class="empty-state" id="note-empty" hidden><b>这里还没有便签</b><span>创建第一张便签，或换一个搜索词。</span></div>
-        </section>
-
-        <section class="screen module" data-screen="days" aria-label="My Days">
-          <header class="module-head"><button class="back" type="button" data-route="home">← Home</button><div><span><p class="overline">02 · LIFE PLANNER</p><h2>My Days</h2></span><span class="switch"><button class="active" type="button" data-calendar-view="week">Week</button><button type="button" data-calendar-view="month">Month</button></span></div></header>
-          <p class="inline-status" id="days-status" role="status" aria-live="polite">正在读取生活计划…</p>
-          <div class="calendar-layout">
-            <section class="calendar-main">
-              <div class="calendar-title"><span><p id="calendar-month-label">MONTH</p><h3 id="calendar-range-label">—</h3></span><span><button type="button" id="calendar-prev" aria-label="上一段日期">←</button><button type="button" id="calendar-next" aria-label="下一段日期">→</button></span></div>
-              <div class="week" id="week"></div><div class="month" id="month" hidden></div>
-              <div class="today-head"><span><p id="day-label">SELECTED DAY</p><h3 id="day-title">—</h3></span><button class="primary" id="add-task" type="button">＋ Add task</button></div>
-              <div class="tasks" id="tasks"></div>
-            </section>
-            <aside class="upcoming">
-              <p class="overline">COMING UP</p><h3>Important dates</h3>
-              <div class="dates" id="important-dates"></div>
-              <button class="under" id="add-important" type="button">＋ Add important date</button>
-              <div class="progress"><span>THIS WEEK <b id="week-progress-label">0 / 0</b></span><i><u id="week-progress-bar"></u></i><small>完成一点，也留一点呼吸。</small></div>
-            </aside>
-          </div>
-        </section>
-
-        <section class="screen module map-module" data-screen="footprints" aria-label="Footprints">
-          <header class="module-head compact"><button class="back" type="button" data-route="home">← Home</button><div><span><p class="overline">03 · PERSONAL MAP</p><h2>Footprints</h2></span><span class="legend"><i></i>去过 <i></i>想去</span></div></header>
-          <p class="inline-status" id="footprints-status" role="status" aria-live="polite">正在读取你的足迹…</p>
-          <div class="map-layout">
-            <aside class="place-panel">
-              <form class="place-search-form" id="place-search-form">
-                <label class="search">⌕ <input id="place-search" type="search" minlength="2" maxlength="120" autocomplete="off" placeholder="搜索城市或地点"></label>
-                <button type="submit" aria-label="搜索地点">搜索</button>
-              </form>
-              <p class="geocode-note">按下搜索后查询，请勿输入私密文字 · © OpenStreetMap contributors</p>
-              <div class="geocode-results" id="geocode-results" hidden></div>
-              <div class="filters"><button class="active" type="button" data-filter="all">全部</button><button type="button" data-filter="visited">去过</button><button type="button" data-filter="wish">想去</button></div>
-              <div id="place-list" class="place-list"></div>
-              <button class="primary full" id="add-place" type="button">＋ 搜索并添加</button>
-            </aside>
-            <div class="map-stage" id="map-stage">
-              <div class="real-map" id="footprints-map" aria-label="真实可交互世界地图"></div>
-              <div class="map-status" id="map-loading"><span></span><b>正在加载真实地图</b><small>OpenFreeMap · OpenStreetMap</small></div>
-              <div class="map-status map-error" id="map-error" hidden><b>地图暂时无法加载</b><small id="map-error-message">请检查网络连接后重试。</small><button type="button" id="retry-map">重新加载地图</button></div>
-              <button class="world-view" id="world-view" type="button">世界视角</button>
-              <span class="map-help">拖动与滚轮缩放 · 点击标记查看详情</span>
-              <article class="place-detail" id="place-detail" hidden></article>
+          <div class="account-pop" id="personal-account-pop" hidden>
+            <b id="personal-auth-user-label">正在检查登录状态…</b>
+            <span id="personal-auth-user-email">—</span>
+            <div class="account-actions">
+              <a href="./admin.html" id="personal-auth-admin-link-pop" hidden>邀请管理</a>
             </div>
           </div>
-        </section>
-      </main>
+        </aside>
+
+        <div class="ws-main">
+          <header class="ws-topbar">
+            <button type="button" class="ws-menu" id="ws-menu" aria-label="打开导航">☰</button>
+            <div class="ws-topbar-copy">
+              <h2 id="ws-panel-title">Overview</h2>
+              <p id="ws-panel-desc">今天的生活首页</p>
+            </div>
+          </header>
+          <div class="app-notice" id="personal-app-notice" role="status" aria-live="polite" hidden></div>
+          <main id="personal-app" tabindex="-1">
+            <section class="screen module overview-module" data-screen="overview" aria-label="Overview" hidden>
+              <p class="inline-status" id="overview-status" role="status" aria-live="polite"></p>
+              <div class="overview-grid">
+                <article class="ov-block ov-date">
+                  <p class="ov-label">Today</p>
+                  <h3 id="overview-date">—</h3>
+                  <p class="ov-soft" id="overview-greet">准备开始这一天</p>
+                </article>
+                <article class="ov-block">
+                  <div class="ov-head"><h3>今日待办</h3><button type="button" class="text-btn" data-overview-go="days">打开 My Days</button></div>
+                  <ul class="ov-list" id="overview-todos"></ul>
+                </article>
+                <article class="ov-block">
+                  <div class="ov-head"><h3>重要日期</h3></div>
+                  <ul class="ov-list" id="overview-dates"></ul>
+                </article>
+                <article class="ov-block">
+                  <div class="ov-head"><h3>最近便签</h3><button type="button" class="text-btn" data-overview-go="notes">全部便签</button></div>
+                  <div class="ov-notes" id="overview-notes"></div>
+                </article>
+                <article class="ov-block">
+                  <div class="ov-head"><h3>最近足迹</h3><button type="button" class="text-btn" data-overview-go="footprints">打开地图</button></div>
+                  <ul class="ov-list" id="overview-footprints"></ul>
+                </article>
+                <article class="ov-block ov-quick">
+                  <h3>快速新增</h3>
+                  <div class="ov-quick-row">
+                    <button type="button" class="quick-btn" data-overview-go="notes">＋ 便签</button>
+                    <button type="button" class="quick-btn" data-overview-go="days">＋ 任务</button>
+                    <button type="button" class="quick-btn" data-overview-go="footprints">＋ 地点</button>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <section class="screen module" data-screen="notes" aria-label="Little Notes" hidden>
+              <header class="module-head compact-head">
+                <div><span><p class="overline">LITTLE NOTES</p><h2>便签</h2></span></div>
+              </header>
+              <div class="toolbar note-toolbar">
+                <label class="search">⌕ <input id="note-search" type="search" placeholder="搜索便签" autocomplete="off"></label>
+                <label class="sort-label">排序 <select id="note-sort"><option value="updated_desc">最近更新</option><option value="created_desc">最新创建</option><option value="created_asc">最早创建</option></select></label>
+                <span class="counter"><b id="note-count">0</b> notes</span>
+                <button class="primary" id="add-note" type="button">＋ 新增便签</button>
+              </div>
+              <p class="inline-status" id="notes-status" role="status" aria-live="polite">正在读取你的便签…</p>
+              <div class="note-wall" id="note-wall"></div>
+              <div class="empty-state" id="note-empty" hidden><b>这里还没有便签</b><span>创建第一张便签，或换一个搜索词。</span></div>
+            </section>
+
+            <section class="screen module" data-screen="days" aria-label="My Days" hidden>
+              <header class="module-head compact-head">
+                <div>
+                  <span><p class="overline">MY DAYS</p><h2>日子</h2></span>
+                  <span class="switch">
+                    <button class="active" type="button" data-calendar-view="week">周视图</button>
+                    <button type="button" data-calendar-view="month">月历</button>
+                  </span>
+                </div>
+              </header>
+              <p class="inline-status" id="days-status" role="status" aria-live="polite">正在读取生活计划…</p>
+              <div class="calendar-layout">
+                <section class="calendar-main">
+                  <div class="calendar-title"><span><p id="calendar-month-label">MONTH</p><h3 id="calendar-range-label">—</h3></span><span><button type="button" id="calendar-prev" aria-label="上一段日期">←</button><button type="button" id="calendar-next" aria-label="下一段日期">→</button></span></div>
+                  <div class="week" id="week"></div><div class="month" id="month" hidden></div>
+                  <div class="today-head"><span><p id="day-label">SELECTED DAY</p><h3 id="day-title">—</h3></span><button class="primary" id="add-task" type="button">＋ 新任务</button></div>
+                  <div class="tasks" id="tasks"></div>
+                </section>
+                <aside class="upcoming">
+                  <p class="overline">COMING UP</p><h3>重要日期</h3>
+                  <div class="dates" id="important-dates"></div>
+                  <button class="under" id="add-important" type="button">＋ 添加重要日期</button>
+                  <div class="progress"><span>本周进度 <b id="week-progress-label">0 / 0</b></span><i><u id="week-progress-bar"></u></i><small>完成一点，也留一点呼吸。</small></div>
+                </aside>
+              </div>
+            </section>
+
+            <section class="screen module map-module" data-screen="footprints" aria-label="Footprints" hidden>
+              <header class="module-head compact-head map-head">
+                <div>
+                  <span><p class="overline">FOOTPRINTS</p><h2>足迹</h2></span>
+                  <span class="legend"><i></i>去过 <i></i>想去</span>
+                </div>
+              </header>
+              <p class="inline-status" id="footprints-status" role="status" aria-live="polite">正在读取你的足迹…</p>
+              <div class="map-tools-bar">
+                <form class="place-search-form" id="place-search-form">
+                  <label class="search">⌕ <input id="place-search" type="search" minlength="2" maxlength="120" autocomplete="off" placeholder="搜索城市或地点"></label>
+                  <button type="submit" aria-label="搜索地点">搜索</button>
+                </form>
+                <div class="filters">
+                  <button class="active" type="button" data-filter="all">全部</button>
+                  <button type="button" data-filter="visited">去过</button>
+                  <button type="button" data-filter="wish">想去</button>
+                </div>
+                <button type="button" class="ghost-btn" id="places-drawer-toggle">收起列表</button>
+                <button class="primary" id="add-place" type="button">＋ 添加</button>
+              </div>
+              <p class="geocode-note map-tools-note">按下搜索后查询，请勿输入私密文字 · © OpenStreetMap contributors</p>
+              <div class="geocode-results" id="geocode-results" hidden></div>
+              <div class="map-layout map-layout-wide">
+                <aside class="place-panel is-open" id="place-panel">
+                  <div id="place-list" class="place-list"></div>
+                </aside>
+                <div class="map-stage" id="map-stage">
+                  <div class="real-map" id="footprints-map" aria-label="真实可交互世界地图"></div>
+                  <div class="map-status" id="map-loading"><span></span><b>正在加载真实地图</b><small>OpenFreeMap · OpenStreetMap</small></div>
+                  <div class="map-status map-error" id="map-error" hidden><b>地图暂时无法加载</b><small id="map-error-message">请检查网络连接后重试。</small><button type="button" id="retry-map">重新加载地图</button></div>
+                  <button class="world-view" id="world-view" type="button">世界视角</button>
+                  <span class="map-help">拖动与滚轮缩放 · 点击标记查看详情</span>
+                  <article class="place-detail" id="place-detail" hidden></article>
+                </div>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
 
       <dialog id="note-dialog" class="dialog"><form id="note-form">
         <header><span><p class="overline">LITTLE NOTE</p><h3 id="note-dialog-title">打开便签</h3></span><button type="button" data-close="note-dialog" aria-label="关闭">×</button></header>
