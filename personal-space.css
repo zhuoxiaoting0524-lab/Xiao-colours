@@ -33,8 +33,30 @@
 .world-view{position:absolute;z-index:4;left:16px;top:16px;padding:9px 12px;border:1px solid var(--strong);background:rgba(251,250,246,.92);box-shadow:0 8px 24px rgba(43,45,39,.1);font-size:10px;letter-spacing:.08em}
 .map-help{z-index:4;bottom:30px;padding:5px 8px;background:rgba(251,250,246,.82)}
 .place-detail{z-index:5}
+.place-search-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding-bottom:11px;border-bottom:1px solid var(--line)}
+.place-search-form .search{min-width:0}
+.place-search-form button{min-width:54px;padding:8px 11px;border:1px solid var(--strong);background:var(--ink);color:#fff;font-size:9px;letter-spacing:.06em}
+.place-search-form button:disabled{cursor:wait;opacity:.55}
+.geocode-note{margin:8px 0 0;color:var(--muted);font-size:8px;line-height:1.5}
+.geocode-results{max-height:190px;margin-top:12px;overflow:auto;border-block:1px solid var(--line)}
+.geocode-results button{width:100%;display:grid;gap:3px;padding:11px 4px;border-bottom:1px solid var(--line);background:none;text-align:left}
+.geocode-results button:last-child{border-bottom:0}
+.geocode-results button:hover,.geocode-results button:focus-visible{background:var(--sage2)}
+.geocode-results b{overflow:hidden;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+.geocode-results small{display:-webkit-box;overflow:hidden;color:var(--muted);font-size:9px;line-height:1.45;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.geocode-empty,.place-empty{margin:0;padding:18px 5px;color:var(--muted);font-size:10px;line-height:1.6}
+.place-list{scrollbar-width:thin}
+.place{min-width:0}
+.place span{min-width:0}
+.place b,.place small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.place-detail .place-location{margin-top:0;color:var(--muted);font-size:10px;line-height:1.5}
+.place-detail .place-note{margin-top:12px;color:var(--ink);font:14px/1.75 var(--serif);white-space:pre-wrap}
+.place-detail footer{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.place-actions{display:flex;gap:12px}
+.place-actions .under{padding:5px 0}
+.place-location-label{margin:-12px 0 17px;padding-bottom:12px;border-bottom:1px solid var(--line);line-height:1.55}
 @keyframes map-spin{to{rotate:360deg}}
-@media(max-width:700px){.real-map .maplibregl-ctrl-top-right{top:10px;right:10px}.world-view{left:10px;top:10px}.map-help{display:none}.map-status{width:calc(100% - 36px);min-width:0}.place-detail{z-index:7}}
+@media(max-width:700px){.real-map .maplibregl-ctrl-top-right{top:10px;right:10px}.world-view{left:10px;top:10px}.map-help{display:none}.map-status{width:calc(100% - 36px);min-width:0}.place-detail{z-index:7;right:9px;left:9px;bottom:9px;top:auto;width:auto;max-height:min(56%,390px);overflow:auto}.geocode-results{max-height:160px}.place-detail footer{position:sticky;bottom:-23px;margin-inline:-23px;padding:14px 23px 0;background:linear-gradient(to bottom,rgba(251,250,246,0),var(--paper) 18px)}}
 /* Phase 2 integration: the approved visual layer is isolated from the retained legacy DOM. */
 [hidden]{display:none!important}
 body>.paper-noise,body>.auth-bar,body>.svg-defs,body>#app{display:none!important}

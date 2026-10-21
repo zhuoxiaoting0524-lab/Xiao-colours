@@ -1,7 +1,7 @@
 import { api, getMe, loginUrlForView } from "./auth-client.js";
 import { mountNotes } from "./notes.js?v=20";
 import { mountDays } from "./days.js?v=20";
-import { mountFootprints } from "./footprints.js?v=20";
+import { mountFootprints } from "./footprints.js?v=30";
 
 const root = document.querySelector("#personal-space-v2");
 const $ = (selector, scope = root) => scope?.querySelector(selector);
@@ -69,7 +69,7 @@ function renderAccount() {
 async function mountRoute(name) {
   if (name === "notes") await mountNotes(authState, { notify });
   if (name === "days") await mountDays(authState, { notify });
-  if (name === "footprints") await mountFootprints();
+  if (name === "footprints") await mountFootprints(authState, { notify });
 }
 
 async function route(name, { push = true } = {}) {

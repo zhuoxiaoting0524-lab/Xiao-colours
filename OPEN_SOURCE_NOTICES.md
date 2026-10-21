@@ -30,6 +30,20 @@
 - 底图与地图数据：© OpenStreetMap contributors
 - 版权说明：https://www.openstreetmap.org/copyright
 
+GLOBAL PULSE 继续使用上述 Leaflet 实现，不受私人空间改版影响。
+
+### Footprints 私人足迹地图
+
+- 交互组件：MapLibre GL JS 6.15.0（BSD-3-Clause）
+- 地图样式与瓦片：OpenFreeMap 公共实例
+- 地图数据：© OpenStreetMap contributors
+- 地点搜索：OpenStreetMap Foundation 的 Nominatim 公共服务
+- MapLibre：https://maplibre.org/maplibre-gl-js/docs/
+- OpenFreeMap：https://openfreemap.org/
+- Nominatim 使用政策：https://operations.osmfoundation.org/policies/nominatim/
+
+Footprints 不需要 API Key，也没有接入付费地图服务。地点搜索只在已登录用户主动提交时发起，不提供输入联想；Worker 将规范化查询散列后缓存结果，并以全站最多约每秒一次的频率访问公共 Nominatim 服务。搜索词会发送给 OpenStreetMap Foundation 的服务，因此不应在地点搜索框输入私密文字。界面保留 OpenStreetMap 署名；若访问量增长，应迁移到自托管或具有明确服务保障的地理编码服务。
+
 ## AI 分析
 
 当前项目没有服务端模型接口，因此 AI 摘要功能保持关闭。页面中的“态势概览”仅对已获取的新闻数量、媒体数量、来源国和规则分类进行统计，不冒充 AI 分析或事实核验。

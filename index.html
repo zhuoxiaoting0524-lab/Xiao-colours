@@ -20,10 +20,10 @@
     />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.15.0/dist/maplibre-gl.css" />
     <link rel="stylesheet" href="./styles.css?v=16" />
-    <link rel="stylesheet" href="./personal-space.css?v=20" />
+    <link rel="stylesheet" href="./personal-space.css?v=30" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=20"></script>
+    <script type="module" src="./personal-space.js?v=30"></script>
   </head>
   <body>
     <div class="paper-noise" aria-hidden="true"></div>
@@ -110,8 +110,19 @@
 
         <section class="screen module map-module" data-screen="footprints" aria-label="Footprints">
           <header class="module-head compact"><button class="back" type="button" data-route="home">← Home</button><div><span><p class="overline">03 · PERSONAL MAP</p><h2>Footprints</h2></span><span class="legend"><i></i>去过 <i></i>想去</span></div></header>
+          <p class="inline-status" id="footprints-status" role="status" aria-live="polite">正在读取你的足迹…</p>
           <div class="map-layout">
-            <aside class="place-panel"><label class="search">⌕ <input id="place-search" type="search" placeholder="搜索地点"></label><div class="filters"><button class="active" type="button" data-filter="all">全部</button><button type="button" data-filter="visited">去过</button><button type="button" data-filter="wish">想去</button></div><div id="place-list" class="place-list"></div><button class="primary full" id="add-place" type="button">＋ 添加足迹</button></aside>
+            <aside class="place-panel">
+              <form class="place-search-form" id="place-search-form">
+                <label class="search">⌕ <input id="place-search" type="search" minlength="2" maxlength="120" autocomplete="off" placeholder="搜索城市或地点"></label>
+                <button type="submit" aria-label="搜索地点">搜索</button>
+              </form>
+              <p class="geocode-note">按下搜索后查询，请勿输入私密文字 · © OpenStreetMap contributors</p>
+              <div class="geocode-results" id="geocode-results" hidden></div>
+              <div class="filters"><button class="active" type="button" data-filter="all">全部</button><button type="button" data-filter="visited">去过</button><button type="button" data-filter="wish">想去</button></div>
+              <div id="place-list" class="place-list"></div>
+              <button class="primary full" id="add-place" type="button">＋ 搜索并添加</button>
+            </aside>
             <div class="map-stage" id="map-stage">
               <div class="real-map" id="footprints-map" aria-label="真实可交互世界地图"></div>
               <div class="map-status" id="map-loading"><span></span><b>正在加载真实地图</b><small>OpenFreeMap · OpenStreetMap</small></div>
@@ -152,12 +163,13 @@
       </form></dialog>
 
       <dialog id="place-dialog" class="dialog small"><form id="place-form">
-        <header><span><p class="overline">FOOTPRINTS</p><h3>添加足迹</h3></span><button type="button" data-close="place-dialog" aria-label="关闭">×</button></header>
-        <p class="hint">Footprints 本阶段保留已确认的交互原型；新增地点仅在本次浏览中展示，不写入正式数据。</p>
-        <label>地点<select id="place-name"><option>Reykjavík</option><option>Seoul</option><option>Marrakech</option></select></label>
+        <header><span><p class="overline">FOOTPRINTS</p><h3 id="place-dialog-title">添加足迹</h3></span><button type="button" data-close="place-dialog" aria-label="关闭">×</button></header>
+        <p class="hint place-location-label" id="place-location-label"></p>
+        <label>地点名称<input id="place-name" required maxlength="140"></label>
         <label>状态<select id="place-status"><option value="wish">想去</option><option value="visited">去过</option></select></label>
-        <label>一句记录<textarea id="place-note" rows="4" maxlength="180"></textarea></label>
-        <footer><span></span><span></span><button type="button" data-close="place-dialog">取消</button><button class="primary" type="submit">添加到预览</button></footer>
+        <label>日期（可选）<input id="place-date" type="date"></label>
+        <label>文字备注<textarea id="place-note" rows="5" maxlength="2000"></textarea></label>
+        <footer><button class="danger" id="delete-place" type="button">删除</button><span></span><button type="button" data-close="place-dialog">取消</button><button class="primary" id="save-place" type="submit">保存</button></footer>
       </form></dialog>
     </div>
 
