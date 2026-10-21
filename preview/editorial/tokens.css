@@ -1,0 +1,44 @@
+/* XiaoColour — Soft Editorial Minimalism design tokens (preview only) */
+:root {
+  /* Color */
+  --bg: #f8f8f6;
+  --surface: #ffffff;
+  --ink: #202321;
+  --muted: #737a74;
+  --brand: #afc6b6;
+  --brand-soft: #e8ede8;
+  --line: rgba(32, 35, 33, 0.08);
+  --line-strong: rgba(32, 35, 33, 0.14);
+  --danger: #9a4f4a;
+  --note-ivory: #f7f3ea;
+  --note-sage: #e4ece3;
+  --note-blue: #e4ebf0;
+  --note-rose: #f3e6e9;
+
+  /* Type */
+  --font: "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --fs-hero: 1.875rem; /* 30px */
+  --fs-title: 1.25rem; /* 20px */
+  --fs-body: 0.9375rem; /* 15px */
+  --fs-ui: 0.875rem; /* 14px */
+  --fs-meta: 0.8125rem; /* 13px */
+  --fs-tiny: 0.75rem; /* 12px */
+  --lh: 1.5;
+  --tracking: -0.01em;
+
+  /* Space (8px system) */
+  --s1: 0.25rem;
+  --s2: 0.5rem;
+  --s3: 0.75rem;
+  --s4: 1rem;
+  --s5: 1.5rem;
+  --s6: 2rem;
+  --s7: 3rem;
+  --page-x: 1.5rem;
+  --sidebar: 240px;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --control-h: 2.25rem; /* 36px */
+  --shadow: 0 1px 2px rgba(32, 35, 33, 0.04);
+  --ease: 160ms ease;
+}

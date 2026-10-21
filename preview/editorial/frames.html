@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>XiaoColour｜1440 / 390 Preview Frames</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./tokens.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font);
+        background: #ecece8;
+        color: var(--ink);
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 24px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--line);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      header p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      header a {
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .board {
+        display: grid;
+        gap: 28px;
+        padding: 28px 24px 48px;
+        overflow: auto;
+      }
+      .frame-wrap {
+        display: grid;
+        gap: 10px;
+      }
+      .frame-wrap h2 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .frame {
+        border: 1px solid var(--line-strong);
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--bg);
+        box-shadow: 0 12px 40px rgba(32, 35, 33, 0.08);
+      }
+      .frame.desktop {
+        width: min(1440px, 100%);
+        height: 900px;
+      }
+      .frame.mobile {
+        width: 390px;
+        height: 844px;
+      }
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: var(--bg);
+      }
+      @media (max-width: 900px) {
+        .frame.desktop { height: 640px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Soft Editorial Minimalism · Viewport Frames</h1>
+        <p>桌面 1440 × 900 · 手机 390 × 844 · 正式站未改动</p>
+      </div>
+      <a href="./index.html">打开可交互预览 →</a>
+    </header>
+    <div class="board">
+      <div class="frame-wrap">
+        <h2>Desktop · 1440px</h2>
+        <div class="frame desktop"><iframe src="./index.html" title="Desktop preview"></iframe></div>
+      </div>
+      <div class="frame-wrap">
+        <h2>Mobile · 390px</h2>
+        <div class="frame mobile"><iframe src="./index.html" title="Mobile preview"></iframe></div>
+      </div>
+    </div>
+  </body>
+</html>

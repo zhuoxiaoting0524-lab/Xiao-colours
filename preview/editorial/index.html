@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>XiaoColour｜Editorial UI Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="./tokens.css" />
+    <link rel="stylesheet" href="./app.css" />
+  </head>
+  <body>
+    <div class="preview-banner">
+      <span>Visual preview only · Soft Editorial Minimalism · 不部署正式站</span>
+      <a href="./frames.html">1440 / 390 对照</a>
+    </div>
+
+    <div class="shell" id="shell">
+      <div class="backdrop" id="backdrop" hidden></div>
+
+      <aside class="sidebar" id="sidebar" aria-label="Primary">
+        <div class="sidebar-brand">
+          <button type="button" class="logo" data-panel="overview">XiaoColour</button>
+          <button type="button" class="icon-btn sidebar-close" id="sidebar-close" aria-label="Close menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+
+        <nav class="nav">
+          <button type="button" class="nav-item is-active" data-panel="overview">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20H14v-5h-4v5H4z" /></svg>
+            Overview
+          </button>
+          <button type="button" class="nav-item" data-panel="notes">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16H7zM9 8h6M9 12h6M9 16h4" /></svg>
+            Little Notes
+          </button>
+          <button type="button" class="nav-item" data-panel="days">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="1.5" /><path d="M8 3v4M16 3v4M4 10h16" /></svg>
+            My Days
+          </button>
+          <button type="button" class="nav-item" data-panel="footprints">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10z" /><circle cx="12" cy="11" r="2.2" /></svg>
+            Footprints
+          </button>
+        </nav>
+
+        <div class="sidebar-foot">
+          <a class="nav-link" href="/global.html" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M4 12h16M12 4c2.5 2.8 2.5 13.2 0 16M12 4c-2.5 2.8-2.5 13.2 0 16" /></svg>
+            Global Pulse
+          </a>
+          <button type="button" class="nav-link" id="btn-settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6" /></svg>
+            账户设置
+          </button>
+          <button type="button" class="nav-link" id="btn-logout">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7V5h9v14h-9v-2M13 12H4m0 0 3-3M4 12l3 3" /></svg>
+            退出登录
+          </button>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <button type="button" class="icon-btn menu" id="menu-btn" aria-label="Open menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+          <div>
+            <h1 id="panel-title">Overview</h1>
+            <p id="panel-desc">今天的生活首页</p>
+          </div>
+        </header>
+
+        <main class="main" id="main">
+          <!-- Overview -->
+          <section class="panel is-active" id="panel-overview" data-panel="overview">
+            <div class="ov-grid">
+              <header class="ov-date">
+                <p class="label">Today</p>
+                <h2 id="ov-date">—</h2>
+                <p class="muted" id="ov-greet">按自己的节奏开始</p>
+              </header>
+
+              <section class="section">
+                <div class="section-head">
+                  <h3>今日待办</h3>
+                  <button type="button" class="link-btn" data-go="days">查看全部</button>
+                </div>
+                <ul class="list" id="ov-todos"></ul>
+                <div class="empty compact" id="ov-todos-empty" hidden>
+                  <p>今天还没有待办</p>
+                  <button type="button" class="btn btn-secondary" data-go="days">添加任务</button>
+                </div>
+              </section>
+
+              <section class="section">
+                <div class="section-head"><h3>重要日期</h3></div>
+                <ul class="list" id="ov-dates"></ul>
+                <div class="empty compact" id="ov-dates-empty" hidden>
+                  <p>暂无即将到来的日期</p>
+                  <button type="button" class="btn btn-secondary" data-go="days">添加日期</button>
+                </div>
+              </section>
+
+              <section class="section">
+                <div class="section-head">
+                  <h3>最近便签</h3>
+                  <button type="button" class="link-btn" data-go="notes">全部便签</button>
+                </div>
+                <div class="chip-row" id="ov-notes"></div>
+                <div class="empty compact" id="ov-notes-empty" hidden>
+                  <p>还没有便签</p>
+                  <button type="button" class="btn btn-secondary" data-quick="note">新建便签</button>
+                </div>
+              </section>
+
+              <section class="section">
+                <div class="section-head">
+                  <h3>最近足迹</h3>
+                  <button type="button" class="link-btn" data-go="footprints">打开地图</button>
+                </div>
+                <ul class="list" id="ov-places"></ul>
+                <div class="empty compact" id="ov-places-empty" hidden>
+                  <p>还没有足迹</p>
+                  <button type="button" class="btn btn-secondary" data-go="footprints">添加地点</button>
+                </div>
+              </section>
+
+              <section class="section section-full">
+                <div class="section-head"><h3>快速新增</h3></div>
+                <div class="quick-row">
+                  <button type="button" class="btn btn-secondary" data-quick="note">＋ 便签</button>
+                  <button type="button" class="btn btn-secondary" data-quick="task">＋ 任务</button>
+                  <button type="button" class="btn btn-secondary" data-quick="place">＋ 地点</button>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <!-- Notes -->
+          <section class="panel" id="panel-notes" data-panel="notes" hidden>
+            <div class="notes-layout">
+              <div class="notes-main">
+                <div class="toolbar">
+                  <label class="field grow">
+                    <span class="sr-only">搜索</span>
+                    <input id="notes-search" type="search" placeholder="搜索便签" />
+                  </label>
+                  <label class="field shrink">
+                    <span class="sr-only">排序</span>
+                    <select id="notes-sort">
+                      <option value="updated">最近更新</option>
+                      <option value="created">最新创建</option>
+                    </select>
+                  </label>
+                  <button type="button" class="btn btn-primary" id="notes-add">新增便签</button>
+                </div>
+                <div class="notes-grid" id="notes-grid"></div>
+                <div class="empty" id="notes-empty" hidden>
+                  <p>还没有便签</p>
+                  <span>把需要记住的事放在这里。</span>
+                  <button type="button" class="btn btn-primary" id="notes-empty-add">新建第一条</button>
+                </div>
+              </div>
+              <aside class="drawer" id="notes-drawer" hidden>
+                <div class="drawer-head">
+                  <h3>编辑便签</h3>
+                  <button type="button" class="icon-btn" id="notes-close" aria-label="关闭">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                  </button>
+                </div>
+                <label class="field stacked">标题<input id="note-title" maxlength="80" /></label>
+                <label class="field stacked">内容<textarea id="note-body" rows="10"></textarea></label>
+                <div class="field stacked">
+                  <span>颜色</span>
+                  <div class="swatches" id="note-colors">
+                    <button type="button" data-color="ivory" class="is-active" aria-label="暖白"></button>
+                    <button type="button" data-color="sage" aria-label="浅绿"></button>
+                    <button type="button" data-color="blue" aria-label="浅蓝"></button>
+                    <button type="button" data-color="rose" aria-label="浅粉"></button>
+                  </div>
+                </div>
+                <label class="check"><input type="checkbox" id="note-pin" /> 置顶</label>
+                <div class="drawer-actions">
+                  <button type="button" class="btn btn-primary" id="note-save">保存</button>
+                  <button type="button" class="btn btn-ghost danger" id="note-delete">删除</button>
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          <!-- Days -->
+          <section class="panel" id="panel-days" data-panel="days" hidden>
+            <div class="days-layout">
+              <div class="days-main">
+                <div class="toolbar">
+                  <div class="seg" role="group" aria-label="视图">
+                    <button type="button" class="seg-btn is-active" data-cal="week">周视图</button>
+                    <button type="button" class="seg-btn" data-cal="month">月历</button>
+                  </div>
+                  <div class="cal-nav">
+                    <button type="button" class="icon-btn" id="cal-prev" aria-label="上一段">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6 8 12l6 6" /></svg>
+                    </button>
+                    <strong id="cal-label">—</strong>
+                    <button type="button" class="icon-btn" id="cal-next" aria-label="下一段">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
+                    </button>
+                  </div>
+                  <button type="button" class="btn btn-primary" id="task-add">新任务</button>
+                </div>
+                <div class="week" id="week"></div>
+                <div class="month" id="month" hidden></div>
+                <section class="section tight">
+                  <div class="section-head">
+                    <h3 id="day-title">当日待办</h3>
+                  </div>
+                  <ul class="task-list" id="day-tasks"></ul>
+                  <div class="empty compact" id="day-tasks-empty" hidden>
+                    <p>这一天还没有任务</p>
+                    <button type="button" class="btn btn-secondary" id="task-empty-add">添加任务</button>
+                  </div>
+                </section>
+              </div>
+              <aside class="side-rail">
+                <section class="section tight">
+                  <div class="section-head"><h3>重要日期</h3></div>
+                  <ul class="list" id="days-dates"></ul>
+                  <button type="button" class="link-btn" id="important-add">＋ 添加重要日期</button>
+                </section>
+                <aside class="drawer inline" id="task-drawer" hidden>
+                  <div class="drawer-head">
+                    <h3>编辑任务</h3>
+                    <button type="button" class="icon-btn" id="task-close" aria-label="关闭">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                    </button>
+                  </div>
+                  <label class="field stacked">任务<input id="task-title" maxlength="120" /></label>
+                  <label class="field stacked">日期<input id="task-date" type="date" /></label>
+                  <div class="drawer-actions">
+                    <button type="button" class="btn btn-primary" id="task-save">保存</button>
+                    <button type="button" class="btn btn-ghost danger" id="task-delete">删除</button>
+                  </div>
+                </aside>
+              </aside>
+            </div>
+          </section>
+
+          <!-- Footprints -->
+          <section class="panel" id="panel-footprints" data-panel="footprints" hidden>
+            <div class="map-layout">
+              <div class="toolbar map-toolbar">
+                <label class="field grow">
+                  <span class="sr-only">搜索地点</span>
+                  <input id="place-search" type="search" placeholder="搜索地点" />
+                </label>
+                <div class="seg" role="group" aria-label="筛选">
+                  <button type="button" class="seg-btn is-active" data-filter="all">全部</button>
+                  <button type="button" class="seg-btn" data-filter="visited">去过</button>
+                  <button type="button" class="seg-btn" data-filter="wish">想去</button>
+                </div>
+                <button type="button" class="btn btn-secondary" id="places-toggle">收起列表</button>
+                <button type="button" class="btn btn-primary" id="place-add">添加地点</button>
+              </div>
+              <div class="map-stage">
+                <div id="map" class="map" role="img" aria-label="足迹地图"></div>
+                <aside class="places-drawer is-open" id="places-drawer">
+                  <h3>地点</h3>
+                  <ul class="places" id="places-list"></ul>
+                </aside>
+                <aside class="place-card" id="place-card" hidden>
+                  <button type="button" class="icon-btn card-close" id="place-close" aria-label="关闭">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                  </button>
+                  <h3 id="place-title">—</h3>
+                  <p class="meta" id="place-meta"></p>
+                  <p id="place-note"></p>
+                </aside>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" hidden></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
