@@ -155,7 +155,8 @@ function renderTasks() {
   $("#day-title").textContent = formatLong(selectedDate);
   const container = $("#tasks");
   if (!list.length) {
-    container.innerHTML = '<p class="empty">这一天还没有任务。点击 Add task 创建一个。</p>';
+    container.innerHTML = '<p class="empty">这一天还没有任务。<button type="button" class="text-btn" id="day-empty-add">添加任务</button></p>';
+    container.querySelector("#day-empty-add")?.addEventListener("click", () => editTask());
   } else {
     container.replaceChildren(...list.map((task) => {
       const row = document.createElement("article");

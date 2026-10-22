@@ -1,8 +1,8 @@
 import { api, getMe, loginUrlForView } from "./auth-client.js";
-import { mountOverview } from "./overview.js?v=1";
-import { mountNotes } from "./notes.js?v=21";
-import { mountDays } from "./days.js?v=21";
-import { mountFootprints } from "./footprints.js?v=31";
+import { mountOverview } from "./overview.js?v=2";
+import { mountNotes } from "./notes.js?v=22";
+import { mountDays } from "./days.js?v=22";
+import { mountFootprints } from "./footprints.js?v=32";
 
 const root = document.querySelector("#personal-space-v2");
 const $ = (selector, scope = root) => scope?.querySelector(selector);
@@ -12,9 +12,9 @@ const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const PANEL_META = {
   overview: { title: "Overview", desc: "今天的生活首页" },
-  notes: { title: "Little Notes", desc: "私人便签 · 右侧面板编辑" },
-  days: { title: "My Days", desc: "周视图为主 · 当日待办" },
-  footprints: { title: "Footprints", desc: "地图为主体的足迹空间" },
+  notes: { title: "Little Notes", desc: "私人便签" },
+  days: { title: "My Days", desc: "日历与当日待办" },
+  footprints: { title: "Footprints", desc: "私人足迹地图" },
 };
 
 let authState = {

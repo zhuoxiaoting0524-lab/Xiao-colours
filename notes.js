@@ -166,6 +166,7 @@ export async function mountNotes(authState, options = {}) {
   if (!mounted) {
     mounted = true;
     $("#add-note").addEventListener("click", () => editNote());
+    $("#note-empty-add")?.addEventListener("click", () => editNote());
     $("#note-form").addEventListener("submit", saveNote);
     $("#delete-note").addEventListener("click", deleteNote);
     $("#note-search").addEventListener("input", () => {

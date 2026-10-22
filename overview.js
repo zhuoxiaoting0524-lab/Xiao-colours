@@ -32,9 +32,23 @@ function setStatus(message, error = false) {
   node.hidden = !message;
 }
 
-function fillList(container, items, emptyText, renderItem) {
+function fillList(container, items, emptyText, renderItem, emptyAction) {
   if (!items.length) {
-    container.innerHTML = `<p class="overview-empty">${emptyText}</p>`;
+    const wrap = document.createElement("div");
+    wrap.className = "overview-empty-wrap";
+    const text = document.createElement("p");
+    text.className = "overview-empty";
+    text.textContent = emptyText;
+    wrap.appendChild(text);
+    if (emptyAction) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "quick-btn";
+      button.textContent = emptyAction.label;
+      button.addEventListener("click", emptyAction.onClick);
+      wrap.appendChild(button);
+    }
+    container.replaceChildren(wrap);
     return;
   }
   container.replaceChildren(...items.map(renderItem));
@@ -54,8 +68,7 @@ async function loadOverview() {
   }).format(today);
 
   const hour = today.getHours ? new Date().getHours() : 12;
-  $("#overview-greet").textContent =
-    hour < 12 ? "上午好，慢慢开始。" : hour < 18 ? "下午好，按自己的节奏。" : "晚上好，留下一点今天。";
+  $("#overview-greet").textContent = hour < 12 ? "上午好" : hour < 18 ? "下午好" : "晚上好";
 
   try {
     const [notesData, tasksData, datesData, placesData] = await Promise.all([
@@ -70,12 +83,18 @@ async function loadOverview() {
     const dates = datesData.dates || [];
     const places = placesData.footprints || placesData.places || [];
 
-    fillList($("#overview-todos"), tasks.slice(0, 6), "今天还没有待办", (task) => {
-      const li = document.createElement("li");
-      li.innerHTML = `<span class="ov-check${task.completed ? " done" : ""}" aria-hidden="true"></span><span></span>`;
-      li.querySelector("span:last-child").textContent = task.title;
-      return li;
-    });
+    fillList(
+      $("#overview-todos"),
+      tasks.slice(0, 6),
+      "今天还没有待办",
+      (task) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<span class="ov-check${task.completed ? " done" : ""}" aria-hidden="true"></span><span></span>`;
+        li.querySelector("span:last-child").textContent = task.title;
+        return li;
+      },
+      { label: "添加任务", onClick: () => onNavigate("days") },
+    );
 
     const upcoming = dates
       .map((item) => {
@@ -92,32 +111,50 @@ async function loadOverview() {
       .sort((a, b) => a.occurrence - b.occurrence)
       .slice(0, 4);
 
-    fillList($("#overview-dates"), upcoming, "还没有即将到来的重要日期", ({ item, remaining }) => {
-      const li = document.createElement("li");
-      li.innerHTML = `<span></span><em></em>`;
-      li.querySelector("span").textContent = item.title;
-      li.querySelector("em").textContent = remaining === 0 ? "今天" : `${remaining} 天后`;
-      return li;
-    });
+    fillList(
+      $("#overview-dates"),
+      upcoming,
+      "暂无即将到来的重要日期",
+      ({ item, remaining }) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<span></span><em></em>`;
+        li.querySelector("span").textContent = item.title;
+        li.querySelector("em").textContent = remaining === 0 ? "今天" : `${remaining} 天后`;
+        return li;
+      },
+      { label: "添加日期", onClick: () => onNavigate("days") },
+    );
 
-    fillList($("#overview-notes"), notes.slice(0, 4), "还没有便签", (note) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = `overview-note color-${note.color || "ivory"}`;
-      btn.textContent = note.title || "Untitled note";
-      btn.addEventListener("click", () => onNavigate("notes"));
-      return btn;
-    });
+    fillList(
+      $("#overview-notes"),
+      notes.slice(0, 4),
+      "还没有便签",
+      (note) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `overview-note color-${note.color || "ivory"}`;
+        btn.textContent = note.title || "Untitled note";
+        btn.addEventListener("click", () => onNavigate("notes"));
+        return btn;
+      },
+      { label: "新建便签", onClick: () => onNavigate("notes") },
+    );
 
-    fillList($("#overview-footprints"), places.slice(0, 4), "还没有足迹", (place) => {
-      const li = document.createElement("li");
-      li.innerHTML = `<span></span><em></em>`;
-      li.querySelector("span").textContent = place.name;
-      li.querySelector("em").textContent = place.status === "visited" ? "去过" : "想去";
-      li.style.cursor = "pointer";
-      li.addEventListener("click", () => onNavigate("footprints"));
-      return li;
-    });
+    fillList(
+      $("#overview-footprints"),
+      places.slice(0, 4),
+      "还没有足迹",
+      (place) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<span></span><em></em>`;
+        li.querySelector("span").textContent = place.name;
+        li.querySelector("em").textContent = place.status === "visited" ? "去过" : "想去";
+        li.style.cursor = "pointer";
+        li.addEventListener("click", () => onNavigate("footprints"));
+        return li;
+      },
+      { label: "添加地点", onClick: () => onNavigate("footprints") },
+    );
 
     setStatus("");
   } catch (error) {

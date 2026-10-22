@@ -5,26 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="XiaoColour 私人空间：Little Notes、My Days 与 Footprints。" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
-    <meta name="theme-color" content="#F9F9F7" />
+    <meta name="theme-color" content="#F8F8F6" />
     <link rel="apple-touch-icon" href="./favicon.svg" />
     <meta property="og:title" content="XiaoColour｜Personal Space" />
-    <meta property="og:description" content="Welcome to XiaoColour — a hand-drawn personal space." />
+    <meta property="og:description" content="XiaoColour — a calm personal workspace for notes, days, and places." />
     <meta property="og:type" content="website" />
     <title>XiaoColour｜Personal Space</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Gaegu:wght@400;700&family=Ma+Shan+Zheng&family=Patrick+Hand&family=Rock+Salt&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.15.0/dist/maplibre-gl.css" />
     <link rel="stylesheet" href="./styles.css?v=16" />
-    <link rel="stylesheet" href="./personal-space.css?v=31" />
-    <link rel="stylesheet" href="./workspace-shell.css?v=1" />
+    <link rel="stylesheet" href="./design-tokens.css?v=1" />
+    <link rel="stylesheet" href="./personal-space.css?v=32" />
+    <link rel="stylesheet" href="./workspace-shell.css?v=2" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=31"></script>
+    <script type="module" src="./personal-space.js?v=32"></script>
   </head>
   <body>
     <div class="paper-noise" aria-hidden="true"></div>
@@ -46,7 +47,7 @@
         <div class="ws-welcome">
           <p class="ws-kicker">Welcome</p>
           <h1 class="ws-brand">XiaoColour</h1>
-          <p class="ws-lead">私人便签、日子与足迹的安静空间</p>
+          <p class="ws-lead">Notes, days, and places — in one calm workspace.</p>
           <div class="ws-welcome-actions">
             <button class="ws-cta" type="button" data-route="overview" id="welcome-enter">进入工作区</button>
             <a class="ws-link" href="./login.html" id="personal-auth-login-link">登录</a>
@@ -132,24 +133,24 @@
             </section>
 
             <section class="screen module" data-screen="notes" aria-label="Little Notes" hidden>
-              <header class="module-head compact-head">
-                <div><span><p class="overline">LITTLE NOTES</p><h2>便签</h2></span></div>
-              </header>
               <div class="toolbar note-toolbar">
                 <label class="search">⌕ <input id="note-search" type="search" placeholder="搜索便签" autocomplete="off"></label>
                 <label class="sort-label">排序 <select id="note-sort"><option value="updated_desc">最近更新</option><option value="created_desc">最新创建</option><option value="created_asc">最早创建</option></select></label>
-                <span class="counter"><b id="note-count">0</b> notes</span>
-                <button class="primary" id="add-note" type="button">＋ 新增便签</button>
+                <span class="counter"><b id="note-count">0</b></span>
+                <button class="primary" id="add-note" type="button">新增便签</button>
               </div>
               <p class="inline-status" id="notes-status" role="status" aria-live="polite">正在读取你的便签…</p>
               <div class="note-wall" id="note-wall"></div>
-              <div class="empty-state" id="note-empty" hidden><b>这里还没有便签</b><span>创建第一张便签，或换一个搜索词。</span></div>
+              <div class="empty-state" id="note-empty" hidden>
+                <b>还没有便签</b>
+                <span>把需要记住的事放在这里。</span>
+                <button class="primary" type="button" id="note-empty-add">新建第一条</button>
+              </div>
             </section>
 
             <section class="screen module" data-screen="days" aria-label="My Days" hidden>
               <header class="module-head compact-head">
                 <div>
-                  <span><p class="overline">MY DAYS</p><h2>日子</h2></span>
                   <span class="switch">
                     <button class="active" type="button" data-calendar-view="week">周视图</button>
                     <button type="button" data-calendar-view="month">月历</button>
@@ -176,7 +177,6 @@
             <section class="screen module map-module" data-screen="footprints" aria-label="Footprints" hidden>
               <header class="module-head compact-head map-head">
                 <div>
-                  <span><p class="overline">FOOTPRINTS</p><h2>足迹</h2></span>
                   <span class="legend"><i></i>去过 <i></i>想去</span>
                 </div>
               </header>
@@ -192,9 +192,9 @@
                   <button type="button" data-filter="wish">想去</button>
                 </div>
                 <button type="button" class="ghost-btn" id="places-drawer-toggle">收起列表</button>
-                <button class="primary" id="add-place" type="button">＋ 添加</button>
+                <button class="primary" id="add-place" type="button">添加地点</button>
               </div>
-              <p class="geocode-note map-tools-note">按下搜索后查询，请勿输入私密文字 · © OpenStreetMap contributors</p>
+              <p class="geocode-note map-tools-note">© OpenStreetMap contributors</p>
               <div class="geocode-results" id="geocode-results" hidden></div>
               <div class="map-layout map-layout-wide">
                 <aside class="place-panel is-open" id="place-panel">
