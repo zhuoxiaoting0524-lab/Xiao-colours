@@ -1,20 +1,19 @@
 import { api, getMe, loginUrlForView } from "./auth-client.js";
-import { mountOverview } from "./overview.js?v=2";
-import { mountNotes } from "./notes.js?v=22";
-import { mountDays } from "./days.js?v=22";
-import { mountFootprints } from "./footprints.js?v=32";
+import { mountOverview } from "./overview.js?v=4";
+import { mountDays, openTaskComposer, openImportantComposer } from "./days.js?v=23";
+import { mountFootprints } from "./footprints.js?v=33";
 
 const root = document.querySelector("#personal-space-v2");
 const $ = (selector, scope = root) => scope?.querySelector(selector);
 const $$ = (selector, scope = root) => [...(scope?.querySelectorAll(selector) || [])];
-const privateRoutes = new Set(["overview", "notes", "days", "footprints"]);
+const privateRoutes = new Set(["overview", "days", "footprints", "settings"]);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const PANEL_META = {
-  overview: { title: "Overview", desc: "今天的生活首页" },
-  notes: { title: "Little Notes", desc: "私人便签" },
-  days: { title: "My Days", desc: "日历与当日待办" },
-  footprints: { title: "Footprints", desc: "私人足迹地图" },
+  overview: { title: "Overview", desc: "温柔的问候、今日计划与生活概览" },
+  days: { title: "My Days", desc: "把日子过成自己喜欢的样子。" },
+  footprints: { title: "Footprints", desc: "走过的地方，都是生活的颜色。" },
+  settings: { title: "设置", desc: "让这个空间更符合你的喜好。" },
 };
 
 let authState = {
@@ -25,6 +24,49 @@ let authState = {
 };
 let noticeTimer = null;
 let navigating = false;
+let settingsMounted = false;
+
+function effectiveTheme(choice) {
+  if (choice !== "system") return choice;
+  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+const COLOR_SCHEMES = {
+  sage: { primary: "#738B7B", primaryDark: "#526D59", primarySoft: "#E8EEE7" },
+  peach: { primary: "#E8A588", primaryDark: "#B86F50", primarySoft: "#FCEEE7" },
+  rose: { primary: "#E09292", primaryDark: "#B55E5E", primarySoft: "#FCEBEB" },
+  blue: { primary: "#8EAAC9", primaryDark: "#5B7E9F", primarySoft: "#EAF1F8" },
+  lavender: { primary: "#B89FD1", primaryDark: "#8162A0", primarySoft: "#F4EFF9" },
+};
+
+function applyColorScheme(scheme = localStorage.getItem("xiaocolour-color-scheme") || "sage") {
+  const chosen = COLOR_SCHEMES[scheme] || COLOR_SCHEMES.sage;
+  root.style.setProperty("--color-primary", chosen.primary);
+  root.style.setProperty("--color-primary-dark", chosen.primaryDark);
+  root.style.setProperty("--color-primary-soft", chosen.primarySoft);
+  root.style.setProperty("--brand", chosen.primary);
+  root.style.setProperty("--brand-soft", chosen.primarySoft);
+  root.style.setProperty("--primary-dark", chosen.primaryDark);
+  $$(".swatch-btn").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.colorScheme === scheme);
+  });
+}
+
+function applyTheme(choice = localStorage.getItem("xiaocolour-theme") || "light") {
+  const allowed = ["light", "dark", "system"];
+  const next = allowed.includes(choice) ? choice : "light";
+  root.dataset.themeChoice = next;
+  root.dataset.theme = effectiveTheme(next);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", root.dataset.theme === "dark" ? "#18201C" : "#F8F7F2");
+  root.querySelectorAll("[data-theme-choice]").forEach((button) => {
+    const selected = button.dataset.themeChoice === next;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-checked", String(selected));
+  });
+  applyColorScheme();
+}
+
+applyTheme();
 
 function notify(message, isError = false) {
   const node = $("#personal-app-notice");
@@ -62,13 +104,6 @@ function syncNav(name) {
   $$(".ws-nav-item").forEach((btn) => {
     btn.classList.toggle("is-active", btn.dataset.route === name);
   });
-  const meta = PANEL_META[name];
-  if (meta) {
-    const title = $("#ws-panel-title");
-    const desc = $("#ws-panel-desc");
-    if (title) title.textContent = meta.title;
-    if (desc) desc.textContent = meta.desc;
-  }
 }
 
 function openMobileNav() {
@@ -117,6 +152,8 @@ function renderAccount() {
     if (logout) logout.hidden = false;
     if (enter) enter.textContent = "进入工作区";
     if (accountBtn) accountBtn.textContent = "账户设置";
+    const initial = authState.user.displayName?.trim()?.charAt(0)?.toUpperCase() || "X";
+    $("#ws-account-initial") && ($("#ws-account-initial").textContent = initial);
     return;
   }
 
@@ -124,7 +161,7 @@ function renderAccount() {
   if (detail) {
     detail.textContent = authState.status === "error"
       ? "请检查网络后刷新；为保护私人数据，不会误判为已登录。"
-      : "登录后可进入 Overview、Little Notes、My Days 与 Footprints。";
+      : "登录后可进入 Overview、My Days 与 Footprints。";
   }
   if (email) email.textContent = "—";
   if (login) login.hidden = false;
@@ -136,18 +173,90 @@ function renderAccount() {
 
 async function mountRoute(name) {
   if (name === "overview") {
-    await mountOverview(authState, { notify, onNavigate: (target) => route(target) });
+    await mountOverview(authState, {
+      notify,
+      onNavigate: (target) => route(target),
+      onAddTask: async () => { await route("days"); openTaskComposer(); },
+      onAddDate: async () => { await route("days"); openImportantComposer(); },
+    });
   }
-  if (name === "notes") await mountNotes(authState, { notify });
   if (name === "days") await mountDays(authState, { notify });
   if (name === "footprints") await mountFootprints(authState, { notify });
+  if (name === "settings") mountSettings();
+}
+
+function mountSettings() {
+  const user = authState.user;
+  if (!user) return;
+  const initial = user.displayName?.trim()?.charAt(0)?.toUpperCase() || "X";
+  const avatarEl = $("#settings-avatar");
+  if (avatarEl) avatarEl.textContent = initial;
+  const nameEl = $("#settings-name");
+  if (nameEl) nameEl.textContent = user.displayName || "XiaoColour";
+  const emailEl = $("#settings-email");
+  if (emailEl) emailEl.textContent = user.email || "记录生活的每一份美好";
+  const adminLink = $("#settings-admin-link");
+  if (adminLink) adminLink.hidden = user.role !== "admin";
+  
+  applyTheme(root.dataset.themeChoice);
+  applyColorScheme();
+
+  if (settingsMounted) return;
+  settingsMounted = true;
+
+  $$("[data-theme-choice]").forEach((button) => button.addEventListener("click", () => {
+    const choice = button.dataset.themeChoice;
+    localStorage.setItem("xiaocolour-theme", choice);
+    applyTheme(choice);
+    notify("外观主题已保存");
+  }));
+
+  $$(".swatch-btn").forEach((btn) => btn.addEventListener("click", () => {
+    const scheme = btn.dataset.colorScheme;
+    localStorage.setItem("xiaocolour-color-scheme", scheme);
+    applyColorScheme(scheme);
+    notify("界面风格已更新");
+  }));
+
+  $("#settings-notify-toggle")?.addEventListener("change", (e) => {
+    notify(e.target.checked ? "提醒通知已开启" : "提醒通知已关闭");
+  });
+
+  $("#settings-lang")?.addEventListener("change", (e) => {
+    notify(`语言已切换为 ${e.target.options[e.target.selectedIndex].text}`);
+  });
+
+  $("#settings-edit-profile")?.addEventListener("click", () => {
+    const currentName = $("#settings-name").textContent;
+    const newName = window.prompt("修改显示名称：", currentName);
+    if (newName && newName.trim()) {
+      $("#settings-name").textContent = newName.trim();
+      notify("个人资料已更新");
+    }
+  });
+
+  $("#settings-logout")?.addEventListener("click", logout);
+}
+
+async function logout() {
+  try {
+    await api("/api/auth/logout", { method: "POST", csrfToken: authState.csrfToken, body: {} });
+  } finally {
+    location.href = "./index.html";
+  }
 }
 
 async function route(name, { push = true } = {}) {
   if (navigating) return;
   if (name === "home" || !name) name = "home";
   const screen = $(`[data-screen="${name}"]`);
-  if (!screen && name !== "home") name = authState.authenticated ? "overview" : "home";
+  if (!screen && name !== "home") {
+    name = authState.authenticated ? "overview" : "home";
+    if (!push) {
+      const replacement = name === "home" ? `${location.pathname}${location.search}` : `#${name}`;
+      history.replaceState(null, "", replacement);
+    }
+  }
 
   if (privateRoutes.has(name)) {
     if (authState.status === "loading") await authBoot;
@@ -240,12 +349,19 @@ document.addEventListener("click", (event) => {
   }
 });
 
-$("#personal-auth-logout-btn")?.addEventListener("click", async () => {
-  try {
-    await api("/api/auth/logout", { method: "POST", csrfToken: authState.csrfToken, body: {} });
-  } finally {
-    location.href = "./index.html";
+$("#personal-auth-logout-btn")?.addEventListener("click", logout);
+
+$("#ws-header-search")?.addEventListener("click", () => {
+  if (location.hash !== "#footprints") {
+    route("footprints");
   }
+  setTimeout(() => {
+    $("#place-search")?.focus();
+  }, 120);
+});
+
+$("#ws-header-notify")?.addEventListener("click", () => {
+  notify("今日一切顺利，生活自有节奏。☀");
 });
 
 $("#places-drawer-toggle")?.addEventListener("click", () => {
@@ -269,12 +385,12 @@ window.addEventListener("resize", () => {
   if (window.innerWidth > 768) closeMobileNav();
 });
 
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+  if (root.dataset.themeChoice === "system") applyTheme("system");
+});
+
 await authBoot;
 const initialHash = location.hash.slice(1);
 let initial = initialHash || "home";
 if (!initialHash && authState.status === "authenticated") initial = "overview";
-if (privateRoutes.has(initial) || initial === "home") {
-  await route(initial, { push: false });
-} else {
-  await route(authState.status === "authenticated" ? "overview" : "home", { push: false });
-}
+await route(initial, { push: false });

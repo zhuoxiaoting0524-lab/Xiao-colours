@@ -1,12 +1,12 @@
 /* XiaoColour Soft Editorial Minimalism — shared design tokens */
 :root {
-  --bg: #f8f8f6;
+  --bg: #f8f7f2;
   --surface: #ffffff;
-  --ink: #202321;
-  --muted: #737a74;
-  --brand: #afc6b6;
-  --brand-soft: #e8ede8;
-  --line: rgba(32, 35, 33, 0.08);
+  --ink: #252b28;
+  --muted: #818a83;
+  --brand: #738b7b;
+  --brand-soft: #e8eee7;
+  --line: #e7eae3;
   --line-strong: rgba(32, 35, 33, 0.14);
   --danger: #9a4f4a;
   --note-ivory: #f7f3ea;
@@ -32,11 +32,11 @@
   --s6: 2rem;
   --s7: 3rem;
   --page-x: 1.5rem;
-  --sidebar: 240px;
-  --radius: 8px;
-  --radius-sm: 6px;
+  --sidebar: 238px;
+  --radius: 18px;
+  --radius-sm: 11px;
   --control-h: 2.25rem;
-  --shadow: 0 1px 2px rgba(32, 35, 33, 0.04);
+  --shadow: 0 4px 20px rgba(45, 60, 48, 0.035);
   --ease: 160ms ease;
 
   /* Back-compat aliases used by personal-space.css */

@@ -3,19 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="XiaoColour 私人空间：Little Notes、My Days 与 Footprints。" />
+    <meta name="description" content="XiaoColour 私人空间：My Days 与 Footprints。" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
-    <meta name="theme-color" content="#F8F8F6" />
+    <meta name="theme-color" content="#F8F7F2" />
     <link rel="apple-touch-icon" href="./favicon.svg" />
     <meta property="og:title" content="XiaoColour｜Personal Space" />
-    <meta property="og:description" content="XiaoColour — a calm personal workspace for notes, days, and places." />
+    <meta property="og:description" content="XiaoColour — a calm personal workspace for days and places." />
     <meta property="og:type" content="website" />
     <title>XiaoColour｜Personal Space</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.15.0/dist/maplibre-gl.css" />
@@ -23,9 +23,10 @@
     <link rel="stylesheet" href="./design-tokens.css?v=1" />
     <link rel="stylesheet" href="./personal-space.css?v=32" />
     <link rel="stylesheet" href="./workspace-shell.css?v=2" />
+    <link rel="stylesheet" href="./lifestyle-journal.css?v=1" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=32"></script>
+    <script type="module" src="./personal-space.js?v=35"></script>
   </head>
   <body>
     <div class="paper-noise" aria-hidden="true"></div>
@@ -47,13 +48,13 @@
         <div class="ws-welcome">
           <p class="ws-kicker">Welcome</p>
           <h1 class="ws-brand">XiaoColour</h1>
-          <p class="ws-lead">Notes, days, and places — in one calm workspace.</p>
+          <p class="ws-lead">Days and places — in one calm workspace.</p>
           <div class="ws-welcome-actions">
             <button class="ws-cta" type="button" data-route="overview" id="welcome-enter">进入工作区</button>
             <a class="ws-link" href="./login.html" id="personal-auth-login-link">登录</a>
             <a class="ws-link" href="./global.html">Global Pulse ↗</a>
           </div>
-          <p class="ws-welcome-hint" id="personal-auth-user-detail">登录后可使用 Overview、Little Notes、My Days 与 Footprints。</p>
+          <p class="ws-welcome-hint" id="personal-auth-user-detail">登录后可使用 Overview、My Days 与 Footprints。</p>
           <a class="ws-admin" href="./admin.html" id="personal-auth-admin-link" hidden>邀请管理</a>
         </div>
       </section>
@@ -64,18 +65,54 @@
         <aside class="ws-sidebar" id="ws-sidebar" aria-label="模块导航">
           <div class="ws-sidebar-top">
             <button type="button" class="ws-sidebar-close" id="ws-sidebar-close" aria-label="关闭导航">×</button>
-            <button type="button" class="ws-brand-btn" data-route="overview">XiaoColour</button>
-            <p class="ws-brand-sub">Personal Workspace</p>
+            <button type="button" class="ws-brand-btn" data-route="overview">
+              <span class="ws-brand-leaf" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22v-9" />
+                  <path d="M12 13a5 5 0 0 1 5-5h2a5 5 0 0 1-5 5h-2z" />
+                  <path d="M12 16a5 5 0 0 0-5-5H5a5 5 0 0 0 5 5h2z" />
+                </svg>
+              </span>
+              <span><b>XiaoColour</b><small>My little world</small></span>
+            </button>
           </div>
           <nav class="ws-nav">
-            <button type="button" class="ws-nav-item" data-route="overview"><span class="ws-nav-mark" aria-hidden="true"></span>Overview</button>
-            <button type="button" class="ws-nav-item" data-route="notes"><span class="ws-nav-mark" aria-hidden="true"></span>Little Notes</button>
-            <button type="button" class="ws-nav-item" data-route="days"><span class="ws-nav-mark" aria-hidden="true"></span>My Days</button>
-            <button type="button" class="ws-nav-item" data-route="footprints"><span class="ws-nav-mark" aria-hidden="true"></span>Footprints</button>
+            <button type="button" class="ws-nav-item" data-route="overview">
+              <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 20Z"/><path d="M9 21v-7h6v7"/></svg>
+              <span>Overview</span>
+            </button>
+            <button type="button" class="ws-nav-item" data-route="days">
+              <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              <span>My Days</span>
+            </button>
+            <button type="button" class="ws-nav-item" data-route="footprints">
+              <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11.5A7 7 0 0 1 19 9.5C19 15.5 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+              <span>Footprints</span>
+            </button>
+            <button type="button" class="ws-nav-item ws-settings-nav" data-route="settings">
+              <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+              <span>设置</span>
+            </button>
           </nav>
+          
+          <!-- Botanical branch illustration & signature script in sidebar footer -->
+          <div class="ws-sidebar-illustration" aria-hidden="true">
+            <svg class="ws-botanical-branch" viewBox="0 0 160 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15 130 C 35 110, 50 85, 75 35 C 85 18, 92 10, 95 5" stroke="#738B7B" stroke-width="2" stroke-linecap="round" opacity="0.75" />
+              <path d="M28 115 C 10 110, 0 95, 8 82 C 18 80, 32 95, 28 115 Z" fill="#8CA595" opacity="0.65" />
+              <path d="M42 98 C 60 96, 74 106, 68 120 C 55 125, 42 112, 42 98 Z" fill="#9AB2A3" opacity="0.6" />
+              <path d="M48 78 C 30 70, 22 52, 34 40 C 45 42, 53 60, 48 78 Z" fill="#738B7B" opacity="0.7" />
+              <path d="M62 60 C 82 55, 96 68, 88 82 C 75 88, 62 75, 62 60 Z" fill="#8EA898" opacity="0.65" />
+              <path d="M72 42 C 58 32, 55 15, 68 8 C 78 12, 80 28, 72 42 Z" fill="#7E9685" opacity="0.75" />
+              <path d="M82 28 C 100 22, 110 32, 106 45 C 95 50, 84 40, 82 28 Z" fill="#94AC9E" opacity="0.7" />
+              <path d="M92 12 C 96 2, 108 0, 112 8 C 110 16, 100 18, 92 12 Z" fill="#8CA595" opacity="0.8" />
+            </svg>
+            <span class="ws-sidebar-script">A more colorful life ☆</span>
+          </div>
+
           <div class="ws-nav-footer">
-            <a class="ws-nav-link" href="./global.html">Global Pulse</a>
-            <button type="button" class="ws-nav-link" id="personal-account" aria-expanded="false">账户设置</button>
+            <a class="ws-nav-link" href="./global.html">Global Pulse ↗</a>
+            <button type="button" class="ws-nav-link" id="personal-account" aria-expanded="false">账户菜单</button>
             <button type="button" class="ws-nav-link" id="personal-auth-logout-btn" hidden>退出登录</button>
           </div>
           <div class="account-pop" id="personal-account-pop" hidden>
@@ -90,9 +127,22 @@
         <div class="ws-main">
           <header class="ws-topbar">
             <button type="button" class="ws-menu" id="ws-menu" aria-label="打开导航">☰</button>
-            <div class="ws-topbar-copy">
+            <div class="ws-topbar-copy" id="ws-topbar-copy">
               <h2 id="ws-panel-title">Overview</h2>
-              <p id="ws-panel-desc">今天的生活首页</p>
+              <p id="ws-panel-desc">温柔的问候、今日计划与生活概览</p>
+            </div>
+            
+            <!-- Global header right: Search, Notifications, Avatar -->
+            <div class="ws-topbar-actions">
+              <button type="button" class="ws-action-icon-btn" id="ws-header-search" aria-label="搜索">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </button>
+              <button type="button" class="ws-action-icon-btn" id="ws-header-notify" aria-label="提醒通知">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </button>
+              <button type="button" class="ws-account-avatar" data-route="settings" aria-label="打开设置">
+                <span id="ws-account-initial">X</span>
+              </button>
             </div>
           </header>
           <div class="app-notice" id="personal-app-notice" role="status" aria-live="polite" hidden></div>
@@ -100,128 +150,425 @@
             <section class="screen module overview-module" data-screen="overview" aria-label="Overview" hidden>
               <p class="inline-status" id="overview-status" role="status" aria-live="polite"></p>
               <div class="overview-grid">
-                <article class="ov-block ov-date">
-                  <p class="ov-label">Today</p>
-                  <h3 id="overview-date">—</h3>
-                  <p class="ov-soft" id="overview-greet">准备开始这一天</p>
-                </article>
-                <article class="ov-block">
-                  <div class="ov-head"><h3>今日待办</h3><button type="button" class="text-btn" data-overview-go="days">打开 My Days</button></div>
+                <header class="ov-hero">
+                  <div class="ov-hero-text">
+                    <p class="ov-label" id="overview-date">OCTOBER 23 · FRIDAY</p>
+                    <h3><span id="overview-greet">下午好</span> <span class="ov-sun" aria-hidden="true">☀</span></h3>
+                    <p class="ov-slogan">慢慢来，生活自有节奏。</p>
+                  </div>
+                  <!-- Daisy flowers in ceramic vase illustration matching mockup -->
+                  <div class="ov-hero-vase" aria-hidden="true">
+                    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <ellipse cx="100" cy="110" rx="75" ry="65" fill="#FBF8F2" opacity="0.7" />
+                      <ellipse cx="100" cy="180" rx="55" ry="10" fill="#E8ECE5" opacity="0.6" />
+                      <!-- Vase body -->
+                      <path d="M78 178 C 72 178, 66 168, 68 140 C 70 120, 78 112, 82 100 L 118 100 C 122 112, 130 120, 132 140 C 134 168, 128 178, 122 178 Z" fill="#F4EFEA" stroke="#E2DAD2" stroke-width="1.5" />
+                      <ellipse cx="100" cy="100" rx="18" ry="4" fill="#EBE3DC" stroke="#E2DAD2" stroke-width="1.2" />
+                      <path d="M72 116 C 58 122, 56 148, 70 156" stroke="#E2DAD2" stroke-width="3" fill="none" stroke-linecap="round" />
+                      <!-- Stems -->
+                      <path d="M100 100 Q 95 65 72 42" stroke="#738B7B" stroke-width="2" stroke-linecap="round" />
+                      <path d="M102 100 Q 106 60 125 35" stroke="#738B7B" stroke-width="2" stroke-linecap="round" />
+                      <path d="M98 100 Q 98 50 100 25" stroke="#738B7B" stroke-width="2.2" stroke-linecap="round" />
+                      <path d="M96 100 Q 75 75 52 68" stroke="#738B7B" stroke-width="1.8" stroke-linecap="round" />
+                      <path d="M104 100 Q 125 78 145 70" stroke="#738B7B" stroke-width="1.8" stroke-linecap="round" />
+                      <!-- Leaves -->
+                      <path d="M85 70 C 72 65, 70 52, 78 48 C 88 52, 88 62, 85 70 Z" fill="#8CA595" opacity="0.85" />
+                      <path d="M112 68 C 125 62, 130 50, 122 46 C 114 50, 112 60, 112 68 Z" fill="#9AB2A3" opacity="0.85" />
+                      <path d="M92 48 C 82 40, 84 28, 92 26 C 98 32, 96 42, 92 48 Z" fill="#7E9685" opacity="0.85" />
+                      <path d="M106 50 C 116 42, 118 30, 110 26 C 102 32, 102 42, 106 50 Z" fill="#8EA898" opacity="0.85" />
+                      <!-- Daisies -->
+                      <g transform="translate(100, 25)">
+                        <circle cx="0" cy="-14" r="5" fill="#FFFFFF" /><circle cx="10" cy="-10" r="5" fill="#FFFFFF" /><circle cx="14" cy="0" r="5" fill="#FFFFFF" /><circle cx="10" cy="10" r="5" fill="#FFFFFF" /><circle cx="0" cy="14" r="5" fill="#FFFFFF" /><circle cx="-10" cy="10" r="5" fill="#FFFFFF" /><circle cx="-14" cy="0" r="5" fill="#FFFFFF" /><circle cx="-10" cy="-10" r="5" fill="#FFFFFF" />
+                        <circle cx="0" cy="0" r="6" fill="#F4BA42" />
+                      </g>
+                      <g transform="translate(72, 42)">
+                        <circle cx="0" cy="-11" r="4.2" fill="#FFFFFF" /><circle cx="8" cy="-8" r="4.2" fill="#FFFFFF" /><circle cx="11" cy="0" r="4.2" fill="#FFFFFF" /><circle cx="8" cy="8" r="4.2" fill="#FFFFFF" /><circle cx="0" cy="11" r="4.2" fill="#FFFFFF" /><circle cx="-8" cy="8" r="4.2" fill="#FFFFFF" /><circle cx="-11" cy="0" r="4.2" fill="#FFFFFF" /><circle cx="-8" cy="-8" r="4.2" fill="#FFFFFF" />
+                        <circle cx="0" cy="0" r="5" fill="#F5C04A" />
+                      </g>
+                      <g transform="translate(125, 35)">
+                        <circle cx="0" cy="-12" r="4.5" fill="#FFFFFF" /><circle cx="9" cy="-9" r="4.5" fill="#FFFFFF" /><circle cx="12" cy="0" r="4.5" fill="#FFFFFF" /><circle cx="9" cy="9" r="4.5" fill="#FFFFFF" /><circle cx="0" cy="12" r="4.5" fill="#FFFFFF" /><circle cx="-9" cy="9" r="4.5" fill="#FFFFFF" /><circle cx="-12" cy="0" r="4.5" fill="#FFFFFF" /><circle cx="-9" cy="-9" r="4.5" fill="#FFFFFF" />
+                        <circle cx="0" cy="0" r="5.2" fill="#F4BA42" />
+                      </g>
+                      <g transform="translate(52, 68)">
+                        <circle cx="0" cy="-9" r="3.8" fill="#FFFFFF" /><circle cx="7" cy="-7" r="3.8" fill="#FFFFFF" /><circle cx="9" cy="0" r="3.8" fill="#FFFFFF" /><circle cx="7" cy="7" r="3.8" fill="#FFFFFF" /><circle cx="0" cy="9" r="3.8" fill="#FFFFFF" /><circle cx="-7" cy="7" r="3.8" fill="#FFFFFF" /><circle cx="-9" cy="0" r="3.8" fill="#FFFFFF" /><circle cx="-7" cy="-7" r="3.8" fill="#FFFFFF" />
+                        <circle cx="0" cy="0" r="4.2" fill="#E8B038" />
+                      </g>
+                      <g transform="translate(145, 70)">
+                        <circle cx="0" cy="-9" r="3.8" fill="#FFFFFF" /><circle cx="7" cy="-7" r="3.8" fill="#FFFFFF" /><circle cx="9" cy="0" r="3.8" fill="#FFFFFF" /><circle cx="7" cy="7" r="3.8" fill="#FFFFFF" /><circle cx="0" cy="9" r="3.8" fill="#FFFFFF" /><circle cx="-7" cy="7" r="3.8" fill="#FFFFFF" /><circle cx="-9" cy="0" r="3.8" fill="#FFFFFF" /><circle cx="-7" cy="-7" r="3.8" fill="#FFFFFF" />
+                        <circle cx="0" cy="0" r="4.2" fill="#E8B038" />
+                      </g>
+                    </svg>
+                  </div>
+                </header>
+
+                <!-- 3 Summary Stat Cards matching mockup -->
+                <section class="ov-stats" aria-label="今日概览">
+                  <button class="ov-stat ov-stat-task" type="button" data-overview-go="days">
+                    <span class="ov-stat-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M9 11l2 2 4-4"/></svg>
+                    </span>
+                    <div class="ov-stat-content">
+                      <small>今日任务</small>
+                      <b id="overview-task-count">0 / 0</b>
+                      <em id="overview-task-sub">还没有安排，开始计划吧</em>
+                    </div>
+                    <i class="ov-stat-arrow" aria-hidden="true">→</i>
+                  </button>
+                  <button class="ov-stat ov-stat-peach" type="button" data-overview-go="days" data-overview-add="date">
+                    <span class="ov-stat-icon">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </span>
+                    <div class="ov-stat-content">
+                      <small>重要日期</small>
+                      <b id="overview-date-count">0</b>
+                      <em id="overview-date-sub">还没有重要日期</em>
+                    </div>
+                    <i class="ov-stat-arrow" aria-hidden="true">→</i>
+                  </button>
+                  <button class="ov-stat ov-stat-apricot" type="button" data-overview-go="footprints">
+                    <span class="ov-stat-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11.5A7 7 0 0 1 19 9.5C19 15.5 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+                    </span>
+                    <div class="ov-stat-content">
+                      <small>旅行足迹</small>
+                      <b id="overview-place-count">0</b>
+                      <em id="overview-place-sub">已去过 0 个地方</em>
+                    </div>
+                    <i class="ov-stat-arrow" aria-hidden="true">→</i>
+                  </button>
+                </section>
+
+                <!-- Middle row: Today's plan & Travel feature card -->
+                <article class="ov-card ov-today-card">
+                  <div class="ov-head">
+                    <div class="ov-head-left">
+                      <span class="ov-head-badge green-badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+                      </span>
+                      <h3>今天的小计划</h3>
+                    </div>
+                    <button type="button" class="btn-ghost-pill" data-overview-add="task">＋ 添加任务</button>
+                  </div>
                   <ul class="ov-list" id="overview-todos"></ul>
                 </article>
-                <article class="ov-block">
-                  <div class="ov-head"><h3>重要日期</h3></div>
+
+                <button class="ov-travel-card" type="button" data-overview-go="footprints">
+                  <div class="ov-travel-info">
+                    <small>旅行足迹</small>
+                    <b>去看一看世界，<br>也去看看更大的自己。</b>
+                  </div>
+                  <i class="ov-travel-arrow" aria-hidden="true">→</i>
+                </button>
+
+                <!-- Bottom row: Important dates & Warm quote card -->
+                <article class="ov-card ov-dates-card">
+                  <div class="ov-head">
+                    <div class="ov-head-left">
+                      <span class="ov-head-badge peach-badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <div>
+                        <h3>重要的日子</h3>
+                        <p>记录值得期待的时刻</p>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-ghost-pill" data-overview-add="date">＋ 添加重要日期</button>
+                  </div>
                   <ul class="ov-list" id="overview-dates"></ul>
                 </article>
-                <article class="ov-block">
-                  <div class="ov-head"><h3>最近便签</h3><button type="button" class="text-btn" data-overview-go="notes">全部便签</button></div>
-                  <div class="ov-notes" id="overview-notes"></div>
+
+                <article class="ov-quote" aria-label="生活小句">
+                  <span class="ov-quote-mark" aria-hidden="true">“</span>
+                  <p>生活或许平凡，<br>但每一天都值得被认真对待。</p>
+                  <span class="ov-quote-flower" aria-hidden="true">☘</span>
                 </article>
-                <article class="ov-block">
-                  <div class="ov-head"><h3>最近足迹</h3><button type="button" class="text-btn" data-overview-go="footprints">打开地图</button></div>
-                  <ul class="ov-list" id="overview-footprints"></ul>
-                </article>
-                <article class="ov-block ov-quick">
-                  <h3>快速新增</h3>
-                  <div class="ov-quick-row">
-                    <button type="button" class="quick-btn" data-overview-go="notes">＋ 便签</button>
-                    <button type="button" class="quick-btn" data-overview-go="days">＋ 任务</button>
-                    <button type="button" class="quick-btn" data-overview-go="footprints">＋ 地点</button>
-                  </div>
-                </article>
+                <ul id="overview-footprints" hidden></ul>
               </div>
             </section>
 
-            <section class="screen module" data-screen="notes" aria-label="Little Notes" hidden>
-              <div class="toolbar note-toolbar">
-                <label class="search">⌕ <input id="note-search" type="search" placeholder="搜索便签" autocomplete="off"></label>
-                <label class="sort-label">排序 <select id="note-sort"><option value="updated_desc">最近更新</option><option value="created_desc">最新创建</option><option value="created_asc">最早创建</option></select></label>
-                <span class="counter"><b id="note-count">0</b></span>
-                <button class="primary" id="add-note" type="button">新增便签</button>
-              </div>
-              <p class="inline-status" id="notes-status" role="status" aria-live="polite">正在读取你的便签…</p>
-              <div class="note-wall" id="note-wall"></div>
-              <div class="empty-state" id="note-empty" hidden>
-                <b>还没有便签</b>
-                <span>把需要记住的事放在这里。</span>
-                <button class="primary" type="button" id="note-empty-add">新建第一条</button>
-              </div>
-            </section>
-
-            <section class="screen module" data-screen="days" aria-label="My Days" hidden>
-              <header class="module-head compact-head">
-                <div>
-                  <span class="switch">
+            <section class="screen module days-module" data-screen="days" aria-label="My Days" hidden>
+              <!-- In-page Header for My Days -->
+              <div class="page-head-row">
+                <div class="page-head-copy">
+                  <h2>My Days</h2>
+                  <p>把日子过成自己喜欢的样子。</p>
+                </div>
+                <div class="days-controls-cluster">
+                  <div class="segmented-pills switch" role="tablist">
                     <button class="active" type="button" data-calendar-view="week">周视图</button>
                     <button type="button" data-calendar-view="month">月历</button>
-                  </span>
+                  </div>
+                  <div class="nav-arrows">
+                    <button type="button" id="calendar-prev" aria-label="上一段日期">←</button>
+                    <button type="button" id="calendar-next" aria-label="下一段日期">→</button>
+                  </div>
+                  <button type="button" class="btn-ghost-pill" id="calendar-today">今天</button>
                 </div>
-              </header>
+              </div>
+
               <p class="inline-status" id="days-status" role="status" aria-live="polite">正在读取生活计划…</p>
-              <div class="calendar-layout">
-                <section class="calendar-main">
-                  <div class="calendar-title"><span><p id="calendar-month-label">MONTH</p><h3 id="calendar-range-label">—</h3></span><span><button type="button" id="calendar-prev" aria-label="上一段日期">←</button><button type="button" id="calendar-next" aria-label="下一段日期">→</button></span></div>
-                  <div class="week" id="week"></div><div class="month" id="month" hidden></div>
-                  <div class="today-head"><span><p id="day-label">SELECTED DAY</p><h3 id="day-title">—</h3></span><button class="primary" id="add-task" type="button">＋ 新任务</button></div>
+
+              <!-- Calendar card container -->
+              <div class="calendar-strip-card">
+                <div class="calendar-card-head">
+                  <h3 id="calendar-range-label">October 2026</h3>
+                  <p id="calendar-month-label" hidden>MONTH</p>
+                </div>
+                <div class="week" id="week"></div>
+                <div class="month" id="month" hidden></div>
+              </div>
+
+              <!-- Main 2-column layout: Tasks (left) and Progress + Important dates (right) -->
+              <div class="days-split-layout">
+                <section class="days-task-card">
+                  <div class="days-card-head">
+                    <h3 id="day-title">今天 · 10月23日 星期五</h3>
+                    <p id="day-label" hidden>SELECTED DAY</p>
+                    <button class="btn-ghost-pill" id="add-task" type="button">＋ 新建任务</button>
+                  </div>
                   <div class="tasks" id="tasks"></div>
                 </section>
-                <aside class="upcoming">
-                  <p class="overline">COMING UP</p><h3>重要日期</h3>
-                  <div class="dates" id="important-dates"></div>
-                  <button class="under" id="add-important" type="button">＋ 添加重要日期</button>
-                  <div class="progress"><span>本周进度 <b id="week-progress-label">0 / 0</b></span><i><u id="week-progress-bar"></u></i><small>完成一点，也留一点呼吸。</small></div>
+
+                <aside class="days-side-column">
+                  <!-- Progress Card -->
+                  <div class="progress-card">
+                    <div class="progress-head">
+                      <h4>本周进度</h4>
+                      <b id="week-progress-label">0 / 0</b>
+                    </div>
+                    <div class="progress-visual">
+                      <span class="sprout-icon" aria-hidden="true">🌱</span>
+                      <div class="progress-track"><u id="week-progress-bar"></u></div>
+                    </div>
+                    <small class="progress-sub">完成一点点，也是一种进步。</small>
+                  </div>
+
+                  <!-- Important Dates Card -->
+                  <div class="important-dates-card">
+                    <div class="important-head">
+                      <span class="important-star" aria-hidden="true">☆</span>
+                      <h4>重要日期</h4>
+                    </div>
+                    <div class="dates" id="important-dates"></div>
+                    <button class="btn-dashed-action" id="add-important" type="button">＋ 添加重要日期</button>
+                  </div>
                 </aside>
               </div>
             </section>
 
-            <section class="screen module map-module" data-screen="footprints" aria-label="Footprints" hidden>
-              <header class="module-head compact-head map-head">
-                <div>
-                  <span class="legend"><i></i>去过 <i></i>想去</span>
+            <section class="screen module map-module footprints-module" data-screen="footprints" aria-label="Footprints" hidden>
+              <!-- In-page Header for Footprints -->
+              <div class="page-head-row">
+                <div class="page-head-copy">
+                  <h2>Footprints</h2>
+                  <p>走过的地方，都是生活的颜色。</p>
                 </div>
-              </header>
-              <p class="inline-status" id="footprints-status" role="status" aria-live="polite">正在读取你的足迹…</p>
-              <div class="map-tools-bar">
-                <form class="place-search-form" id="place-search-form">
-                  <label class="search">⌕ <input id="place-search" type="search" minlength="2" maxlength="120" autocomplete="off" placeholder="搜索城市或地点"></label>
-                  <button type="submit" aria-label="搜索地点">搜索</button>
-                </form>
+              </div>
+
+              <!-- Toolbar: Filters, Search, Add -->
+              <div class="footprints-toolbar-row">
                 <div class="filters">
                   <button class="active" type="button" data-filter="all">全部</button>
                   <button type="button" data-filter="visited">去过</button>
                   <button type="button" data-filter="wish">想去</button>
                 </div>
-                <button type="button" class="ghost-btn" id="places-drawer-toggle">收起列表</button>
-                <button class="primary" id="add-place" type="button">添加地点</button>
+                <form class="place-search-form" id="place-search-form">
+                  <label class="search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input id="place-search" type="search" minlength="2" maxlength="120" autocomplete="off" placeholder="搜索城市或地点…">
+                  </label>
+                  <button type="submit" aria-label="搜索地点">搜索</button>
+                </form>
+                <button class="primary btn-primary-pill" id="add-place" type="button">＋ 添加地点</button>
+                <button type="button" class="ghost-btn" id="places-drawer-toggle" hidden>收起列表</button>
               </div>
-              <p class="geocode-note map-tools-note">© OpenStreetMap contributors</p>
+
+              <!-- 3 Footprints stats cards matching mockup -->
+              <section class="footprint-stats-row" aria-label="足迹统计">
+                <article class="fp-stat-card fp-stat-visited">
+                  <span class="fp-stat-icon visited-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.5-7-11.5A7 7 0 0 1 19 9.5C19 15.5 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+                  </span>
+                  <div class="fp-stat-info">
+                    <small>去过的地方</small>
+                    <b id="footprints-visited-count">0</b>
+                    <em>记录你走过的风景</em>
+                  </div>
+                </article>
+                <article class="fp-stat-card fp-stat-wish">
+                  <span class="fp-stat-icon wish-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                  </span>
+                  <div class="fp-stat-info">
+                    <small>想去的地方</small>
+                    <b id="footprints-wish-count">0</b>
+                    <em>收藏下一段旅程</em>
+                  </div>
+                </article>
+                <article class="fp-stat-card fp-stat-explore">
+                  <span class="fp-stat-icon explore-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  </span>
+                  <div class="fp-stat-info">
+                    <small>探索世界</small>
+                    <strong class="fp-stat-hero-label">从这里出发</strong>
+                    <em>用脚步丈量更大的世界</em>
+                  </div>
+                  <b id="footprints-total-count" hidden>0</b>
+                </article>
+              </section>
+
+              <p class="inline-status" id="footprints-status" role="status" aria-live="polite">正在读取你的足迹…</p>
               <div class="geocode-results" id="geocode-results" hidden></div>
-              <div class="map-layout map-layout-wide">
-                <aside class="place-panel is-open" id="place-panel">
-                  <div id="place-list" class="place-list"></div>
-                </aside>
-                <div class="map-stage" id="map-stage">
+
+              <!-- Map and Place cards 2-column split layout matching mockup -->
+              <div class="footprints-split-layout">
+                <!-- Left: Interactive Map -->
+                <div class="footprints-map-wrapper">
                   <div class="real-map" id="footprints-map" aria-label="真实可交互世界地图"></div>
                   <div class="map-status" id="map-loading"><span></span><b>正在加载真实地图</b><small>OpenFreeMap · OpenStreetMap</small></div>
                   <div class="map-status map-error" id="map-error" hidden><b>地图暂时无法加载</b><small id="map-error-message">请检查网络连接后重试。</small><button type="button" id="retry-map">重新加载地图</button></div>
-                  <button class="world-view" id="world-view" type="button">世界视角</button>
-                  <span class="map-help">拖动与滚轮缩放 · 点击标记查看详情</span>
+                  <button class="world-view" id="world-view" type="button" aria-label="重置世界视角">世界视角</button>
+                  <p class="geocode-note map-tools-note">© OpenStreetMap contributors</p>
                   <article class="place-detail" id="place-detail" hidden></article>
                 </div>
+
+                <!-- Right: Place Cards or Empty state -->
+                <div class="footprints-cards-column">
+                  <aside class="place-panel" id="place-panel" hidden>
+                    <div id="place-list" class="place-list"></div>
+                  </aside>
+                  <div class="footprint-cards" id="footprint-cards"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="screen module settings-module" data-screen="settings" aria-label="设置" hidden>
+              <!-- In-page Header for Settings -->
+              <div class="page-head-row">
+                <div class="page-head-copy">
+                  <h2>设置</h2>
+                  <p>让这个空间更符合你的喜好。</p>
+                </div>
+              </div>
+              <p class="inline-status" id="settings-status" role="status" aria-live="polite"></p>
+
+              <div class="settings-stack">
+                <!-- Card 1: 账户信息 -->
+                <section class="settings-card">
+                  <div class="settings-card-head">
+                    <h3>账户信息</h3>
+                  </div>
+                  <div class="settings-profile-row">
+                    <span class="settings-avatar" id="settings-avatar">X</span>
+                    <div class="settings-profile-meta">
+                      <b id="settings-name">XiaoColour</b>
+                      <small id="settings-email">记录生活的每一份美好</small>
+                    </div>
+                    <button type="button" class="btn-ghost-pill" id="settings-edit-profile">✎ 编辑资料</button>
+                  </div>
+                </section>
+
+                <!-- Card 2: 外观设置 -->
+                <section class="settings-card">
+                  <div class="settings-card-head">
+                    <h3>外观设置</h3>
+                  </div>
+                  <div class="settings-subgroup">
+                    <h4>主题模式</h4>
+                    <div class="theme-options-grid" role="radiogroup" aria-label="主题模式">
+                      <button type="button" class="theme-card-btn" data-theme-choice="light">
+                        <span class="theme-btn-icon">☀</span>
+                        <div class="theme-btn-text">
+                          <b>浅色模式</b>
+                          <small>清新明亮</small>
+                        </div>
+                        <span class="theme-check-badge" aria-hidden="true">✓</span>
+                      </button>
+                      <button type="button" class="theme-card-btn" data-theme-choice="dark">
+                        <span class="theme-btn-icon">🌙</span>
+                        <div class="theme-btn-text">
+                          <b>深色模式</b>
+                          <small>专注舒适</small>
+                        </div>
+                        <span class="theme-check-badge" aria-hidden="true">✓</span>
+                      </button>
+                      <button type="button" class="theme-card-btn" data-theme-choice="system">
+                        <span class="theme-btn-icon">💻</span>
+                        <div class="theme-btn-text">
+                          <b>跟随系统</b>
+                          <small>与系统保持一致</small>
+                        </div>
+                        <span class="theme-check-badge" aria-hidden="true">✓</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="settings-subgroup">
+                    <h4>界面风格</h4>
+                    <div class="color-palette-swatches" role="radiogroup" aria-label="界面风格">
+                      <button type="button" class="swatch-btn is-active" data-color-scheme="sage" title="鼠尾草绿" style="--swatch-color: #738B7B;" aria-label="鼠尾草绿">
+                        <span class="swatch-circle"><i aria-hidden="true">✓</i></span>
+                      </button>
+                      <button type="button" class="swatch-btn" data-color-scheme="peach" title="暖桃色" style="--swatch-color: #E8A588;" aria-label="暖桃色">
+                        <span class="swatch-circle"><i aria-hidden="true">✓</i></span>
+                      </button>
+                      <button type="button" class="swatch-btn" data-color-scheme="rose" title="蔷薇粉" style="--swatch-color: #E09292;" aria-label="蔷薇粉">
+                        <span class="swatch-circle"><i aria-hidden="true">✓</i></span>
+                      </button>
+                      <button type="button" class="swatch-btn" data-color-scheme="blue" title="晴空蓝" style="--swatch-color: #8EAAC9;" aria-label="晴空蓝">
+                        <span class="swatch-circle"><i aria-hidden="true">✓</i></span>
+                      </button>
+                      <button type="button" class="swatch-btn" data-color-scheme="lavender" title="薰衣草" style="--swatch-color: #B89FD1;" aria-label="薰衣草">
+                        <span class="swatch-circle"><i aria-hidden="true">✓</i></span>
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Card 3: 其他设置 -->
+                <section class="settings-card">
+                  <div class="settings-card-head">
+                    <h3>其他设置</h3>
+                  </div>
+                  <div class="settings-rows-list">
+                    <div class="settings-row-item">
+                      <div class="settings-row-label">
+                        <span class="row-icon" aria-hidden="true">🌐</span>
+                        <b>语言</b>
+                      </div>
+                      <select id="settings-lang" class="settings-select">
+                        <option value="zh-CN">简体中文</option>
+                        <option value="en-US">English</option>
+                      </select>
+                    </div>
+
+                    <div class="settings-row-item">
+                      <div class="settings-row-label">
+                        <span class="row-icon" aria-hidden="true">🔔</span>
+                        <div>
+                          <b>通知</b>
+                          <small>接收重要提醒</small>
+                        </div>
+                      </div>
+                      <label class="ios-switch">
+                        <input type="checkbox" id="settings-notify-toggle" checked>
+                        <span class="ios-slider"></span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="settings-card-footer">
+                    <a href="./global.html" class="btn-ghost-pill">打开 Global Pulse ↗</a>
+                    <a href="./admin.html" id="settings-admin-link" class="btn-ghost-pill" hidden>邀请管理 ↗</a>
+                    <button type="button" id="settings-logout" class="btn-danger-pill">退出登录</button>
+                  </div>
+                </section>
               </div>
             </section>
           </main>
         </div>
       </div>
-
-      <dialog id="note-dialog" class="dialog"><form id="note-form">
-        <header><span><p class="overline">LITTLE NOTE</p><h3 id="note-dialog-title">打开便签</h3></span><button type="button" data-close="note-dialog" aria-label="关闭">×</button></header>
-        <input id="note-title" class="large-input" maxlength="120" placeholder="便签标题">
-        <textarea id="note-body" rows="9" maxlength="6000" placeholder="写下一点什么…"></textarea>
-        <div class="note-options"><div class="colors" aria-label="便签颜色"><button class="active" type="button" data-note-color="ivory" aria-label="奶油白"></button><button type="button" data-note-color="sage" aria-label="鼠尾草绿"></button><button type="button" data-note-color="blue" aria-label="柔和蓝"></button><button type="button" data-note-color="rose" aria-label="柔和粉"></button></div><label class="pin-toggle"><input type="checkbox" id="note-pinned"> 置顶</label></div>
-        <p class="hint" id="note-meta"></p>
-        <footer><button class="danger" id="delete-note" type="button">删除</button><span></span><button type="button" data-close="note-dialog">取消</button><button class="primary" id="save-note" type="submit">保存</button></footer>
-      </form></dialog>
 
       <dialog id="task-dialog" class="dialog small"><form id="task-form">
         <header><span><p class="overline">MY DAYS</p><h3 id="task-dialog-title">编辑任务</h3></span><button type="button" data-close="task-dialog" aria-label="关闭">×</button></header>

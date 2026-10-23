@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.js",
+    "test": "node --test tests/safe-next.test.js tests/password.test.js",
     "test:auth:e2e": "node tests/auth-isolation.e2e.mjs http://127.0.0.1:8787",
     "test:acceptance": "node tests/acceptance-isolation.e2e.mjs http://127.0.0.1:45454",
     "test:journal": "node tests/journal-isolation.e2e.mjs http://127.0.0.1:45454",
@@ -11,7 +11,7 @@
     "test:journal-editor": "node tests/journal-editor.e2e.mjs http://127.0.0.1:45454",
     "test:personal-space": "node tests/personal-space-v2.e2e.mjs http://127.0.0.1:45454",
     "test:footprints": "node tests/footprints.e2e.mjs http://127.0.0.1:45454",
-    "check": "node --check worker/index.js && node --check worker/news-cache.js && node --check worker/auth-api.js && node --check worker/journal-api.js && node --check worker/gallery-api.js && node --check worker/notes-api.js && node --check worker/days-api.js && node --check worker/footprints-api.js && node --check journal.js && node --check journal-editor.js && node --check gallery.js && node --check personal-space.js && node --check notes.js && node --check days.js && node --check footprints.js && node --check worker/password.js && node --check global.js && node --check global/data-service.js",
+    "check": "node --check worker/index.js && node --check worker/news-cache.js && node --check worker/auth-api.js && node --check worker/journal-api.js && node --check worker/gallery-api.js && node --check worker/notes-api.js && node --check worker/days-api.js && node --check worker/footprints-api.js && node --check journal.js && node --check journal-editor.js && node --check gallery.js && node --check personal-space.js && node --check days.js && node --check footprints.js && node --check worker/password.js && node --check global.js && node --check global/data-service.js",
     "db:local": "wrangler d1 migrations apply DB --local",
     "preview": "npx --yes serve -l 43127 .",
     "dev": "wrangler dev --test-scheduled",

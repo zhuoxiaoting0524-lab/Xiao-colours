@@ -13,11 +13,11 @@ test("safeNextPath blocks open redirects", () => {
 test("loginUrlForView targets private modules with shared next", () => {
   assert.deepEqual(
     PRIVATE_VIEWS,
-    ["notes", "days", "footprints", "journal", "gallery", "collections"],
+    ["overview", "days", "footprints", "settings", "journal", "gallery", "collections"],
   );
   assert.equal(
-    loginUrlForView("notes"),
-    "./login.html?next=" + encodeURIComponent("./index.html#notes"),
+    loginUrlForView("overview"),
+    "./login.html?next=" + encodeURIComponent("./index.html#overview"),
   );
   assert.equal(
     loginUrlForView("gallery"),

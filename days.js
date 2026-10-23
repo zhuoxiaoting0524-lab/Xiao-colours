@@ -16,6 +16,16 @@ let importantDates = [];
 let activeTaskId = null;
 let activeImportantId = null;
 
+const PLANT_SPRIG_SVG = `
+<svg class="plant-sprig" viewBox="0 0 60 70" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M30 65 Q 30 35 25 10" stroke="#738B7B" stroke-width="2" stroke-linecap="round" />
+  <path d="M28 50 C 15 48 10 38 18 30 C 26 32 28 42 28 50 Z" fill="#8CA595" opacity="0.8" />
+  <path d="M29 38 C 42 36 48 26 40 18 C 32 20 30 30 29 38 Z" fill="#9AB2A3" opacity="0.8" />
+  <path d="M26 22 C 16 18 14 10 20 5 C 26 8 26 16 26 22 Z" fill="#7E9685" opacity="0.85" />
+  <path d="M25 10 C 28 2 36 2 38 8 C 36 14 30 14 25 10 Z" fill="#8CA595" opacity="0.85" />
+</svg>
+`;
+
 function startOfLocalDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
@@ -52,16 +62,13 @@ function endOfMonthGrid(date) {
   return addDays(startOfWeek(monthEnd), 6);
 }
 
-function formatMonth(date) {
-  return new Intl.DateTimeFormat("en", { month: "long" }).format(date).toUpperCase();
-}
-
 function formatLong(date) {
   return new Intl.DateTimeFormat("en", { month: "long", day: "numeric", year: "numeric" }).format(date);
 }
 
 function setStatus(message, error = false) {
   const node = $("#days-status");
+  if (!node) return;
   node.textContent = message;
   node.classList.toggle("is-error", error);
   node.hidden = !message;
@@ -87,11 +94,10 @@ function dayTasks(date) {
 }
 
 function renderHeader() {
-  const { from, to } = currentRange();
-  $("#calendar-month-label").textContent = formatMonth(cursorDate);
-  $("#calendar-range-label").textContent = calendarView === "week"
-    ? `${new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(from)} — ${new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(to)}`
-    : `${new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(cursorDate)}`;
+  const label = $("#calendar-range-label");
+  if (label) {
+    label.textContent = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(cursorDate);
+  }
 }
 
 function selectDate(date) {
@@ -104,16 +110,34 @@ function selectDate(date) {
 function renderWeek() {
   const from = startOfWeek(cursorDate);
   const today = startOfLocalDay(new Date());
-  $("#week").replaceChildren(...Array.from({ length: 7 }, (_, index) => {
+  const weekContainer = $("#week");
+  if (!weekContainer) return;
+
+  weekContainer.replaceChildren(...Array.from({ length: 7 }, (_, index) => {
     const date = addDays(from, index);
+    const dateTasks = dayTasks(date);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `day${sameDay(date, selectedDate) ? " active" : ""}${dayTasks(date).length ? " has" : ""}`;
+    const isSelected = sameDay(date, selectedDate);
+    const isToday = sameDay(date, today);
+    button.className = `day${isSelected ? " active" : ""}${dateTasks.length ? " has" : ""}`;
     button.setAttribute("aria-label", formatLong(date));
-    button.innerHTML = "<span></span><b></b><i></i>";
-    button.querySelector("span").textContent = new Intl.DateTimeFormat("en", { weekday: "short" }).format(date).toUpperCase();
-    button.querySelector("b").textContent = String(date.getDate());
-    if (sameDay(date, today)) button.dataset.today = "true";
+
+    // Dots indicator if tasks exist
+    let dotsHtml = "";
+    if (dateTasks.length > 0) {
+      const hasCompleted = dateTasks.some((t) => t.completed);
+      const hasPending = dateTasks.some((t) => !t.completed);
+      dotsHtml = `<span class="day-dots"><i class="day-dot ${hasPending ? "dot-coral" : "dot-green"}"></i>${hasCompleted && hasPending ? '<i class="day-dot dot-yellow"></i>' : ""}</span>`;
+    }
+
+    button.innerHTML = `
+      <span class="day-name">${new Intl.DateTimeFormat("en", { weekday: "short" }).format(date).toUpperCase()}</span>
+      <b class="day-number">${date.getDate()}</b>
+      ${dotsHtml}
+    `;
+
+    if (isToday) button.dataset.today = "true";
     button.addEventListener("click", () => selectDate(date));
     return button;
   }));
@@ -123,15 +147,19 @@ function renderMonth() {
   const monthStart = new Date(cursorDate.getFullYear(), cursorDate.getMonth(), 1);
   const from = startOfWeek(monthStart);
   const today = startOfLocalDay(new Date());
-  $("#month").replaceChildren(...Array.from({ length: 42 }, (_, index) => {
+  const monthContainer = $("#month");
+  if (!monthContainer) return;
+
+  monthContainer.replaceChildren(...Array.from({ length: 42 }, (_, index) => {
     const date = addDays(from, index);
+    const dateTasks = dayTasks(date);
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = String(date.getDate());
     button.classList.toggle("outside", date.getMonth() !== cursorDate.getMonth());
     button.classList.toggle("active", sameDay(date, selectedDate));
     button.classList.toggle("today", sameDay(date, today));
-    button.classList.toggle("has", dayTasks(date).length > 0);
+    button.classList.toggle("has", dateTasks.length > 0);
     button.setAttribute("aria-label", formatLong(date));
     button.addEventListener("click", async () => {
       if (date.getMonth() !== cursorDate.getMonth()) {
@@ -149,27 +177,51 @@ function renderMonth() {
 function renderTasks() {
   const list = dayTasks(selectedDate);
   const today = startOfLocalDay(new Date());
-  $("#day-label").textContent = sameDay(selectedDate, today)
-    ? `TODAY · ${new Intl.DateTimeFormat("en", { weekday: "short" }).format(selectedDate).toUpperCase()}`
-    : new Intl.DateTimeFormat("en", { weekday: "long" }).format(selectedDate).toUpperCase();
-  $("#day-title").textContent = formatLong(selectedDate);
+  const isToday = sameDay(selectedDate, today);
+
+  // Header formatted as: 今天 · 10月23日 星期五
+  const weekdaysZh = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+  const m = selectedDate.getMonth() + 1;
+  const d = selectedDate.getDate();
+  const w = weekdaysZh[selectedDate.getDay()];
+  const titleEl = $("#day-title");
+  if (titleEl) {
+    titleEl.textContent = isToday ? `今天 · ${m}月${d}日 ${w}` : `${m}月${d}日 ${w}`;
+  }
+
   const container = $("#tasks");
+  if (!container) return;
+
   if (!list.length) {
-    container.innerHTML = '<p class="empty">这一天还没有任务。<button type="button" class="text-btn" id="day-empty-add">添加任务</button></p>';
+    container.innerHTML = `
+      <div class="days-empty-wrap">
+        ${PLANT_SPRIG_SVG}
+        <p class="days-empty-desc">这一天还没有任务。<br>从一件小事开始，让今天变得充实吧！</p>
+        <button type="button" class="btn-primary-pill" id="day-empty-add">＋ 添加任务</button>
+      </div>
+    `;
     container.querySelector("#day-empty-add")?.addEventListener("click", () => editTask());
   } else {
     container.replaceChildren(...list.map((task) => {
       const row = document.createElement("article");
-      row.className = `task${task.completed ? " done" : ""}`;
-      row.innerHTML = '<button class="check" type="button" aria-label="切换完成状态"></button><time></time><h4></h4><span><i class="tag"></i><button class="edit" type="button" aria-label="编辑任务">···</button></span>';
-      row.querySelector("time").textContent = task.time || "ALL DAY";
-      row.querySelector("h4").textContent = task.title;
-      row.querySelector(".tag").textContent = task.tag;
-      row.querySelector(".check").addEventListener("click", () => toggleTask(task));
-      row.querySelector(".edit").addEventListener("click", () => editTask(task.id));
+      row.className = `task-item${task.completed ? " done" : ""}`;
+      row.innerHTML = `
+        <button class="task-check" type="button" aria-label="切换完成状态">✓</button>
+        <div class="task-info">
+          <h4 class="task-title">${task.title}</h4>
+          <div class="task-meta-row">
+            ${task.time ? `<time class="task-time">${task.time}</time>` : ""}
+            <span class="task-tag-badge">${task.tag || "Personal"}</span>
+          </div>
+        </div>
+        <button class="task-edit-btn" type="button" aria-label="编辑任务">···</button>
+      `;
+      row.querySelector(".task-check").addEventListener("click", () => toggleTask(task));
+      row.querySelector(".task-edit-btn").addEventListener("click", () => editTask(task.id));
       return row;
     }));
   }
+
   renderProgress();
 }
 
@@ -181,8 +233,12 @@ function renderProgress() {
     return date >= from && date <= to;
   });
   const completed = weekTasks.filter((task) => task.completed).length;
-  $("#week-progress-label").textContent = `${completed} / ${weekTasks.length}`;
-  $("#week-progress-bar").style.width = weekTasks.length ? `${Math.round(completed / weekTasks.length * 100)}%` : "0%";
+  const label = $("#week-progress-label");
+  const bar = $("#week-progress-bar");
+  if (label) label.textContent = `${completed} / ${weekTasks.length}`;
+  if (bar) {
+    bar.style.width = weekTasks.length ? `${Math.round((completed / weekTasks.length) * 100)}%` : "0%";
+  }
 }
 
 function nextImportantOccurrence(item) {
@@ -196,23 +252,31 @@ function nextImportantOccurrence(item) {
 
 function renderImportantDates() {
   const container = $("#important-dates");
+  if (!container) return;
+
   const sorted = importantDates
     .map((item) => ({ item, occurrence: nextImportantOccurrence(item) }))
     .sort((a, b) => a.occurrence - b.occurrence)
     .slice(0, 8);
+
   if (!sorted.length) {
-    container.innerHTML = '<span class="empty-date">还没有重要日期。</span>';
+    container.innerHTML = '<span class="empty-date-tip">还没有重要日期。</span>';
     return;
   }
+
   container.replaceChildren(...sorted.map(({ item, occurrence }) => {
     const article = document.createElement("article");
+    article.className = "important-item";
     article.tabIndex = 0;
     article.setAttribute("role", "button");
     const remaining = Math.ceil((startOfLocalDay(occurrence) - startOfLocalDay(new Date())) / DAY_MS);
-    article.innerHTML = "<time></time><b><span></span><small></small></b>";
-    article.querySelector("time").textContent = new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" }).format(occurrence).toUpperCase();
-    article.querySelector("b span").textContent = item.title;
-    article.querySelector("small").textContent = remaining === 0 ? "Today" : remaining > 0 ? `${remaining} days` : "Passed";
+    article.innerHTML = `
+      <div class="important-main">
+        <b class="important-title">${item.title}</b>
+        <small class="important-note">${item.note || ""}</small>
+      </div>
+      <span class="important-badge">${remaining === 0 ? "今天" : remaining === 1 ? "明天" : remaining > 0 ? `${remaining} 天后` : "已过"}</span>
+    `;
     const open = () => editImportant(item.id);
     article.addEventListener("click", open);
     article.addEventListener("keydown", (event) => {
@@ -250,13 +314,13 @@ async function loadDays() {
 }
 
 function openDialog(id) {
-  const dialog = $(`#${id}`);
-  if (!dialog.open) dialog.showModal();
+  const dialog = document.getElementById(id);
+  if (dialog?.showModal) dialog.showModal();
 }
 
 function closeDialog(id) {
-  const dialog = $(`#${id}`);
-  if (dialog.open) dialog.close();
+  const dialog = document.getElementById(id);
+  if (dialog?.close) dialog.close();
 }
 
 function editTask(id = null) {
@@ -267,11 +331,9 @@ function editTask(id = null) {
   $("#task-date").value = task?.date || dateKey(selectedDate);
   $("#task-time").value = task?.time || "";
   $("#task-tag").value = task?.tag || "Personal";
-  $("#task-repeat").value = task?.repeatRule || "none";
+  $("#task-repeat").value = "none";
   $("#task-repeat").disabled = Boolean(task);
-  $("#task-meta").textContent = task
-    ? "当前只编辑这一条记录。"
-    : "重复任务会创建独立日期记录，之后可逐条调整。";
+  $("#task-meta").textContent = task ? "正在修改现有任务" : "重复任务会创建独立日期记录，之后可逐条调整。";
   $("#delete-task").hidden = !task;
   openDialog("task-dialog");
 }
@@ -282,20 +344,28 @@ async function saveTask(event) {
   const payload = {
     title: $("#task-title").value.trim(),
     date: $("#task-date").value,
-    time: $("#task-time").value,
+    time: $("#task-time").value || null,
     tag: $("#task-tag").value,
+    repeat: $("#task-repeat").value,
   };
-  if (!activeTaskId) payload.repeatRule = $("#task-repeat").value;
   button.disabled = true;
   button.textContent = "保存中…";
   try {
-    const result = activeTaskId
-      ? await api(`/api/me/days/tasks/${encodeURIComponent(activeTaskId)}`, { method: "PATCH", csrfToken: auth.csrfToken, body: payload })
-      : await api("/api/me/days/tasks", { method: "POST", csrfToken: auth.csrfToken, body: payload });
+    let result;
+    if (activeTaskId) {
+      result = await api(`/api/me/days/tasks/${encodeURIComponent(activeTaskId)}`, {
+        method: "PATCH",
+        csrfToken: auth.csrfToken,
+        body: payload,
+      });
+    } else {
+      result = await api("/api/me/days/tasks", { method: "POST", csrfToken: auth.csrfToken, body: payload });
+    }
     closeDialog("task-dialog");
     selectedDate = parseDate(payload.date);
     cursorDate = new Date(selectedDate);
     await loadDays();
+    window.dispatchEvent(new CustomEvent("xc:data-changed", { detail: { source: "days" } }));
     notify(result.generatedCount > 1 ? `已创建 ${result.generatedCount} 条重复任务` : "任务已保存");
   } catch (error) {
     $("#task-meta").textContent = error.message || "保存失败，请重试。";
@@ -314,6 +384,7 @@ async function toggleTask(task) {
     });
     task.completed = !task.completed;
     renderTasks();
+    window.dispatchEvent(new CustomEvent("xc:data-changed", { detail: { source: "days" } }));
   } catch (error) {
     notify(error.message || "状态更新失败", true);
   }
@@ -329,6 +400,7 @@ async function deleteTask() {
     });
     closeDialog("task-dialog");
     await loadDays();
+    window.dispatchEvent(new CustomEvent("xc:data-changed", { detail: { source: "days" } }));
     notify("任务已删除");
   } catch (error) {
     $("#task-meta").textContent = error.message || "删除失败，请重试。";
@@ -366,6 +438,7 @@ async function saveImportant(event) {
     }
     closeDialog("important-dialog");
     await loadDays();
+    window.dispatchEvent(new CustomEvent("xc:data-changed", { detail: { source: "days" } }));
     notify("重要日期已保存");
   } catch (error) {
     notify(error.message || "重要日期保存失败", true);
@@ -385,6 +458,7 @@ async function deleteImportant() {
     });
     closeDialog("important-dialog");
     await loadDays();
+    window.dispatchEvent(new CustomEvent("xc:data-changed", { detail: { source: "days" } }));
     notify("重要日期已删除");
   } catch (error) {
     notify(error.message || "删除失败", true);
@@ -406,21 +480,39 @@ export async function mountDays(authState, options = {}) {
     mounted = true;
     const dayIcon = $("#home-day-icon");
     if (dayIcon) dayIcon.textContent = String(new Date().getDate());
-    $("#calendar-prev").addEventListener("click", () => changePeriod(-1));
-    $("#calendar-next").addEventListener("click", () => changePeriod(1));
+    $("#calendar-prev")?.addEventListener("click", () => changePeriod(-1));
+    $("#calendar-next")?.addEventListener("click", () => changePeriod(1));
+    $("#calendar-today")?.addEventListener("click", async () => {
+      cursorDate = startOfLocalDay(new Date());
+      selectedDate = new Date(cursorDate);
+      await loadDays();
+    });
     $$('[data-calendar-view]').forEach((button) => button.addEventListener("click", async () => {
       calendarView = button.dataset.calendarView;
       $$('[data-calendar-view]').forEach((item) => item.classList.toggle("active", item === button));
-      $("#week").hidden = calendarView === "month";
-      $("#month").hidden = calendarView !== "month";
+      const weekEl = $("#week");
+      const monthEl = $("#month");
+      if (weekEl) weekEl.hidden = calendarView === "month";
+      if (monthEl) monthEl.hidden = calendarView !== "month";
       await loadDays();
     }));
-    $("#add-task").addEventListener("click", () => editTask());
-    $("#task-form").addEventListener("submit", saveTask);
-    $("#delete-task").addEventListener("click", deleteTask);
-    $("#add-important").addEventListener("click", () => editImportant());
-    $("#important-form").addEventListener("submit", saveImportant);
-    $("#delete-important").addEventListener("click", deleteImportant);
+    $("#add-task")?.addEventListener("click", () => editTask());
+    $("#task-form")?.addEventListener("submit", saveTask);
+    $("#delete-task")?.addEventListener("click", deleteTask);
+    $("#add-important")?.addEventListener("click", () => editImportant());
+    $("#important-form")?.addEventListener("submit", saveImportant);
+    $("#delete-important")?.addEventListener("click", deleteImportant);
+    window.addEventListener("xc:data-changed", (e) => {
+      if (e.detail?.source !== "days" && auth?.authenticated) loadDays();
+    });
   }
   if (!loaded) await loadDays();
+}
+
+export function openTaskComposer() {
+  editTask();
+}
+
+export function openImportantComposer() {
+  editImportant();
 }

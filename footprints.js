@@ -63,7 +63,64 @@ function renderPlaces() {
       return button;
     }));
   }
+  renderPlaceCards(items);
+  const visited = places.filter((place) => place.status === "visited").length;
+  const wish = places.filter((place) => place.status === "wish").length;
+  $("#footprints-visited-count").textContent = String(visited);
+  $("#footprints-wish-count").textContent = String(wish);
+  $("#footprints-total-count").textContent = String(places.length);
   syncMapMarkers();
+}
+
+function renderPlaceCards(items) {
+  const container = $("#footprint-cards");
+  if (!container) return;
+  if (!items.length) {
+    const empty = document.createElement("div");
+    empty.className = "footprint-empty-card";
+    empty.innerHTML = `
+      <span class="fp-empty-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+      </span>
+      <h4>还没有足迹</h4>
+      <p>先添加一个地点吧，记录你去过的地方，或收藏想去的目的地。</p>
+      <button type="button" class="btn-primary-pill" id="fp-empty-add-btn">＋ 添加地点</button>
+    `;
+    empty.querySelector("#fp-empty-add-btn").addEventListener("click", () => {
+      const search = $("#place-search");
+      if (search) {
+        search.focus();
+        notify("在上方搜索框输入城市或地点名称开始记录");
+      }
+    });
+    container.replaceChildren(empty);
+    return;
+  }
+  container.replaceChildren(...items.map((place) => {
+    const card = document.createElement("article");
+    card.className = "footprint-card";
+    card.dataset.status = place.status;
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    const isVisited = place.status === "visited";
+    card.innerHTML = `
+      <div class="fp-card-header">
+        <span class="fp-status-tag ${isVisited ? "status-visited" : "status-wish"}">${isVisited ? "去过 · VISITED" : "想去 · WISH"}</span>
+        <time class="fp-card-date">${formatDate(place.date, place.status)}</time>
+      </div>
+      <h4 class="fp-card-title">${place.name}</h4>
+      <p class="fp-card-note">${place.note || place.locationLabel || "还没有备注。"}</p>
+    `;
+    const open = () => showPlace(place.id);
+    card.addEventListener("click", open);
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        open();
+      }
+    });
+    return card;
+  }));
 }
 
 function syncMapMarkers() {
@@ -355,6 +412,7 @@ async function savePlace(event) {
     showPlace(saved.id);
     notify(editingPlaceId ? "足迹已更新" : "足迹已保存");
     setStatus(`${places.length} 个私人地点`);
+    window.dispatchEvent(new CustomEvent("xc:data-changed", { detail: { source: "footprints" } }));
   } catch (error) {
     console.error("Footprint save failed:", error);
     notify(error.message || "足迹保存失败。", true);
@@ -378,6 +436,7 @@ async function deletePlace(place = places.find((item) => item.id === editingPlac
     renderPlaces();
     setStatus(places.length ? `${places.length} 个私人地点` : "");
     notify("足迹已删除");
+    window.dispatchEvent(new CustomEvent("xc:data-changed", { detail: { source: "footprints" } }));
   } catch (error) {
     console.error("Footprint delete failed:", error);
     notify(error.message || "足迹删除失败。", true);
