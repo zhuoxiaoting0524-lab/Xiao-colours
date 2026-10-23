@@ -124,31 +124,7 @@ export function TopFiveCard(article, rank) {
       </div>
     </article>`;
 }
-  const size = rank === 1 ? "lead" : rank <= 3 ? "medium" : "compact";
-  const cardClass = `gp-top-five-card gp-top-five-card--${size}${article.image ? "" : " no-image"}`;
-  const visibleTitle = displayTitle(article);
-  const detailUrl = newsDetailHref(article);
-  const attention = article.importance?.attentionNote;
-  const summary = size === "lead" && article.summary
-    ? `<p class="gp-top-five-card__summary">${escapeHtml(conciseText(article.summary, 132))}</p>`
-    : "";
-  return `
-    <article class="${cardClass}">
-      <a class="gp-top-five-card__media" href="${escapeHtml(detailUrl)}" aria-label="站内阅读：${escapeHtml(article.title)}">${imageMarkup(article, { eager: rank === 1 })}</a>
-      <span class="gp-top-five-card__rank" aria-label="第 ${rank} 名">${String(rank).padStart(2, "0")}</span>
-      <div class="gp-top-five-card__content">
-        <div class="gp-top-five-card__eyebrow">
-          <span class="gp-badge">${escapeHtml(categoryLabel(article.category))}</span>
-          <span class="gp-top-five-card__language">${escapeHtml(languageNotice(article))}</span>
-        </div>
-        <h3><a href="${escapeHtml(detailUrl)}">${escapeHtml(visibleTitle)}</a></h3>
-        ${article.translatedTitle ? `<p class="gp-top-five-card__original" lang="auto">原文：${escapeHtml(article.title)}</p>` : ""}
-        ${summary}
-        ${attention ? `<div class="gp-top-five-card__attention"><strong>为什么值得关注？</strong><p>${escapeHtml(attention)}</p><small>基于新闻标题、时间与来源元数据 · 非 AI 生成</small></div>` : ""}
-        <div class="gp-featured-card__meta">${sourceMeta(article)}</div>
-        ${relatedSourcesMarkup(article)}
-      </div>
-    </article>`;
+
 }
 
 export function TodayTopFive(container, topEvents, { availableCount = 0, dataStatus = "live" } = {}) {
