@@ -102,6 +102,31 @@ export function TopFiveCard(article, rank) {
   const size = rank === 1 ? "lead" : rank <= 3 ? "medium" : "compact";
   const cardClass = `gp-top-five-card gp-top-five-card--${size}${article.image ? "" : " no-image"}`;
   const visibleTitle = displayTitle(article);
+  // Direct link to original source if available
+  const originalUrl = article.url || newsDetailHref(article);
+  const summary = size === "lead" && article.summary
+    ? `<p class="gp-top-five-card__summary">${escapeHtml(conciseText(article.summary, 132))}</p>`
+    : "";
+  return `
+    <article class="${cardClass}">
+      <a class="gp-top-five-card__media" href="${escapeHtml(originalUrl)}" target="_blank" rel="noopener noreferrer" aria-label="打开原文：${escapeHtml(article.title)}">${imageMarkup(article, { eager: rank === 1 })}</a>
+      <span class="gp-top-five-card__rank" aria-label="第 ${rank} 名">${String(rank).padStart(2, "0")}</span>
+      <div class="gp-top-five-card__content">
+        <div class="gp-top-five-card__eyebrow">
+          <span class="gp-badge">${escapeHtml(categoryLabel(article.category))}</span>
+          <span class="gp-top-five-card__language">${escapeHtml(languageNotice(article))}</span>
+        </div>
+        <h3><a href="${escapeHtml(originalUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(visibleTitle)}</a></h3>
+        ${article.translatedTitle ? `<p class="gp-top-five-card__original" lang="auto">原文：${escapeHtml(article.title)}</p>` : ""}
+        ${summary}
+        <div class="gp-featured-card__meta">${sourceMeta(article)}</div>
+        ${relatedSourcesMarkup(article)}
+      </div>
+    </article>`;
+}
+  const size = rank === 1 ? "lead" : rank <= 3 ? "medium" : "compact";
+  const cardClass = `gp-top-five-card gp-top-five-card--${size}${article.image ? "" : " no-image"}`;
+  const visibleTitle = displayTitle(article);
   const detailUrl = newsDetailHref(article);
   const attention = article.importance?.attentionNote;
   const summary = size === "lead" && article.summary
@@ -177,6 +202,24 @@ export function NewsDetail(article) {
 }
 
 export function NewsCard(article) {
+  const visibleTitle = displayTitle(article);
+  // Direct link to the original source
+  const originalUrl = article.url || newsDetailHref(article);
+  return `
+    <article class="gp-news-card${article.image ? "" : " no-image"}">
+      <div class="gp-news-card__media">${imageMarkup(article)}</div>
+      <div class="gp-news-card__body">
+        <div class="gp-news-card__meta">${sourceMeta(article)}</div>
+        <span class="gp-badge">${escapeHtml(categoryLabel(article.category))}</span>
+        <h3><a class="gp-news-card__title" href="${escapeHtml(originalUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(visibleTitle)}</a></h3>
+        <!-- Simplified: no internal summary or analysis -->
+        <div class="gp-news-card__footer">
+          <span>${escapeHtml(article.translatedTitle ? "中文译文 · 保留原文" : hasChineseText(article.title) ? "中文原文" : `未接入翻译 · ${article.language} 原文`)}</span>
+          <a href="${escapeHtml(originalUrl)}" target="_blank" rel="noopener noreferrer">打开原文 →</a>
+        </div>
+      </div>
+    </article>`;
+}
   const visibleTitle = displayTitle(article);
   const detailUrl = newsDetailHref(article);
   return `
