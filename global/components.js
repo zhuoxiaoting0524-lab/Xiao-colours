@@ -193,33 +193,7 @@ export function NewsCard(article) {
       </div>
     </article>`;
 }
-  const visibleTitle = displayTitle(article);
-  const detailUrl = newsDetailHref(article);
-  return `
-    <article class="gp-news-card${article.image ? "" : " no-image"}">
-      <div class="gp-news-card__media">${imageMarkup(article)}</div>
-      <div class="gp-news-card__body">
-        <div class="gp-news-card__meta">${sourceMeta(article)}</div>
-        <span class="gp-badge">${escapeHtml(categoryLabel(article.category))}</span>
-        <h3><a class="gp-news-card__title" href="${escapeHtml(detailUrl)}">${escapeHtml(visibleTitle)}</a></h3>
-        <p class="gp-news-card__context">${article.sourceCount > 1 ? `该事件已聚合 ${article.sourceCount} 个媒体来源。` : "已整理原始新闻标题与可验证元数据。"}点击进入站内摘要、报道时间线与来源对比。</p>
-        <div class="gp-news-card__footer">
-          <span>${escapeHtml(article.translatedTitle ? "中文译文 · 保留原文" : hasChineseText(article.title) ? "中文原文" : `未接入翻译 · ${article.language} 原文`)}</span>
-          <a href="${escapeHtml(detailUrl)}">站内阅读 →</a>
-        </div>
-      </div>
-      ${NewsDetail(article)}
-    </article>`;
-}
-
-export function NewsFeed(container, articles) {
-  if (!articles.length) {
-    container.innerHTML = '<div class="gp-empty-state"><p><strong>没有找到匹配内容</strong>请调整关键词、地区、分类或时间范围。</p></div>';
-    return;
-  }
-  container.innerHTML = articles.map(NewsCard).join("");
-  bindImageFallbacks(container);
-}
+  
 
 export function DailyBrief(container, topEvents, { availableCount = 0, dataStatus = "live" } = {}) {
   container.dataset.count = String(topEvents.length);
