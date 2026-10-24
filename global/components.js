@@ -301,6 +301,20 @@ export function LastUpdatedIndicator(element, fetchedAt, source) {
   element.title = fetchedAt.toISOString();
 }
 
+// Simple news feed renderer – displays a list of news cards
+export function NewsFeed(container, articles) {
+  if (!Array.isArray(articles) || articles.length === 0) {
+    container.innerHTML = `
+      <div class="gp-empty-state">
+        <p><strong>暂无新闻</strong>请稍后再试。</p>
+      </div>`;
+    return;
+  }
+  // Use existing NewsCard component for each article
+  container.innerHTML = articles.map(NewsCard).join("");
+  bindImageFallbacks(container);
+}
+
 export function ThemeToggle(button, theme) {
   const isLight = theme === "light";
   button.setAttribute("aria-pressed", String(isLight));
