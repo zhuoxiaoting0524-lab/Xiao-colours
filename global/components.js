@@ -7,7 +7,10 @@ import {
   relativeTime,
   uniqueValues,
 } from "./utils.js";
-import { newsDetailHref } from "./news-reader.js";
+
+function originalNewsUrl(article) {
+  return article?.url || article?.relatedSources?.find((source) => source.url)?.url || "";
+}
 
 function imageMarkup(article, { eager = false } = {}) {
   if (!article.image) return "";
@@ -81,14 +84,13 @@ function relatedSourcesMarkup(article) {
     source: article.source,
     publishedAt: article.publishedAt,
   }];
-  const detailUrl = newsDetailHref(article, "#gp-sources");
   return `
     <details class="gp-top-five-card__sources">
       <summary>查看 ${sources.length} 条原始报道</summary>
       <ul>
         ${sources.map((source) => `
           <li>
-            <a href="${escapeHtml(detailUrl)}">
+            <a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">
               <strong>${escapeHtml(source.source)}</strong>
               <span>${escapeHtml(conciseText(source.title, 92))}</span>
             </a>
@@ -102,8 +104,7 @@ export function TopFiveCard(article, rank) {
   const size = rank === 1 ? "lead" : rank <= 3 ? "medium" : "compact";
   const cardClass = `gp-top-five-card gp-top-five-card--${size}${article.image ? "" : " no-image"}`;
   const visibleTitle = displayTitle(article);
-  // Direct link to original source if available
-  const originalUrl = article.url || newsDetailHref(article);
+  const originalUrl = originalNewsUrl(article);
   const summary = size === "lead" && article.summary
     ? `<p class="gp-top-five-card__summary">${escapeHtml(conciseText(article.summary, 132))}</p>`
     : "";
@@ -144,44 +145,12 @@ export function TodayTopFive(container, topEvents, { availableCount = 0, dataSta
   bindImageFallbacks(container);
 }
 
-export function NewsDetail(article) {
-  const relatedSources = article.relatedSources?.length ? article.relatedSources : [{
-    title: article.originalTitle || article.title,
-    url: article.url,
-    source: article.source,
-    country: article.country,
-    language: article.language,
-    publishedAt: article.publishedAt,
-  }];
-  const summary = relatedSources.length > 1
-    ? `查看 ${relatedSources.length} 条关联报道`
-    : "查看数据详情";
-  const detailUrl = newsDetailHref(article, "#gp-sources");
-  return `
-    <details>
-      <summary>${summary}</summary>
-      <div class="gp-news-detail">
-        <p><b>原始标题</b>${escapeHtml(article.originalTitle || article.title)}</p>
-        <p><b>数据说明</b>GDELT 当前提供标题与新闻元数据，页面未使用翻译服务补写标题或正文摘要。</p>
-        <ul class="gp-related-sources">
-          ${relatedSources.map((source) => `
-            <li>
-              <a href="${escapeHtml(detailUrl)}">${escapeHtml(source.source)}</a>
-              <span>${knownCountry(source.country) ? `媒体来源国 ${escapeHtml(source.country)} · ` : ""}${escapeHtml(fullDateTime(source.publishedAt))}</span>
-              ${source.title !== article.title ? `<small>${escapeHtml(source.title)}</small>` : ""}
-            </li>`).join("")}
-        </ul>
-      </div>
-    </details>`;
-}
-
 export function NewsCard(article) {
   const visibleTitle = displayTitle(article);
-  // Direct link to the original source
-  const originalUrl = article.url || newsDetailHref(article);
+  const originalUrl = originalNewsUrl(article);
   return `
     <article class="gp-news-card${article.image ? "" : " no-image"}">
-      <div class="gp-news-card__media">${imageMarkup(article)}</div>
+      <a class="gp-news-card__media" href="${escapeHtml(originalUrl)}" target="_blank" rel="noopener noreferrer" aria-label="打开原文：${escapeHtml(article.title)}">${imageMarkup(article)}</a>
       <div class="gp-news-card__body">
         <div class="gp-news-card__meta">${sourceMeta(article)}</div>
         <span class="gp-badge">${escapeHtml(categoryLabel(article.category))}</span>
@@ -212,7 +181,7 @@ export function DailyBrief(container, topEvents, { availableCount = 0, dataStatu
     <article class="gp-daily-brief__item">
       <span>${String(index + 1).padStart(2, "0")}</span>
       <div>
-        <h3><a href="${escapeHtml(newsDetailHref(article))}">${escapeHtml(article.title)}</a></h3>
+        <h3><a href="${escapeHtml(originalNewsUrl(article))}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a></h3>
         <p>${escapeHtml(article.importance?.attentionNote || factualEventSummary(article))}</p>
         <small>${escapeHtml(article.source)} · ${escapeHtml(relativeTime(article.eventUpdatedAt || article.publishedAt))} · ${article.sourceCount || 1} 个媒体来源</small>
       </div>
@@ -248,7 +217,7 @@ export function MajorEvents(container, articles) {
     <article class="gp-major-event">
       <span class="gp-major-event__dot${score === 2 ? " is-critical" : ""}" aria-hidden="true"></span>
       <div>
-        <h4><a href="${escapeHtml(newsDetailHref(article))}">${escapeHtml(article.title)}</a></h4>
+        <h4><a href="${escapeHtml(originalNewsUrl(article))}" target="_blank" rel="noopener noreferrer">${escapeHtml(article.title)}</a></h4>
         <p>${escapeHtml(article.source)} · ${knownCountry(article.country) ? `${escapeHtml(article.country)} · ` : ""}${escapeHtml(relativeTime(article.publishedAt))}</p>
       </div>
     </article>`).join("");
@@ -273,7 +242,7 @@ export function RelatedCoverage(container, articles) {
       </summary>
       <ul>
         ${article.relatedSources.map((source) => `
-          <li><a href="${escapeHtml(newsDetailHref(article, "#gp-sources"))}">${escapeHtml(source.source)} · 站内查看</a></li>`).join("")}
+          <li><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.source)} · 打开原文 ↗</a></li>`).join("")}
       </ul>
     </details>`).join("");
 }

@@ -8,15 +8,14 @@
 
 ## 实时新闻：GDELT Project
 
-- 接口：GDELT DOC 2.0 API、GDELT Context 2.0 API
-- 用途：检索和展示全球公开新闻标题、来源媒体、发布时间、媒体来源国、语言、原始链接，以及 Context API 明确提供的短上下文片段
+- 接口：GDELT DOC 2.0 API
+- 用途：检索和展示全球公开新闻标题、来源媒体、发布时间、媒体来源国、语言与原始链接
 - 官方网站：https://www.gdeltproject.org/
 - 接口文档：https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/
-- Context 文档：https://blog.gdeltproject.org/announcing-the-gdelt-context-2-0-api/
 
 页面不会把 GDELT 的“媒体来源国”描述为“事件发生地”。搜索关键词会发送给 GDELT 公共接口。
 
-浏览器通过 GDELT 官方支持 CORS 的 JSON 接口读取数据。请求之间至少间隔 5.5 秒，避免对公共服务重复施压。站内阅读页仅展示 Context API 返回的有限上下文片段，不抓取、绕过付费墙或转载第三方新闻全文；每条原始报道仍由用户主动选择后在新标签页打开。
+浏览器通过 GDELT 官方支持 CORS 的 JSON 接口读取数据。请求之间至少间隔 5.5 秒，避免对公共服务重复施压。点击新闻后直接在新标签页打开媒体原始报道；本站不抓取、绕过付费墙或转载第三方新闻全文。
 
 ## 自然事件：USGS
 

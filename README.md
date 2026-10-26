@@ -59,9 +59,8 @@ wrangler deploy
 - `global/gdelt-client.js`：GDELT 公共接口节流与安全 JSON 解析
 - `global/news-quality.js`：规范化 URL、标题/可用摘要相似度、多来源事件聚合与透明重要性评分
 - `global/components.js`：TOP 5、60秒速览、新闻卡片、筛选、简报和更新时间组件
-- `global/news.html`：可直接访问的站内新闻详情页
-- `global/news-page.js`：详情加载、事件摘要、来源对比、报道时间线与错误状态
-- `global/news-reader.js`：详情链接、事件定位和 GDELT Context 短片段适配
+- `global/news.html`：旧详情链接兼容入口，自动跳转到媒体原始报道
+- `global/news-page.js`：旧详情链接的原始报道定位与跳转逻辑
 - `global/map.js`：Leaflet 按需加载、图层、标记与事件弹窗
 - `worker/index.js`：同域新闻 API、静态资源分发与 Cloudflare Cron 入口
 - `worker/news-cache.js`：GDELT 校验、有限重试、健康记录及 KV/Cache API 存储

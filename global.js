@@ -11,7 +11,7 @@ import {
   TodayTopFive,
   WorldBrief,
   categoryExists,
-} from "./global/components.js?v=6";
+} from "./global/components.js?v=7";
 import { GlobalMapSection } from "./global/map.js";
 import { rankNewsEvents, selectTopEvents } from "./global/news-quality.js";
 import { categoryLabel, debounce, filterArticles, fullDateTime, uniqueValues } from "./global/utils.js";

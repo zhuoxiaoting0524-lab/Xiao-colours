@@ -3,51 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="GLOBAL PULSE 站内新闻事件详情与多来源报道整理。" />
+    <meta name="description" content="正在前往新闻原始来源。" />
     <meta name="theme-color" content="#0B1020" />
-    <title>新闻详情｜GLOBAL PULSE</title>
+    <title>正在打开原始报道｜GLOBAL PULSE</title>
     <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://api.gdeltproject.org" crossorigin />
     <link rel="stylesheet" href="../global.css?v=5" />
-    <script type="module" src="./news-page.js?v=5"></script>
+    <script type="module" src="./news-page.js?v=6"></script>
   </head>
   <body class="gp-app gp-reader-app" data-gp-theme="dark">
-    <a class="gp-skip-link" href="#gp-reader-root">跳到新闻内容</a>
-
-    <header class="gp-header" id="gp-top">
-      <div class="gp-header__inner gp-reader-header__inner">
-        <a class="gp-brand" href="../global.html" aria-label="返回 GLOBAL PULSE 全球新闻">
-          <span class="gp-brand__mark" aria-hidden="true">GP</span>
-          <span class="gp-brand__copy"><b>GLOBAL PULSE</b><small>站内阅读</small></span>
-        </a>
-        <nav class="gp-nav" aria-label="页面导航">
-          <a href="../index.html">个人主页</a>
-          <a class="is-active" href="../global.html">全球脉搏</a>
-        </nav>
-        <div class="gp-header__tools gp-reader-header__tools">
-          <a class="gp-reader-back" href="../global.html">← 返回全球新闻</a>
-          <button class="gp-theme-toggle" id="gp-theme-toggle" type="button" aria-label="切换为浅色模式" aria-pressed="false">
-            <svg class="gp-theme-toggle__sun" aria-hidden="true" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="3.5"></circle>
-              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
-            </svg>
-            <span>主题</span>
-          </button>
-        </div>
-      </div>
-    </header>
-
     <main class="gp-reader-shell" id="gp-reader-root" tabindex="-1" aria-live="polite">
       <div class="gp-reader-loading">
         <div class="gp-inline-skeleton"></div>
-        <div class="gp-inline-skeleton"></div>
-        <p>正在从最近成功数据中查找事件，并加载合法的新闻上下文…</p>
+        <p>正在打开新闻媒体的原始报道…</p>
+        <p><a href="../global.html">返回 GLOBAL PULSE</a></p>
       </div>
     </main>
-
-    <footer class="gp-footer gp-reader-footer">
-      <p>© <span id="gp-footer-year">2026</span> XiaoColour · GLOBAL PULSE</p>
-      <p>站内页面不嵌入第三方媒体网页、广告或追踪脚本。</p>
-    </footer>
   </body>
 </html>
