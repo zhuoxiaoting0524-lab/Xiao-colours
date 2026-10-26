@@ -11,7 +11,7 @@ import {
   TodayTopFive,
   WorldBrief,
   categoryExists,
-} from "./global/components.js";
+} from "./global/components.js?v=6";
 import { GlobalMapSection } from "./global/map.js";
 import { rankNewsEvents, selectTopEvents } from "./global/news-quality.js";
 import { categoryLabel, debounce, filterArticles, fullDateTime, uniqueValues } from "./global/utils.js";
@@ -437,6 +437,7 @@ const mapObserver = new IntersectionObserver((entries, observer) => {
 mapObserver.observe(elements.mapStage);
 
 async function bootstrap() {
+  window.dispatchEvent(new CustomEvent("global-pulse:booted"));
   setTheme(getInitialTheme());
   document.querySelector("#gp-footer-year").textContent = new Date().getFullYear();
   updateClock();
@@ -448,4 +449,8 @@ async function bootstrap() {
   window.setInterval(() => loadData(), AUTO_REFRESH_MS);
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error("GLOBAL PULSE bootstrap failed:", error);
+  renderLoadError(error);
+  setLoading(false);
+});

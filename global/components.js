@@ -123,6 +123,7 @@ export function TopFiveCard(article, rank) {
         ${relatedSourcesMarkup(article)}
       </div>
     </article>`;
+}
 
 export function TodayTopFive(container, topEvents, { availableCount = 0, dataStatus = "live" } = {}) {
   container.dataset.count = String(topEvents.length);
