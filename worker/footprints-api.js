@@ -8,6 +8,18 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const GEOCODE_CACHE_MS = 30 * 24 * 60 * 60 * 1000;
 const GEOCODE_GAP_MS = 1_100;
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
+const MAX_PHOTO_BYTES = 700 * 1024;
+const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const SEARCH_ALIASES = new Map([
+  ["日本", "Japan"], ["japan", "Japan"],
+  ["中国", "China"], ["china", "China"],
+  ["美国", "United States"], ["美國", "United States"], ["usa", "United States"], ["us", "United States"], ["united states", "United States"],
+  ["英国", "United Kingdom"], ["英國", "United Kingdom"], ["uk", "United Kingdom"], ["united kingdom", "United Kingdom"],
+  ["法国", "France"], ["法國", "France"], ["france", "France"],
+  ["巴黎", "Paris, France"], ["paris", "Paris, France"],
+  ["东京", "Tokyo, Japan"], ["東京", "Tokyo, Japan"], ["tokyo", "Tokyo, Japan"],
+  ["巴塞罗那", "Barcelona, Spain"], ["巴塞羅那", "Barcelona, Spain"], ["barcelona", "Barcelona, Spain"],
+]);
 
 async function requireSession(db, request, { csrf = false } = {}) {
   const session = await loadSession(db, request);
@@ -94,6 +106,19 @@ function cleanFootprint(body, { partial = false } = {}) {
   if (!partial || Object.hasOwn(body, "sourceId")) {
     data.sourceId = String(body.sourceId || "").trim().slice(0, 140) || null;
   }
+  if (!partial || Object.hasOwn(body, "nameZh")) {
+    data.nameZh = String(body.nameZh || "").trim().slice(0, 140) || null;
+  }
+  if (!partial || Object.hasOwn(body, "nameEn")) {
+    data.nameEn = String(body.nameEn || "").trim().slice(0, 140) || null;
+  }
+  if (!partial || Object.hasOwn(body, "countryCode")) {
+    const countryCode = String(body.countryCode || "").trim().toUpperCase();
+    data.countryCode = /^[A-Z]{2}$/.test(countryCode) ? countryCode : null;
+  }
+  if (!partial || Object.hasOwn(body, "placeType")) {
+    data.placeType = String(body.placeType || "place").trim().slice(0, 80) || "place";
+  }
   return data;
 }
 
@@ -109,6 +134,14 @@ function publicFootprint(row) {
     latitude: Number(row.latitude),
     geocoder: row.geocoder,
     sourceId: row.source_id,
+    nameZh: row.name_zh || null,
+    nameEn: row.name_en || null,
+    countryCode: row.country_code || null,
+    placeType: row.place_type || "place",
+    photoId: row.photo_id || null,
+    imageUrl: row.photo_id
+      ? `/api/me/footprints/${encodeURIComponent(row.id)}/photo?v=${encodeURIComponent(row.photo_updated_at || row.updated_at || "")}`
+      : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -118,13 +151,23 @@ function normalizeSearchQuery(value) {
   return String(value || "").trim().replace(/\s+/g, " ").slice(0, 120);
 }
 
+function canonicalSearchQuery(value) {
+  const query = normalizeSearchQuery(value);
+  return SEARCH_ALIASES.get(query.toLocaleLowerCase("en-US")) || query;
+}
+
 function publicSearchResult(item) {
   const longitude = Number(item.lon);
   const latitude = Number(item.lat);
   if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
   const address = item.address || {};
+  const names = item.namedetails || {};
+  const nameZh = String(names["name:zh-Hans"] || names["name:zh"] || "").trim().slice(0, 140) || null;
+  const nameEn = String(names["name:en"] || "").trim().slice(0, 140) || null;
   const name = String(
-    item.name
+    nameZh
+      || nameEn
+      || item.name
       || address.city
       || address.town
       || address.village
@@ -134,16 +177,20 @@ function publicSearchResult(item) {
   ).slice(0, 140);
   return {
     name,
+    nameZh,
+    nameEn,
     label: String(item.display_name || name).slice(0, 500),
     longitude,
     latitude,
     sourceId: `${String(item.osm_type || "osm")}:${String(item.osm_id || item.place_id || "")}`.slice(0, 140),
-    type: String(item.type || item.addresstype || "place").slice(0, 80),
+    type: String(item.addresstype || item.type || "place").slice(0, 80),
+    countryCode: String(address.country_code || "").toUpperCase().slice(0, 2) || null,
   };
 }
 
 async function searchNominatim(db, query) {
-  const normalized = query.toLocaleLowerCase("en-US");
+  const canonicalQuery = canonicalSearchQuery(query);
+  const normalized = canonicalQuery.toLocaleLowerCase("en-US");
   const queryHash = await sha256Hex(normalized);
   const cached = await db.prepare(
     `SELECT response_json, fetched_at FROM geocode_cache WHERE query_hash = ?`,
@@ -174,9 +221,10 @@ async function searchNominatim(db, query) {
 
   const endpoint = new URL(NOMINATIM_URL);
   endpoint.searchParams.set("format", "jsonv2");
-  endpoint.searchParams.set("q", query);
+  endpoint.searchParams.set("q", canonicalQuery);
   endpoint.searchParams.set("limit", "5");
   endpoint.searchParams.set("addressdetails", "1");
+  endpoint.searchParams.set("namedetails", "1");
   endpoint.searchParams.set("accept-language", "zh-CN,zh,en");
 
   let response;
@@ -215,6 +263,33 @@ async function searchNominatim(db, query) {
   return { results, cached: false, updatedAt: requestedAt };
 }
 
+async function footprintRow(db, userId, id) {
+  return db.prepare(
+    `SELECT f.*, p.id AS photo_id, p.updated_at AS photo_updated_at
+     FROM footprints f
+     LEFT JOIN footprint_photos p ON p.footprint_id = f.id AND p.user_id = f.user_id
+     WHERE f.id = ? AND f.user_id = ?`,
+  ).bind(id, userId).first();
+}
+
+async function readPhoto(request) {
+  const contentType = (request.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (!PHOTO_TYPES.has(contentType)) {
+    const error = new Error("足迹照片仅支持 JPEG、PNG 或 WebP");
+    error.code = "invalid_photo_type";
+    error.status = 400;
+    throw error;
+  }
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (!bytes.byteLength || bytes.byteLength > MAX_PHOTO_BYTES) {
+    const error = new Error("压缩后的足迹照片不能超过 700KB");
+    error.code = bytes.byteLength ? "photo_too_large" : "empty_photo";
+    error.status = 400;
+    throw error;
+  }
+  return { bytes, contentType };
+}
+
 export async function handleFootprintsApi(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -239,10 +314,16 @@ export async function handleFootprintsApi(request, env) {
       }
       const rows = status === "all"
         ? await db.prepare(
-          `SELECT * FROM footprints WHERE user_id = ? ORDER BY updated_at DESC, id DESC LIMIT 500`,
+          `SELECT f.*, p.id AS photo_id, p.updated_at AS photo_updated_at
+           FROM footprints f
+           LEFT JOIN footprint_photos p ON p.footprint_id = f.id AND p.user_id = f.user_id
+           WHERE f.user_id = ? ORDER BY f.updated_at DESC, f.id DESC LIMIT 500`,
         ).bind(session.user.id).all()
         : await db.prepare(
-          `SELECT * FROM footprints WHERE user_id = ? AND status = ? ORDER BY updated_at DESC, id DESC LIMIT 500`,
+          `SELECT f.*, p.id AS photo_id, p.updated_at AS photo_updated_at
+           FROM footprints f
+           LEFT JOIN footprint_photos p ON p.footprint_id = f.id AND p.user_id = f.user_id
+           WHERE f.user_id = ? AND f.status = ? ORDER BY f.updated_at DESC, f.id DESC LIMIT 500`,
         ).bind(session.user.id, status).all();
       return json({ ok: true, footprints: (rows.results || []).map(publicFootprint) });
     }
@@ -254,8 +335,9 @@ export async function handleFootprintsApi(request, env) {
       await db.prepare(
         `INSERT INTO footprints
           (id, user_id, name, location_label, status, visited_date, note,
-           longitude, latitude, geocoder, source_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           longitude, latitude, geocoder, source_id, name_zh, name_en,
+           country_code, place_type, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).bind(
         id,
         session.user.id,
@@ -268,21 +350,80 @@ export async function handleFootprintsApi(request, env) {
         body.latitude,
         body.geocoder,
         body.sourceId,
+        body.nameZh,
+        body.nameEn,
+        body.countryCode,
+        body.placeType,
         timestamp,
         timestamp,
       ).run();
-      const row = await db.prepare(
-        `SELECT * FROM footprints WHERE id = ? AND user_id = ?`,
-      ).bind(id, session.user.id).first();
+      const row = await footprintRow(db, session.user.id, id);
       return json({ ok: true, footprint: publicFootprint(row) }, 201);
+    }
+
+    const photoMatch = path.match(/^\/api\/me\/footprints\/([^/]+)\/photo$/);
+    if (photoMatch) {
+      const id = decodeURIComponent(photoMatch[1]);
+      const existing = await footprintRow(db, session.user.id, id);
+      if (!existing) return errorJson(404, "not_found", "足迹不存在");
+
+      if (request.method === "GET") {
+        const photo = await db.prepare(
+          `SELECT content_type, image_data FROM footprint_photos
+           WHERE footprint_id = ? AND user_id = ?`,
+        ).bind(id, session.user.id).first();
+        if (!photo) return errorJson(404, "not_found", "足迹照片不存在");
+        return new Response(photo.image_data, {
+          headers: {
+            "content-type": photo.content_type,
+            "cache-control": "private, no-cache",
+            "content-security-policy": "default-src 'none'; sandbox",
+            "x-content-type-options": "nosniff",
+          },
+        });
+      }
+
+      if (request.method === "PUT") {
+        const photo = await readPhoto(request);
+        const timestamp = nowIso();
+        const photoId = existing.photo_id || randomToken(12);
+        await db.prepare(
+          `INSERT INTO footprint_photos
+            (id, footprint_id, user_id, content_type, byte_size, image_data, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(footprint_id) DO UPDATE SET
+             content_type = excluded.content_type,
+             byte_size = excluded.byte_size,
+             image_data = excluded.image_data,
+             updated_at = excluded.updated_at
+           WHERE footprint_photos.user_id = excluded.user_id`,
+        ).bind(
+          photoId,
+          id,
+          session.user.id,
+          photo.contentType,
+          photo.bytes.byteLength,
+          photo.bytes,
+          timestamp,
+          timestamp,
+        ).run();
+        const row = await footprintRow(db, session.user.id, id);
+        return json({ ok: true, footprint: publicFootprint(row) });
+      }
+
+      if (request.method === "DELETE") {
+        await db.prepare(
+          `DELETE FROM footprint_photos WHERE footprint_id = ? AND user_id = ?`,
+        ).bind(id, session.user.id).run();
+        return json({ ok: true });
+      }
+      return null;
     }
 
     const match = path.match(/^\/api\/me\/footprints\/([^/]+)$/);
     if (!match) return null;
     const id = decodeURIComponent(match[1]);
-    const existing = await db.prepare(
-      `SELECT * FROM footprints WHERE id = ? AND user_id = ?`,
-    ).bind(id, session.user.id).first();
+    const existing = await footprintRow(db, session.user.id, id);
     if (!existing) return errorJson(404, "not_found", "足迹不存在");
 
     if (request.method === "PATCH") {
@@ -291,7 +432,8 @@ export async function handleFootprintsApi(request, env) {
       await db.prepare(
         `UPDATE footprints
          SET name = ?, location_label = ?, status = ?, visited_date = ?, note = ?,
-             longitude = ?, latitude = ?, geocoder = ?, source_id = ?, updated_at = ?
+             longitude = ?, latitude = ?, geocoder = ?, source_id = ?,
+             name_zh = ?, name_en = ?, country_code = ?, place_type = ?, updated_at = ?
          WHERE id = ? AND user_id = ?`,
       ).bind(
         changes.name ?? existing.name,
@@ -303,13 +445,15 @@ export async function handleFootprintsApi(request, env) {
         changes.latitude ?? existing.latitude,
         changes.geocoder ?? existing.geocoder,
         Object.hasOwn(changes, "sourceId") ? changes.sourceId : existing.source_id,
+        Object.hasOwn(changes, "nameZh") ? changes.nameZh : existing.name_zh,
+        Object.hasOwn(changes, "nameEn") ? changes.nameEn : existing.name_en,
+        Object.hasOwn(changes, "countryCode") ? changes.countryCode : existing.country_code,
+        changes.placeType ?? existing.place_type,
         updatedAt,
         id,
         session.user.id,
       ).run();
-      const row = await db.prepare(
-        `SELECT * FROM footprints WHERE id = ? AND user_id = ?`,
-      ).bind(id, session.user.id).first();
+      const row = await footprintRow(db, session.user.id, id);
       return json({ ok: true, footprint: publicFootprint(row) });
     }
 
@@ -321,7 +465,7 @@ export async function handleFootprintsApi(request, env) {
     }
     return null;
   } catch (error) {
-    if (/no such table: (footprints|geocode_cache|geocode_rate_state)/.test(String(error?.message || ""))) {
+    if (/no such (table|column): (footprints|footprint_photos|geocode_cache|geocode_rate_state|name_zh)/.test(String(error?.message || ""))) {
       return errorJson(503, "schema_missing", "Footprints 数据表尚未初始化，请先完成第三阶段数据库迁移。");
     }
     const status = error.status || (error.code === "db_unavailable" ? 503 : 400);

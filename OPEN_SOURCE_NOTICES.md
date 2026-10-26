@@ -33,15 +33,16 @@ GLOBAL PULSE 继续使用上述 Leaflet 实现，不受私人空间改版影响�
 
 ### Footprints 私人足迹地图
 
-- 交互组件：MapLibre GL JS 6.15.0（BSD-3-Clause）
-- 地图样式与瓦片：OpenFreeMap 公共实例
+- 交互组件：MapLibre GL JS 6.16.0（BSD-3-Clause）
+- 地图样式与瓦片：OpenFreeMap 公共实例（Liberty / Positron）
+- 地形高程：Mapterhorn 公共 `raster-dem` 服务
 - 地图数据：© OpenStreetMap contributors
 - 地点搜索：OpenStreetMap Foundation 的 Nominatim 公共服务
 - MapLibre：https://maplibre.org/maplibre-gl-js/docs/
 - OpenFreeMap：https://openfreemap.org/
 - Nominatim 使用政策：https://operations.osmfoundation.org/policies/nominatim/
 
-Footprints 不需要 API Key，也没有接入付费地图服务。地点搜索只在已登录用户主动提交时发起，不提供输入联想；Worker 将规范化查询散列后缓存结果，并以全站最多约每秒一次的频率访问公共 Nominatim 服务。搜索词会发送给 OpenStreetMap Foundation 的服务，因此不应在地点搜索框输入私密文字。界面保留 OpenStreetMap 署名；若访问量增长，应迁移到自托管或具有明确服务保障的地理编码服务。
+Footprints 不需要 API Key，也没有接入 Mapbox 或其他付费地图服务。常见中英文地点别名的候选在本地完成；公共 Nominatim 查询只在已登录用户主动提交时发起，不做逐键远程自动补全。Worker 将规范化查询散列后缓存结果，并以全站最多约每秒一次的频率访问公共 Nominatim 服务。搜索词会发送给 OpenStreetMap Foundation 的服务，因此不应在地点搜索框输入私密文字。界面保留地图署名；若访问量增长，应迁移到自托管或具有明确服务保障的地理编码服务。
 
 ## AI 分析
 
