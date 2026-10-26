@@ -46,6 +46,18 @@ async function request(path, { method = "GET", body, cookie = "", csrfToken } = 
   return { response, data, status: response.status, cookie: jarFrom(response, cookie) };
 }
 
+async function requestBytes(path, { method = "PUT", bytes, contentType, cookie = "", csrfToken } = {}) {
+  const headers = { Accept: "application/json", Origin: base };
+  if (contentType) headers["Content-Type"] = contentType;
+  if (cookie) headers.Cookie = cookie;
+  if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+  const response = await fetch(`${base}${path}`, { method, headers, body: bytes });
+  const data = response.headers.get("content-type")?.includes("application/json")
+    ? await response.json().catch(() => ({}))
+    : null;
+  return { response, data, status: response.status, cookie: jarFrom(response, cookie) };
+}
+
 console.log(`\n=== Footprints phase 3 @ ${base} (${suffix}) ===\n`);
 
 let adminCookie;
@@ -108,9 +120,32 @@ const aliceCreated = await request("/api/me/footprints", {
     latitude: 40.4168,
     geocoder: "nominatim",
     sourceId: "relation:5326784",
+    nameZh: "马德里",
+    nameEn: "Madrid",
+    countryCode: "ES",
+    placeType: "city",
   },
 });
-assert(aliceCreated.status === 201 && aliceCreated.data.footprint?.status === "visited", "Alice creates a visited footprint");
+assert(
+  aliceCreated.status === 201
+    && aliceCreated.data.footprint?.status === "visited"
+    && aliceCreated.data.footprint?.countryCode === "ES",
+  "Alice creates a visited footprint with normalized geography",
+);
+
+const tinyPng = Uint8Array.from(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64"));
+const photoUpload = await requestBytes(`/api/me/footprints/${aliceCreated.data.footprint.id}/photo`, {
+  bytes: tinyPng,
+  contentType: "image/png",
+  cookie: alice.cookie,
+  csrfToken: alice.csrf,
+});
+assert(photoUpload.response.ok && photoUpload.data.footprint?.imageUrl, "Alice uploads a private footprint photo");
+const photoRead = await requestBytes(`/api/me/footprints/${aliceCreated.data.footprint.id}/photo`, {
+  method: "GET",
+  cookie: alice.cookie,
+});
+assert(photoRead.response.ok && photoRead.response.headers.get("content-type") === "image/png", "Alice reads own footprint photo");
 
 const bobCreated = await request("/api/me/footprints", {
   method: "POST",
@@ -129,6 +164,12 @@ const bobCreated = await request("/api/me/footprints", {
   },
 });
 assert(bobCreated.status === 201 && bobCreated.data.footprint?.status === "wish", "Bob creates a wish footprint");
+
+const bobPhotoRead = await requestBytes(`/api/me/footprints/${aliceCreated.data.footprint.id}/photo`, {
+  method: "GET",
+  cookie: bob.cookie,
+});
+assert(bobPhotoRead.status === 404, "Bob cannot read Alice footprint photo");
 
 const aliceList = await request("/api/me/footprints", { cookie: alice.cookie });
 const bobList = await request("/api/me/footprints", { cookie: bob.cookie });

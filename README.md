@@ -4,6 +4,14 @@
 
 网站包含个人主页与“GLOBAL PULSE 全球脉搏”实时新闻与情报中心。
 
+## Footprints 3D 私人旅行地图
+
+- MapLibre GL JS 球形投影，支持旋转、缩放、触摸和完整世界视角。
+- 真实地球、柔和地图、地形视图三种模式；WebGL 失败时回退到 Leaflet 二维地图。
+- 中英文地点搜索与规范化保存，常见别名候选在本地完成，其他查询由登录后的 Worker 代理 Nominatim。
+- 足迹、状态、日期、备注和可选私人封面保存到 D1，并按登录用户隔离。
+- 不需要 Mapbox Token、R2 或付费服务。详见 `docs/FOOTPRINTS_PHASE3.md`。
+
 ## 本地查看
 
 仅预览静态页面时可以直接打开 `index.html`，或运行：
