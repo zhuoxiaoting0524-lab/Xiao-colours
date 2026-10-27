@@ -36,8 +36,9 @@ function fixtures() {
       { id: "place-b", user_id: "bob", name: "Tokyo", status: "wish", longitude: 139.7, latitude: 35.6, created_at: "2026-10-27", updated_at: "2026-10-27" },
     ],
     footprint_photos: [
-      { id: "photo-a", footprint_id: "place-a", user_id: "alice", content_type: "image/png", byte_size: 4, image_data: new Uint8Array([1, 2, 3, 4]), created_at: "2026-10-27", updated_at: "2026-10-27" },
-      { id: "photo-b", footprint_id: "place-b", user_id: "bob", content_type: "image/jpeg", byte_size: 3, image_data: new Uint8Array([5, 6, 7]), created_at: "2026-10-27", updated_at: "2026-10-27" },
+      { id: "photo-a", footprint_id: "place-a", user_id: "alice", content_type: "image/png", byte_size: 4, image_data: new Uint8Array([1, 2, 3, 4]), position: 0, is_cover: 1, caption: "cover", created_at: "2026-10-27", updated_at: "2026-10-27" },
+      { id: "photo-a2", footprint_id: "place-a", user_id: "alice", content_type: "image/webp", byte_size: 2, image_data: new Uint8Array([8, 9]), position: 1, is_cover: 0, caption: "memory", created_at: "2026-10-27", updated_at: "2026-10-27" },
+      { id: "photo-b", footprint_id: "place-b", user_id: "bob", content_type: "image/jpeg", byte_size: 3, image_data: new Uint8Array([5, 6, 7]), position: 0, is_cover: 1, created_at: "2026-10-27", updated_at: "2026-10-27" },
     ],
     personal_notes: [
       { id: "note-a", user_id: "alice", title: "private a", content: "A", created_at: "2026-10-27" },
@@ -53,7 +54,9 @@ test("data export strictly isolates two accounts", async () => {
 
   assert.deepEqual(alice.data.data.myDays.map((item) => item.id), ["task-a"]);
   assert.deepEqual(alice.data.data.footprints.map((item) => item.id), ["place-a"]);
-  assert.deepEqual(alice.photos.map((item) => item.id), ["photo-a"]);
+  assert.deepEqual(alice.photos.map((item) => item.id), ["photo-a", "photo-a2"]);
+  assert.deepEqual(alice.data.data.footprints[0].photos.map((item) => item.id), ["photo-a", "photo-a2"]);
+  assert.equal(alice.data.data.footprints[0].photo.id, "photo-a");
   assert.equal(JSON.stringify(alice.data).includes("Bob task"), false);
   assert.equal(JSON.stringify(alice.data).includes("private b"), false);
 

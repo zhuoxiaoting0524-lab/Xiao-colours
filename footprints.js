@@ -39,9 +39,10 @@ let mapMode = "globe";
 let searchPending = false;
 let searchTimer = null;
 let searchSequence = 0;
-let pendingPhotoFile = null;
-let removePhotoRequested = false;
+let pendingPhotoFiles = [];
 let previewObjectUrl = "";
+let albumPlaceId = null;
+let albumRequest = 0;
 
 function setStatus(message = "", isError = false) {
   const node = $("#footprints-status");
@@ -267,15 +268,152 @@ function showPlace(id) {
   const actions = document.createElement("span");
   actions.className = "place-actions";
   actions.append(
-    detailAction("编辑", "under", () => openPlaceDialog(place)),
+    detailAction(`查看照片${place.photoCount ? `（${place.photoCount}）` : ""}`, "under", () => openAlbumDialog(place)),
+    detailAction("编辑记录", "under", () => openPlaceDialog(place)),
     detailAction("删除", "under danger", () => deletePlace(place)),
   );
   footer.append(time, actions);
   box.append(header, state, location, note, footer);
+  const preview = document.createElement("div");
+  preview.className = "place-album-preview";
+  preview.innerHTML = '<p class="hint">正在读取旅行照片…</p>';
+  box.insertBefore(preview, footer);
+  renderAlbumPreview(place, preview);
   box.hidden = false;
   renderPlaceCards(filteredPlaces());
   syncMapMarkers();
   flyToLocation(place, { detail: true });
+}
+
+async function fetchAlbum(placeId) {
+  const data = await api(`/api/me/footprints/${encodeURIComponent(placeId)}/photos`);
+  return data.photos || [];
+}
+
+async function renderAlbumPreview(place, container) {
+  const request = ++albumRequest;
+  try {
+    const photos = await fetchAlbum(place.id);
+    if (request !== albumRequest || activePlace !== place.id) return;
+    if (!photos.length) {
+      container.innerHTML = '<button type="button" class="place-album-empty">＋ 添加第一张旅行照片</button>';
+      container.querySelector("button").addEventListener("click", () => openAlbumDialog(place));
+      return;
+    }
+    container.replaceChildren(...photos.slice(0, 4).map((photo) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `place-album-thumb${photo.isCover ? " is-cover" : ""}`;
+      const image = document.createElement("img");
+      image.loading = "lazy";
+      image.decoding = "async";
+      image.alt = `${place.name} 的旅行照片`;
+      image.src = photo.imageUrl;
+      const badge = document.createElement("span");
+      badge.textContent = photo.isCover ? "封面" : "";
+      button.append(image, badge);
+      button.addEventListener("click", () => openAlbumDialog(place));
+      return button;
+    }));
+  } catch (error) {
+    container.innerHTML = '<button type="button" class="place-album-empty">照片读取失败，点击重试</button>';
+    container.querySelector("button").addEventListener("click", () => renderAlbumPreview(place, container));
+  }
+}
+
+async function uploadAlbumFiles(placeId, files) {
+  if (!files.length) return;
+  const status = $("#album-photo-status");
+  for (let index = 0; index < files.length; index += 1) {
+    status.textContent = `正在处理 ${index + 1} / ${files.length}…`;
+    const compressed = await compressPhoto(files[index]);
+    const name = encodeURIComponent(files[index].name || `photo-${index + 1}`);
+    await uploadBytes(`/api/me/footprints/${encodeURIComponent(placeId)}/photos?name=${name}`, {
+      method: "POST", bytes: compressed, contentType: compressed.type, csrfToken: authState.csrfToken,
+    });
+  }
+  status.textContent = `${files.length} 张照片已保存`;
+}
+
+async function openAlbumDialog(place) {
+  albumPlaceId = place.id;
+  $("#footprint-album-title").textContent = `${place.name} · 旅行照片`;
+  $("#album-photo-status").textContent = "正在读取…";
+  $("#footprint-album-dialog").showModal();
+  await renderAlbumManager();
+}
+
+async function renderAlbumManager() {
+  const grid = $("#footprint-album-grid");
+  const status = $("#album-photo-status");
+  grid.innerHTML = '<p class="album-empty">正在读取私人相册…</p>';
+  try {
+    const photos = await fetchAlbum(albumPlaceId);
+    status.textContent = `${photos.length} / 20 张`;
+    if (!photos.length) {
+      grid.innerHTML = '<p class="album-empty">这里还没有照片。添加真实旅行照片后，会直接保存在这个地点中。</p>';
+      return;
+    }
+    grid.replaceChildren(...photos.map((photo) => {
+      const card = document.createElement("article");
+      card.className = `album-photo-card${photo.isCover ? " is-cover" : ""}`;
+      const image = document.createElement("img");
+      image.src = photo.imageUrl;
+      image.alt = photo.caption || "旅行照片";
+      image.loading = "lazy";
+      image.decoding = "async";
+      const controls = document.createElement("div");
+      const caption = document.createElement("input");
+      caption.value = photo.caption || "";
+      caption.maxLength = 500;
+      caption.placeholder = "添加照片说明";
+      const placesSelect = document.createElement("select");
+      places.forEach((place) => placesSelect.add(new Option(place.name, place.id, false, place.id === photo.footprintId)));
+      const save = detailAction("保存说明", "under", async () => {
+        await api(`/api/me/footprints/${encodeURIComponent(photo.footprintId)}/photos/${encodeURIComponent(photo.id)}`, {
+          method: "PATCH", csrfToken: authState.csrfToken, body: { caption: caption.value },
+        });
+        notify("照片说明已保存");
+      });
+      const cover = detailAction(photo.isCover ? "当前封面" : "设为封面", "under", async () => {
+        if (photo.isCover) return;
+        await api(`/api/me/footprints/${encodeURIComponent(photo.footprintId)}/photos/${encodeURIComponent(photo.id)}`, {
+          method: "PATCH", csrfToken: authState.csrfToken, body: { isCover: true },
+        });
+        await refreshFootprintsAfterPhotoChange();
+      });
+      cover.disabled = photo.isCover;
+      const move = detailAction("移动到所选地点", "under", async () => {
+        if (placesSelect.value === photo.footprintId) return;
+        await api(`/api/me/footprints/${encodeURIComponent(photo.footprintId)}/photos/${encodeURIComponent(photo.id)}`, {
+          method: "PATCH", csrfToken: authState.csrfToken, body: { footprintId: placesSelect.value },
+        });
+        await refreshFootprintsAfterPhotoChange();
+      });
+      const remove = detailAction("删除", "under danger", async () => {
+        if (!window.confirm("确定删除这张旅行照片吗？此操作不会删除地点记录。")) return;
+        await api(`/api/me/footprints/${encodeURIComponent(photo.footprintId)}/photos/${encodeURIComponent(photo.id)}`, {
+          method: "DELETE", csrfToken: authState.csrfToken, body: {},
+        });
+        await refreshFootprintsAfterPhotoChange();
+      });
+      controls.append(caption, placesSelect, save, cover, move, remove);
+      card.append(image, controls);
+      return card;
+    }));
+  } catch (error) {
+    status.textContent = "读取失败";
+    grid.innerHTML = '<button type="button" class="album-empty">相册读取失败，点击重试</button>';
+    grid.querySelector("button").addEventListener("click", renderAlbumManager);
+  }
+}
+
+async function refreshFootprintsAfterPhotoChange() {
+  await loadFootprints();
+  const place = places.find((item) => item.id === albumPlaceId);
+  if (place) showPlace(place.id);
+  await renderAlbumManager();
+  window.dispatchEvent(new CustomEvent("xc:data-changed", { detail: { source: "footprints" } }));
 }
 
 function showSearchLocation(result) {
@@ -644,11 +782,12 @@ function openPlaceDialog(place = null, location = null, defaultStatus = "wish") 
     return;
   }
   releasePreviewUrl();
-  pendingPhotoFile = null;
-  removePhotoRequested = false;
+  pendingPhotoFiles = [];
   $("#place-photo").value = "";
-  setPhotoPreview(place?.imageUrl || "");
-  $("#remove-place-photo").hidden = !place?.imageUrl;
+  setPhotoPreview("");
+  $("#place-photo-selection").textContent = place?.photoCount
+    ? `已有 ${place.photoCount} 张照片；可继续选择新照片。`
+    : "图片会在浏览器中压缩后保存到你的私人 D1 数据中，单张不超过 700KB。";
   $("#place-dialog-title").textContent = place ? "编辑足迹" : "添加足迹";
   $("#place-name").value = place?.name || selectedLocation.name;
   $("#place-status").value = place?.status || defaultStatus;
@@ -719,19 +858,10 @@ async function savePlace(event) {
       ? await api(`/api/me/footprints/${encodeURIComponent(editingPlaceId)}`, { method: "PATCH", csrfToken: authState.csrfToken, body: payload })
       : await api("/api/me/footprints", { method: "POST", csrfToken: authState.csrfToken, body: payload });
     let saved = data.footprint;
-    if (removePhotoRequested && saved.imageUrl) {
-      await api(`/api/me/footprints/${encodeURIComponent(saved.id)}/photo`, { method: "DELETE", csrfToken: authState.csrfToken, body: {} });
-      saved = { ...saved, photoId: null, imageUrl: null };
-    }
-    if (pendingPhotoFile) {
-      const compressed = await compressPhoto(pendingPhotoFile);
-      data = await uploadBytes(`/api/me/footprints/${encodeURIComponent(saved.id)}/photo`, {
-        method: "PUT",
-        bytes: compressed,
-        contentType: compressed.type,
-        csrfToken: authState.csrfToken,
-      });
-      saved = data.footprint;
+    if (pendingPhotoFiles.length) {
+      await uploadAlbumFiles(saved.id, pendingPhotoFiles);
+      data = await api(`/api/me/footprints`);
+      saved = (data.footprints || []).find((item) => item.id === saved.id) || saved;
     }
     const index = places.findIndex((item) => item.id === saved.id);
     if (index === -1) places.unshift(saved);
@@ -808,22 +938,25 @@ export async function mountFootprints(nextAuthState, options = {}) {
       }
     });
     $("#place-photo").addEventListener("change", (event) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-      pendingPhotoFile = file;
-      removePhotoRequested = false;
+      const files = [...(event.target.files || [])].slice(0, 20);
+      if (!files.length) return;
+      pendingPhotoFiles = files;
       releasePreviewUrl();
-      previewObjectUrl = URL.createObjectURL(file);
+      previewObjectUrl = URL.createObjectURL(files[0]);
       setPhotoPreview(previewObjectUrl);
-      $("#remove-place-photo").hidden = false;
+      $("#place-photo-selection").textContent = `已选择 ${files.length} 张照片；保存地点后一起上传。`;
     });
-    $("#remove-place-photo").addEventListener("click", () => {
-      pendingPhotoFile = null;
-      removePhotoRequested = true;
-      $("#place-photo").value = "";
-      releasePreviewUrl();
-      setPhotoPreview("");
-      $("#remove-place-photo").hidden = true;
+    $("#album-photo-input").addEventListener("change", async (event) => {
+      const files = [...(event.target.files || [])];
+      if (!files.length || !albumPlaceId) return;
+      try {
+        await uploadAlbumFiles(albumPlaceId, files);
+        event.target.value = "";
+        await refreshFootprintsAfterPhotoChange();
+        notify("旅行照片已加入这个地点");
+      } catch (error) {
+        notify(error.message || "照片上传失败", true);
+      }
     });
     $("#place-dialog").addEventListener("close", releasePreviewUrl);
     $("#place-form").addEventListener("submit", savePlace);

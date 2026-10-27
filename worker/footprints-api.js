@@ -9,6 +9,7 @@ const GEOCODE_CACHE_MS = 30 * 24 * 60 * 60 * 1000;
 const GEOCODE_GAP_MS = 1_100;
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 const MAX_PHOTO_BYTES = 700 * 1024;
+const MAX_PHOTOS_PER_PLACE = 20;
 const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const SEARCH_ALIASES = new Map([
   ["日本", "Japan"], ["japan", "Japan"],
@@ -139,9 +140,26 @@ function publicFootprint(row) {
     countryCode: row.country_code || null,
     placeType: row.place_type || "place",
     photoId: row.photo_id || null,
+    photoCount: Number(row.photo_count || (row.photo_id ? 1 : 0)),
     imageUrl: row.photo_id
       ? `/api/me/footprints/${encodeURIComponent(row.id)}/photo?v=${encodeURIComponent(row.photo_updated_at || row.updated_at || "")}`
       : null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function publicPhoto(row) {
+  return {
+    id: row.id,
+    footprintId: row.footprint_id,
+    contentType: row.content_type,
+    byteSize: Number(row.byte_size || 0),
+    originalName: row.original_name || null,
+    caption: row.caption || "",
+    position: Number(row.position || 0),
+    isCover: Boolean(row.is_cover),
+    imageUrl: `/api/me/footprints/${encodeURIComponent(row.footprint_id)}/photos/${encodeURIComponent(row.id)}?v=${encodeURIComponent(row.updated_at || "")}`,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -265,9 +283,10 @@ async function searchNominatim(db, query) {
 
 async function footprintRow(db, userId, id) {
   return db.prepare(
-    `SELECT f.*, p.id AS photo_id, p.updated_at AS photo_updated_at
+    `SELECT f.*, p.id AS photo_id, p.updated_at AS photo_updated_at,
+            (SELECT COUNT(*) FROM footprint_photos pc WHERE pc.footprint_id = f.id AND pc.user_id = f.user_id) AS photo_count
      FROM footprints f
-     LEFT JOIN footprint_photos p ON p.footprint_id = f.id AND p.user_id = f.user_id
+     LEFT JOIN footprint_photos p ON p.footprint_id = f.id AND p.user_id = f.user_id AND p.is_cover = 1
      WHERE f.id = ? AND f.user_id = ?`,
   ).bind(id, userId).first();
 }
@@ -314,15 +333,17 @@ export async function handleFootprintsApi(request, env) {
       }
       const rows = status === "all"
         ? await db.prepare(
-          `SELECT f.*, p.id AS photo_id, p.updated_at AS photo_updated_at
+          `SELECT f.*, p.id AS photo_id, p.updated_at AS photo_updated_at,
+                  (SELECT COUNT(*) FROM footprint_photos pc WHERE pc.footprint_id = f.id AND pc.user_id = f.user_id) AS photo_count
            FROM footprints f
-           LEFT JOIN footprint_photos p ON p.footprint_id = f.id AND p.user_id = f.user_id
+           LEFT JOIN footprint_photos p ON p.footprint_id = f.id AND p.user_id = f.user_id AND p.is_cover = 1
            WHERE f.user_id = ? ORDER BY f.updated_at DESC, f.id DESC LIMIT 500`,
         ).bind(session.user.id).all()
         : await db.prepare(
-          `SELECT f.*, p.id AS photo_id, p.updated_at AS photo_updated_at
+          `SELECT f.*, p.id AS photo_id, p.updated_at AS photo_updated_at,
+                  (SELECT COUNT(*) FROM footprint_photos pc WHERE pc.footprint_id = f.id AND pc.user_id = f.user_id) AS photo_count
            FROM footprints f
-           LEFT JOIN footprint_photos p ON p.footprint_id = f.id AND p.user_id = f.user_id
+           LEFT JOIN footprint_photos p ON p.footprint_id = f.id AND p.user_id = f.user_id AND p.is_cover = 1
            WHERE f.user_id = ? AND f.status = ? ORDER BY f.updated_at DESC, f.id DESC LIMIT 500`,
         ).bind(session.user.id, status).all();
       return json({ ok: true, footprints: (rows.results || []).map(publicFootprint) });
@@ -361,6 +382,100 @@ export async function handleFootprintsApi(request, env) {
       return json({ ok: true, footprint: publicFootprint(row) }, 201);
     }
 
+    const albumMatch = path.match(/^\/api\/me\/footprints\/([^/]+)\/photos$/);
+    if (albumMatch) {
+      const footprintId = decodeURIComponent(albumMatch[1]);
+      const footprint = await footprintRow(db, session.user.id, footprintId);
+      if (!footprint) return errorJson(404, "not_found", "足迹不存在");
+      if (request.method === "GET") {
+        const result = await db.prepare(
+          `SELECT id, footprint_id, content_type, byte_size, original_name, caption,
+                  position, is_cover, created_at, updated_at
+           FROM footprint_photos
+           WHERE footprint_id = ? AND user_id = ?
+           ORDER BY is_cover DESC, position ASC, created_at ASC`,
+        ).bind(footprintId, session.user.id).all();
+        return json({ ok: true, photos: (result.results || []).map(publicPhoto) });
+      }
+      if (request.method === "POST") {
+        const count = await db.prepare(
+          `SELECT COUNT(*) AS total FROM footprint_photos WHERE footprint_id = ? AND user_id = ?`,
+        ).bind(footprintId, session.user.id).first();
+        if (Number(count?.total || 0) >= MAX_PHOTOS_PER_PLACE) {
+          return errorJson(400, "photo_limit", `每个地点最多保存 ${MAX_PHOTOS_PER_PLACE} 张照片`);
+        }
+        const photo = await readPhoto(request);
+        const id = randomToken(12);
+        const timestamp = nowIso();
+        const isCover = Number(count?.total || 0) === 0 ? 1 : 0;
+        const originalName = String(url.searchParams.get("name") || "").trim().slice(0, 180) || null;
+        const caption = String(url.searchParams.get("caption") || "").trim().slice(0, 500) || null;
+        const position = Number(count?.total || 0);
+        await db.prepare(
+          `INSERT INTO footprint_photos
+            (id, footprint_id, user_id, content_type, byte_size, image_data,
+             original_name, caption, position, is_cover, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ).bind(id, footprintId, session.user.id, photo.contentType, photo.bytes.byteLength, photo.bytes, originalName, caption, position, isCover, timestamp, timestamp).run();
+        const saved = await db.prepare(`SELECT * FROM footprint_photos WHERE id = ? AND user_id = ?`).bind(id, session.user.id).first();
+        return json({ ok: true, photo: publicPhoto(saved), footprint: publicFootprint(await footprintRow(db, session.user.id, footprintId)) }, 201);
+      }
+      return null;
+    }
+
+    const albumPhotoMatch = path.match(/^\/api\/me\/footprints\/([^/]+)\/photos\/([^/]+)$/);
+    if (albumPhotoMatch) {
+      const footprintId = decodeURIComponent(albumPhotoMatch[1]);
+      const photoId = decodeURIComponent(albumPhotoMatch[2]);
+      const photo = await db.prepare(
+        `SELECT * FROM footprint_photos WHERE id = ? AND footprint_id = ? AND user_id = ?`,
+      ).bind(photoId, footprintId, session.user.id).first();
+      if (!photo) return errorJson(404, "not_found", "照片不存在");
+      if (request.method === "GET") {
+        return new Response(photo.image_data, { headers: {
+          "content-type": photo.content_type,
+          "cache-control": "private, no-cache",
+          "content-security-policy": "default-src 'none'; sandbox",
+          "x-content-type-options": "nosniff",
+        } });
+      }
+      if (request.method === "PATCH") {
+        const body = await readJsonBody(request);
+        const targetId = String(body.footprintId || footprintId);
+        const target = await footprintRow(db, session.user.id, targetId);
+        if (!target) return errorJson(404, "target_not_found", "目标足迹不存在");
+        const caption = Object.hasOwn(body, "caption") ? String(body.caption || "").slice(0, 500) : photo.caption;
+        const makeCover = body.isCover === true || (targetId !== footprintId && !(await db.prepare(
+          `SELECT id FROM footprint_photos WHERE footprint_id = ? AND user_id = ? AND is_cover = 1`,
+        ).bind(targetId, session.user.id).first()));
+        const timestamp = nowIso();
+        const statements = [];
+        if (makeCover) statements.push(db.prepare(
+          `UPDATE footprint_photos SET is_cover = 0, updated_at = ? WHERE footprint_id = ? AND user_id = ?`,
+        ).bind(timestamp, targetId, session.user.id));
+        statements.push(db.prepare(
+          `UPDATE footprint_photos SET footprint_id = ?, caption = ?, is_cover = ?, updated_at = ?
+           WHERE id = ? AND footprint_id = ? AND user_id = ?`,
+        ).bind(targetId, caption, makeCover ? 1 : 0, timestamp, photoId, footprintId, session.user.id));
+        if (photo.is_cover && targetId !== footprintId) statements.push(db.prepare(
+          `UPDATE footprint_photos SET is_cover = 1, updated_at = ?
+           WHERE id = (SELECT id FROM footprint_photos WHERE footprint_id = ? AND user_id = ? ORDER BY position ASC, created_at ASC LIMIT 1)`,
+        ).bind(timestamp, footprintId, session.user.id));
+        await db.batch(statements);
+        const saved = await db.prepare(`SELECT * FROM footprint_photos WHERE id = ? AND user_id = ?`).bind(photoId, session.user.id).first();
+        return json({ ok: true, photo: publicPhoto(saved) });
+      }
+      if (request.method === "DELETE") {
+        await db.prepare(`DELETE FROM footprint_photos WHERE id = ? AND footprint_id = ? AND user_id = ?`).bind(photoId, footprintId, session.user.id).run();
+        if (photo.is_cover) await db.prepare(
+          `UPDATE footprint_photos SET is_cover = 1, updated_at = ?
+           WHERE id = (SELECT id FROM footprint_photos WHERE footprint_id = ? AND user_id = ? ORDER BY position ASC, created_at ASC LIMIT 1)`,
+        ).bind(nowIso(), footprintId, session.user.id).run();
+        return json({ ok: true, footprint: publicFootprint(await footprintRow(db, session.user.id, footprintId)) });
+      }
+      return null;
+    }
+
     const photoMatch = path.match(/^\/api\/me\/footprints\/([^/]+)\/photo$/);
     if (photoMatch) {
       const id = decodeURIComponent(photoMatch[1]);
@@ -370,7 +485,8 @@ export async function handleFootprintsApi(request, env) {
       if (request.method === "GET") {
         const photo = await db.prepare(
           `SELECT content_type, image_data FROM footprint_photos
-           WHERE footprint_id = ? AND user_id = ?`,
+           WHERE footprint_id = ? AND user_id = ?
+           ORDER BY is_cover DESC, position ASC LIMIT 1`,
         ).bind(id, session.user.id).first();
         if (!photo) return errorJson(404, "not_found", "足迹照片不存在");
         return new Response(photo.image_data, {
@@ -387,34 +503,31 @@ export async function handleFootprintsApi(request, env) {
         const photo = await readPhoto(request);
         const timestamp = nowIso();
         const photoId = existing.photo_id || randomToken(12);
-        await db.prepare(
-          `INSERT INTO footprint_photos
-            (id, footprint_id, user_id, content_type, byte_size, image_data, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-           ON CONFLICT(footprint_id) DO UPDATE SET
-             content_type = excluded.content_type,
-             byte_size = excluded.byte_size,
-             image_data = excluded.image_data,
-             updated_at = excluded.updated_at
-           WHERE footprint_photos.user_id = excluded.user_id`,
-        ).bind(
-          photoId,
-          id,
-          session.user.id,
-          photo.contentType,
-          photo.bytes.byteLength,
-          photo.bytes,
-          timestamp,
-          timestamp,
-        ).run();
+        if (existing.photo_id) {
+          await db.prepare(
+            `UPDATE footprint_photos SET content_type = ?, byte_size = ?, image_data = ?, updated_at = ?
+             WHERE id = ? AND footprint_id = ? AND user_id = ?`,
+          ).bind(photo.contentType, photo.bytes.byteLength, photo.bytes, timestamp, photoId, id, session.user.id).run();
+        } else {
+          await db.prepare(
+            `INSERT INTO footprint_photos
+              (id, footprint_id, user_id, content_type, byte_size, image_data,
+               original_name, caption, position, is_cover, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, 0, 1, ?, ?)`,
+          ).bind(photoId, id, session.user.id, photo.contentType, photo.bytes.byteLength, photo.bytes, timestamp, timestamp).run();
+        }
         const row = await footprintRow(db, session.user.id, id);
         return json({ ok: true, footprint: publicFootprint(row) });
       }
 
       if (request.method === "DELETE") {
-        await db.prepare(
-          `DELETE FROM footprint_photos WHERE footprint_id = ? AND user_id = ?`,
-        ).bind(id, session.user.id).run();
+        if (existing.photo_id) {
+          await db.prepare(`DELETE FROM footprint_photos WHERE id = ? AND footprint_id = ? AND user_id = ?`).bind(existing.photo_id, id, session.user.id).run();
+          await db.prepare(
+            `UPDATE footprint_photos SET is_cover = 1, updated_at = ?
+             WHERE id = (SELECT id FROM footprint_photos WHERE footprint_id = ? AND user_id = ? ORDER BY position ASC, created_at ASC LIMIT 1)`,
+          ).bind(nowIso(), id, session.user.id).run();
+        }
         return json({ ok: true });
       }
       return null;

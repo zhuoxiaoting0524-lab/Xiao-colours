@@ -644,17 +644,28 @@
         <label>状态<select id="place-status"><option value="wish">想去</option><option value="visited">去过</option></select></label>
         <label>日期（可选）<input id="place-date" type="date"></label>
         <label>文字备注<textarea id="place-note" rows="5" maxlength="2000"></textarea></label>
-        <label class="place-photo-field">旅行照片（可选）
+        <label class="place-photo-field">旅行照片（可选，最多 20 张）
           <span class="place-photo-picker">
             <img id="place-photo-preview" alt="足迹照片预览" hidden>
-            <span id="place-photo-placeholder">选择一张属于你的照片</span>
-            <input id="place-photo" type="file" accept="image/jpeg,image/png,image/webp">
+            <span id="place-photo-placeholder">选择属于你的旅行照片</span>
+            <input id="place-photo" type="file" accept="image/jpeg,image/png,image/webp" multiple>
           </span>
-          <small>图片会在浏览器中压缩后保存到你的私人 D1 数据中，单张不超过 700KB。</small>
+          <small id="place-photo-selection">图片会在浏览器中压缩后保存到你的私人 D1 数据中，单张不超过 700KB。</small>
         </label>
-        <button class="under danger" id="remove-place-photo" type="button" hidden>移除当前照片</button>
         <footer><button class="danger" id="delete-place" type="button">删除</button><span></span><button type="button" data-close="place-dialog">取消</button><button class="primary" id="save-place" type="submit">保存</button></footer>
       </form></dialog>
+
+      <dialog id="footprint-album-dialog" class="dialog footprint-album-dialog" aria-labelledby="footprint-album-title">
+        <section>
+          <header><span><p class="overline">TRAVEL ALBUM</p><h3 id="footprint-album-title">旅行照片</h3></span><button type="button" data-close="footprint-album-dialog" aria-label="关闭">×</button></header>
+          <div class="album-upload-row">
+            <label class="primary album-upload-button">＋ 添加照片<input id="album-photo-input" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+            <small id="album-photo-status" role="status" aria-live="polite"></small>
+          </div>
+          <div class="footprint-album-grid" id="footprint-album-grid"></div>
+          <footer><span></span><button type="button" data-close="footprint-album-dialog">完成</button></footer>
+        </section>
+      </dialog>
 
       <dialog id="life-archive-dialog" class="dialog life-archive-dialog" aria-labelledby="life-archive-title">
         <form id="life-archive-form">

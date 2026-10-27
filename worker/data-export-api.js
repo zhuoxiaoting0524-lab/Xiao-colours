@@ -51,13 +51,29 @@ function publicTask(row) {
 function publicImportantDate(row) {
   return { id: row.id, title: row.title, date: row.event_date, note: row.note || "", repeatRule: row.repeat_rule || "none", createdAt: row.created_at, updatedAt: row.updated_at };
 }
-function publicFootprint(row, photo) {
+function publicPhoto(photo) {
+  return {
+    id: photo.id,
+    contentType: photo.content_type,
+    byteSize: Number(photo.byte_size || 0),
+    originalName: photo.original_name || null,
+    caption: photo.caption || "",
+    position: Number(photo.position || 0),
+    isCover: Boolean(photo.is_cover),
+    createdAt: photo.created_at,
+    updatedAt: photo.updated_at,
+  };
+}
+function publicFootprint(row, photos = []) {
+  const normalizedPhotos = photos.map(publicPhoto);
+  const cover = normalizedPhotos.find((photo) => photo.isCover) || normalizedPhotos[0] || null;
   return {
     id: row.id, name: row.name, locationLabel: row.location_label || "", status: row.status,
     visitedDate: row.visited_date || null, note: row.note || "", longitude: Number(row.longitude), latitude: Number(row.latitude),
     geocoder: row.geocoder || null, sourceId: row.source_id || null, nameZh: row.name_zh || null, nameEn: row.name_en || null,
     countryCode: row.country_code || null, placeType: row.place_type || null,
-    photo: photo ? { id: photo.id, contentType: photo.content_type, byteSize: Number(photo.byte_size || 0), createdAt: photo.created_at, updatedAt: photo.updated_at } : null,
+    photo: cover,
+    photos: normalizedPhotos,
     createdAt: row.created_at, updatedAt: row.updated_at,
   };
 }
@@ -70,15 +86,23 @@ export async function collectUserExport(db, user, { includePhotoBytes = false } 
     selectForUser(db, tables, "important_dates", userId, "event_date ASC, created_at ASC"),
     selectForUser(db, tables, "footprints", userId),
     tables.has("footprint_photos")
-      ? db.prepare(`SELECT id, footprint_id, user_id, content_type, byte_size, created_at, updated_at FROM footprint_photos WHERE user_id = ? ORDER BY created_at ASC`).bind(userId).all().then(rows)
+      ? db.prepare(`SELECT id, footprint_id, user_id, content_type, byte_size,
+                           original_name, caption, position, is_cover, created_at, updated_at
+                    FROM footprint_photos WHERE user_id = ?
+                    ORDER BY footprint_id ASC, is_cover DESC, position ASC, created_at ASC`).bind(userId).all().then(rows)
       : [],
     selectForUser(db, tables, "personal_notes", userId),
     selectForUser(db, tables, "journal_pages", userId),
     selectForUser(db, tables, "gallery_items", userId),
     selectForUser(db, tables, "media_objects", userId),
   ]);
-  const photosByFootprint = new Map(photoMetadataRows.map((photo) => [photo.footprint_id, photo]));
-  const footprints = footprintRows.map((footprint) => publicFootprint(footprint, photosByFootprint.get(footprint.id)));
+  const photosByFootprint = new Map();
+  for (const photo of photoMetadataRows) {
+    const album = photosByFootprint.get(photo.footprint_id) || [];
+    album.push(photo);
+    photosByFootprint.set(photo.footprint_id, album);
+  }
+  const footprints = footprintRows.map((footprint) => publicFootprint(footprint, photosByFootprint.get(footprint.id) || []));
   const exportedAt = new Date().toISOString();
   const data = {
     format: BACKUP_FORMAT, version: BACKUP_VERSION, exportedAt,
@@ -165,7 +189,11 @@ function zipFiles(exported, photos) {
     photoPaths.set(photo.id, path);
     return { name: path, bytes: photo.bytes };
   });
-  const footprints = exported.data.footprints.map((footprint) => ({ ...footprint, photo: footprint.photo ? { ...footprint.photo, backupPath: photoPaths.get(footprint.photo.id) || null } : null }));
+  const footprints = exported.data.footprints.map((footprint) => {
+    const photos = (footprint.photos || []).map((photo) => ({ ...photo, backupPath: photoPaths.get(photo.id) || null }));
+    const cover = photos.find((photo) => photo.isCover) || photos[0] || null;
+    return { ...footprint, photo: cover, photos };
+  });
   const manifest = { format: exported.format, version: exported.version, exportedAt: exported.exportedAt, account: exported.account, counts: exported.counts, contents: ["data/my-days.json", "data/important-dates.json", "data/footprints.json", "data/other-data.json", ...photoFiles.map((file) => file.name.replace(`${root}/`, ""))] };
   return [
     { name: `${root}/manifest.json`, bytes: prettyJson(manifest) },

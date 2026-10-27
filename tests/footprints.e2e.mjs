@@ -147,6 +147,22 @@ const photoRead = await requestBytes(`/api/me/footprints/${aliceCreated.data.foo
 });
 assert(photoRead.response.ok && photoRead.response.headers.get("content-type") === "image/png", "Alice reads own footprint photo");
 
+const secondPhotoUpload = await requestBytes(`/api/me/footprints/${aliceCreated.data.footprint.id}/photos?name=second.png`, {
+  method: "POST",
+  bytes: tinyPng,
+  contentType: "image/png",
+  cookie: alice.cookie,
+  csrfToken: alice.csrf,
+});
+assert(secondPhotoUpload.status === 201 && secondPhotoUpload.data.photo?.isCover === false, "Alice adds a second album photo without replacing the cover");
+const aliceAlbum = await request(`/api/me/footprints/${aliceCreated.data.footprint.id}/photos`, { cookie: alice.cookie });
+assert(aliceAlbum.response.ok && aliceAlbum.data.photos?.length === 2, "Alice album lists both photos");
+const secondPhotoId = secondPhotoUpload.data.photo.id;
+const coverUpdate = await request(`/api/me/footprints/${aliceCreated.data.footprint.id}/photos/${secondPhotoId}`, {
+  method: "PATCH", cookie: alice.cookie, csrfToken: alice.csrf, body: { isCover: true, caption: "Second private memory" },
+});
+assert(coverUpdate.response.ok && coverUpdate.data.photo?.isCover, "Alice can set a different album cover and save its caption");
+
 const bobCreated = await request("/api/me/footprints", {
   method: "POST",
   cookie: bob.cookie,
@@ -170,11 +186,18 @@ const bobPhotoRead = await requestBytes(`/api/me/footprints/${aliceCreated.data.
   cookie: bob.cookie,
 });
 assert(bobPhotoRead.status === 404, "Bob cannot read Alice footprint photo");
+const bobAlbumRead = await request(`/api/me/footprints/${aliceCreated.data.footprint.id}/photos`, { cookie: bob.cookie });
+assert(bobAlbumRead.status === 404, "Bob cannot list Alice travel album");
+const bobAlbumDelete = await request(`/api/me/footprints/${aliceCreated.data.footprint.id}/photos/${secondPhotoId}`, {
+  method: "DELETE", cookie: bob.cookie, csrfToken: bob.csrf, body: {},
+});
+assert(bobAlbumDelete.status === 404, "Bob cannot delete Alice album photo");
 
 const aliceList = await request("/api/me/footprints", { cookie: alice.cookie });
 const bobList = await request("/api/me/footprints", { cookie: bob.cookie });
 assert(aliceList.data.footprints.length === 1 && aliceList.data.footprints[0].id === aliceCreated.data.footprint.id, "Alice list only contains Alice data");
 assert(bobList.data.footprints.length === 1 && bobList.data.footprints[0].id === bobCreated.data.footprint.id, "Bob list only contains Bob data");
+assert(aliceList.data.footprints[0].photoCount === 2 && aliceList.data.footprints[0].photoId === secondPhotoId, "Footprint exposes accurate album count and selected cover");
 
 const stealPatch = await request(`/api/me/footprints/${aliceCreated.data.footprint.id}`, {
   method: "PATCH",
