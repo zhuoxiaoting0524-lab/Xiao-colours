@@ -232,8 +232,8 @@ async function searchNominatim(db, query) {
     response = await fetch(endpoint, {
       headers: {
         Accept: "application/json",
-        "User-Agent": "XiaoColour-Footprints/1.0 (+https://xiao-colours.zhuoxiaoting0524.workers.dev/)",
-        Referer: "https://xiao-colours.zhuoxiaoting0524.workers.dev/",
+        "User-Agent": "XiaoColour-Footprints/1.0 (+https://colours.xiaocolour.workers.dev/)",
+        Referer: "https://colours.xiaocolour.workers.dev/",
       },
       signal: AbortSignal.timeout(8_000),
     });

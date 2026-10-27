@@ -100,7 +100,7 @@ pnpm exec wrangler login
 # 3. 确认不会误传 node_modules（仓库已含 .assetsignore）
 pnpm exec wrangler deploy --dry-run
 
-# 4. 发布到现有 Worker 名称 xiao-colours
+# 4. 发布到 Worker 名称 colours
 pnpm deploy
 ```
 
