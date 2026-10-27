@@ -2369,7 +2369,7 @@
   #personal-space-v2 .fp-card-media, #personal-space-v2 .fp-card-media img { min-height: 104px; }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1180px) {
   #personal-space-v2 .footprint-stats-row { max-width: none; margin-left: 0; }
   #personal-space-v2 .footprints-split-layout { grid-template-columns: minmax(0, 1fr); }
   #personal-space-v2 .footprints-map-wrapper, #personal-space-v2 .real-map { min-height: 560px; }
