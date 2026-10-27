@@ -1143,6 +1143,17 @@ html {
   transform: translateY(-3px);
 }
 
+.gp-news-card.is-clickable,
+.gp-top-five-card.is-clickable {
+  cursor: pointer;
+}
+
+.gp-news-card.is-clickable:focus-visible,
+.gp-top-five-card.is-clickable:focus-visible {
+  outline: 2px solid var(--gp-cyan);
+  outline-offset: 4px;
+}
+
 .gp-news-card__media {
   position: relative;
   height: 185px;
@@ -1215,7 +1226,7 @@ html {
 .gp-news-card__footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   margin-top: auto;
 }

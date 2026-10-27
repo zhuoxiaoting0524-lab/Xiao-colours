@@ -1,17 +1,14 @@
 import { AUTO_REFRESH_MS } from "./global/config.js";
 import { GlobalPulseDataService } from "./global/data-service.js";
 import {
-  DailyBrief,
   GlobalPulseHeader,
   LastUpdatedIndicator,
   NewsFeed,
   NewsFilters,
-  RelatedCoverage,
   ThemeToggle,
   TodayTopFive,
-  WorldBrief,
   categoryExists,
-} from "./global/components.js?v=7";
+} from "./global/components.js?v=8";
 import { GlobalMapSection } from "./global/map.js";
 import { rankNewsEvents, selectTopEvents } from "./global/news-quality.js";
 import { categoryLabel, debounce, filterArticles, fullDateTime, uniqueValues } from "./global/utils.js";
@@ -26,8 +23,6 @@ const elements = {
   updated: document.querySelector("#gp-last-updated"),
   topStories: document.querySelector("#gp-top-stories"),
   topFiveStatus: document.querySelector("#gp-top-five-status"),
-  dailyBrief: document.querySelector("#gp-daily-brief"),
-  briefMetrics: document.querySelector("#gp-brief-metrics"),
   categoryTabs: document.querySelector("#gp-category-tabs"),
   viewModes: document.querySelector("#gp-view-modes"),
   time: document.querySelector("#gp-time-filter"),
@@ -43,18 +38,9 @@ const elements = {
   mapQuakeCount: document.querySelector("#gp-map-quake-count"),
   mapRegionCount: document.querySelector("#gp-map-region-count"),
   mapFilterSummary: document.querySelector("#gp-map-filter-summary"),
-  relatedCoverage: document.querySelector("#gp-related-coverage"),
   backToTop: document.querySelector("#gp-back-to-top"),
   toast: document.querySelector("#gp-toast"),
   utcClock: document.querySelector("#gp-utc-clock"),
-  healthDot: document.querySelector("#gp-health-dot"),
-  healthSummary: document.querySelector("#gp-health-summary"),
-  healthSuccess: document.querySelector("#gp-health-success"),
-  healthFailure: document.querySelector("#gp-health-failure"),
-  healthCounts: document.querySelector("#gp-health-counts"),
-  healthSelection: document.querySelector("#gp-health-selection"),
-  healthCache: document.querySelector("#gp-health-cache"),
-  healthError: document.querySelector("#gp-health-error"),
   historySection: document.querySelector("#gp-history"),
   historyFeed: document.querySelector("#gp-history-feed"),
   historyStatus: document.querySelector("#gp-history-status"),
@@ -117,35 +103,6 @@ function updateTopPool(articles) {
   state.topEvents = selectTopEvents(state.topArticles, 5);
 }
 
-function healthTime(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.valueOf()) ? "—" : fullDateTime(date);
-}
-
-function renderHealth() {
-  const health = state.health || {};
-  const stale = ["stale", "seed"].includes(state.source) || health.stale;
-  const hasError = Boolean(health.lastError);
-  elements.healthDot.classList.toggle("is-live", state.source === "live");
-  elements.healthDot.classList.toggle("is-error", state.source === null || (stale && hasError));
-  elements.healthSummary.textContent = state.source === "live"
-    ? `实时数据正常 · ${health.validCount ?? state.articles.length} 条有效新闻`
-    : state.source === "cache"
-      ? `实时源暂不可用 · 正在使用 ${health.cacheCount ?? state.articles.length} 条服务器缓存`
-      : state.source
-        ? "今日数据已过期 · 历史新闻已单独标注"
-        : "当前没有可用新闻数据";
-  elements.healthSuccess.textContent = healthTime(health.lastSuccessAt || state.fetchedAt);
-  elements.healthFailure.textContent = healthTime(health.lastFailureAt);
-  elements.healthCounts.textContent = `${health.rawCount ?? "—"} / ${health.validCount ?? "—"}`;
-  elements.healthSelection.textContent = `${state.topEvents.length} / ${health.cacheCount ?? state.articles.length}`;
-  elements.healthCache.textContent = stale ? "已过期" : state.source === "live" ? "已更新" : state.source === "cache" ? "有效缓存" : "不可用";
-  elements.healthError.textContent = health.lastError
-    ? `${health.lastError.type || "unknown"}${health.lastError.status ? ` · HTTP ${health.lastError.status}` : ""}`
-    : "无";
-}
-
 function renderHistory() {
   const historical = ["stale", "seed"].includes(state.source) && state.articles.length > 0;
   elements.historySection.hidden = !historical;
@@ -162,12 +119,8 @@ function render() {
   const visible = getVisibleArticles();
   const ordered = getOrderedArticles(visible);
   const displayed = ordered.slice(0, state.visibleCount);
-  const briefPool = state.topArticles;
   TodayTopFive(elements.topStories, state.topEvents, { availableCount: state.topArticles.length, dataStatus: state.source });
-  DailyBrief(elements.dailyBrief, state.topEvents, { availableCount: state.topArticles.length, dataStatus: state.source });
   NewsFeed(elements.newsFeed, displayed);
-  WorldBrief(elements.briefMetrics, briefPool);
-  RelatedCoverage(elements.relatedCoverage, briefPool);
   mapSection.update({ articles: visible, earthquakes: state.earthquakes });
   elements.topFiveStatus.textContent = `${state.topEvents.length} 个独立焦点 · 最近 24 小时`;
   elements.resultCount.textContent = ordered.length
@@ -185,7 +138,6 @@ function render() {
   elements.mapRegionCount.textContent = String(mediaRegions.length);
   const regionLabel = state.filters.region === "all" ? "全球" : state.filters.region;
   elements.mapFilterSummary.textContent = `${regionLabel} · ${categoryLabel(state.filters.category)}`;
-  renderHealth();
   renderHistory();
   if (["stale", "seed"].includes(state.source)) {
     setFeedState("当前缓存已超过24小时，不再进入今日新闻列表。旧内容已移至下方“历史缓存新闻”，并保留原始发布时间。");
@@ -270,7 +222,6 @@ function renderLoadError(error) {
     elements.newsFeed.innerHTML = '<div class="gp-empty-state gp-empty-state--compact"><p><strong>暂时无法连接新闻数据源</strong>地图与其他页面不受影响。</p></div>';
   }
   state.health = error?.health || state.health;
-  renderHealth();
 }
 
 async function refreshTopPool() {

@@ -66,7 +66,7 @@ wrangler deploy
 - `global/data-service.js`：GDELT / USGS 数据适配、去重、缓存和降级逻辑
 - `global/gdelt-client.js`：GDELT 公共接口节流与安全 JSON 解析
 - `global/news-quality.js`：规范化 URL、标题/可用摘要相似度、多来源事件聚合与透明重要性评分
-- `global/components.js`：TOP 5、60秒速览、新闻卡片、筛选、简报和更新时间组件
+- `global/components.js`：TOP 5、可整卡打开原文的新闻卡片、筛选和更新时间组件
 - `global/news.html`：旧详情链接兼容入口，自动跳转到媒体原始报道
 - `global/news-page.js`：旧详情链接的原始报道定位与跳转逻辑
 - `global/map.js`：Leaflet 按需加载、图层、标记与事件弹窗

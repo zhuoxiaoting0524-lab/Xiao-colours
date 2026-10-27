@@ -10,6 +10,7 @@ import {
   classifyTitle,
   parseGdeltDate,
   safeImageUrl,
+  safeNewsUrl,
 } from "./utils.js";
 import { clusterNewsEvents } from "./news-quality.js";
 import { fetchGdeltJson } from "./gdelt-client.js";
@@ -24,8 +25,8 @@ export function normalizeArticles(rawArticles, { rankedByRelevance = true } = {}
 
   for (const [index, raw] of (Array.isArray(rawArticles) ? rawArticles : []).entries()) {
     const title = String(raw.title || "").trim();
-    const url = canonicalUrl(String(raw.url || "").trim());
-    if (!title || !/^https?:\/\//i.test(url)) continue;
+    const url = canonicalUrl(safeNewsUrl(raw.url));
+    if (!title || !url) continue;
 
     const key = url;
     if (deduped.has(key)) continue;

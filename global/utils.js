@@ -47,6 +47,15 @@ export function safeImageUrl(url) {
   }
 }
 
+export function safeNewsUrl(url) {
+  try {
+    const parsed = new URL(String(url || "").trim());
+    return parsed.protocol === "https:" ? parsed.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 export function parseGdeltDate(value) {
   const match = String(value || "").match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
   if (!match) return null;
