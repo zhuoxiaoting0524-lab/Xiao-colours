@@ -1727,7 +1727,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 860px;
+  max-width: 1120px;
 }
 
 #personal-space-v2 .settings-card {
@@ -2010,9 +2010,11 @@
 #personal-space-v2 .settings-kicker { margin: 0 0 5px; color: var(--brand); font-size: 10px; font-weight: 700; letter-spacing: .16em; }
 #personal-space-v2 .privacy-lock { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); font-size: 22px; }
 
-#personal-space-v2 .data-export-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+#personal-space-v2 .data-export-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
 #personal-space-v2 .data-export-option { display: flex; align-items: flex-start; gap: 15px; padding: 20px; border: 1px solid var(--line); border-radius: 15px; background: color-mix(in srgb, var(--brand-soft) 24%, var(--surface)); }
 #personal-space-v2 .data-export-option.is-backup { background: color-mix(in srgb, var(--color-peach, #F5E9E2) 45%, var(--surface)); }
+#personal-space-v2 .data-export-option.is-pdf { background: color-mix(in srgb, #f2dddd 42%, var(--surface)); }
+#personal-space-v2 .data-export-option.is-pdf .data-export-icon { color: #aa5f5a; }
 #personal-space-v2 .data-export-icon { display: grid; place-items: center; flex: 0 0 44px; height: 44px; border-radius: 13px; background: var(--surface); color: var(--brand); font-size: 22px; border: 1px solid var(--line); }
 #personal-space-v2 .data-export-copy { min-width: 0; }
 #personal-space-v2 .data-export-copy h4 { margin: 1px 0 6px; color: var(--ink); font-family: "Playfair Display", "Noto Serif SC", Georgia, serif; font-size: 17px; }
@@ -2025,6 +2027,23 @@
 #personal-space-v2 .data-export-details b { margin-bottom: 4px; color: var(--ink); font-size: 12px; }
 #personal-space-v2 .data-export-details span { color: var(--muted); font-size: 11px; line-height: 1.55; }
 #personal-space-v2 .data-export-status { min-height: 18px; margin: 13px 0 0; color: var(--brand); font-size: 12px; }
+
+#personal-space-v2 .life-archive-dialog { width: min(650px, calc(100vw - 28px)); border-radius: 20px; }
+#personal-space-v2 .archive-dialog-intro { margin: -10px 0 22px; color: var(--muted); line-height: 1.65; }
+#personal-space-v2 .archive-fieldset { margin: 0 0 20px; padding: 0; border: 0; }
+#personal-space-v2 .archive-fieldset legend { margin-bottom: 10px; color: var(--ink); font-size: 13px; font-weight: 700; }
+#personal-space-v2 .archive-choice-grid, #personal-space-v2 .archive-check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+#personal-space-v2 .archive-choice-grid label, #personal-space-v2 .archive-check-grid label { display: flex; grid-template-columns: none; align-items: center; gap: 9px; min-height: 45px; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; background: color-mix(in srgb, var(--bg) 68%, var(--surface)); color: var(--ink); font-size: 12px; cursor: pointer; }
+#personal-space-v2 .archive-choice-grid input, #personal-space-v2 .archive-check-grid input { width: 16px; margin: 0; accent-color: var(--brand); }
+#personal-space-v2 .archive-choice-grid label:has(input:checked), #personal-space-v2 .archive-check-grid label:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
+#personal-space-v2 .archive-custom-range { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--brand-soft); }
+#personal-space-v2 .archive-custom-range[hidden] { display: none; }
+#personal-space-v2 .archive-custom-range label { margin: 0; }
+#personal-space-v2 .archive-progress { margin-top: 16px; padding: 13px; border-radius: 12px; background: var(--brand-soft); }
+#personal-space-v2 .archive-progress-bar { display: block; height: 6px; overflow: hidden; border-radius: 10px; background: color-mix(in srgb, var(--brand) 18%, var(--surface)); }
+#personal-space-v2 .archive-progress-bar i { display: block; width: 8%; height: 100%; border-radius: inherit; background: var(--brand); transition: width 180ms ease; }
+#personal-space-v2 .archive-progress b { display: block; margin-top: 8px; color: var(--brand); font-size: 11px; }
+#personal-space-v2 .archive-error { min-height: 18px; margin: 10px 0 0; color: #a04e49; font-size: 12px; }
 
 /* ----------------------------------------------------
    Responsive Adjustments (Mobile, Tablet)
@@ -2043,6 +2062,10 @@
     grid-template-columns: 1fr;
   }
   #personal-space-v2 .data-export-grid, #personal-space-v2 .data-export-details { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 680px) {
+  #personal-space-v2 .archive-choice-grid, #personal-space-v2 .archive-check-grid, #personal-space-v2 .archive-custom-range { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {

@@ -2,6 +2,7 @@ import { api, getMe, loginUrlForView } from "./auth-client.js";
 import { mountOverview } from "./overview.js?v=4";
 import { mountDays, openTaskComposer, openImportantComposer } from "./days.js?v=23";
 import { mountFootprints } from "./footprints.js?v=35";
+import { mountLifeArchive } from "./life-archive.js?v=1";
 
 const root = document.querySelector("#personal-space-v2");
 const $ = (selector, scope = root) => scope?.querySelector(selector);
@@ -197,6 +198,7 @@ function mountSettings() {
   if (emailEl) emailEl.textContent = user.email || "记录生活的每一份美好";
   const adminLink = $("#settings-admin-link");
   if (adminLink) adminLink.hidden = user.role !== "admin";
+  mountLifeArchive({ notify });
   
   applyTheme(root.dataset.themeChoice);
   applyColorScheme();

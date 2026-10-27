@@ -26,7 +26,7 @@
     <link rel="stylesheet" href="./lifestyle-journal.css?v=3" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=36"></script>
+    <script type="module" src="./personal-space.js?v=37"></script>
   </head>
   <body>
     <div class="paper-noise" aria-hidden="true"></div>
@@ -553,6 +553,14 @@
                         <button type="button" class="btn-primary-pill" id="settings-backup-zip">↓ 下载完整备份 ZIP</button>
                       </div>
                     </article>
+                    <article class="data-export-option is-pdf">
+                      <span class="data-export-icon" aria-hidden="true">▧</span>
+                      <div class="data-export-copy">
+                        <h4>导出 PDF 生活档案</h4>
+                        <p>将你的日程、重要日期和旅行足迹整理成一本可以阅读与珍藏的生活记录册。</p>
+                        <button type="button" class="btn-primary-pill" id="settings-export-pdf">↓ 生成 PDF 档案</button>
+                      </div>
+                    </article>
                   </div>
                   <div class="data-export-details">
                     <div>
@@ -647,6 +655,48 @@
         <button class="under danger" id="remove-place-photo" type="button" hidden>移除当前照片</button>
         <footer><button class="danger" id="delete-place" type="button">删除</button><span></span><button type="button" data-close="place-dialog">取消</button><button class="primary" id="save-place" type="submit">保存</button></footer>
       </form></dialog>
+
+      <dialog id="life-archive-dialog" class="dialog life-archive-dialog" aria-labelledby="life-archive-title">
+        <form id="life-archive-form">
+          <header>
+            <span><p class="overline">MY LIFE ARCHIVE</p><h3 id="life-archive-title">生成生活档案</h3></span>
+            <button type="button" data-close="life-archive-dialog" aria-label="关闭">×</button>
+          </header>
+          <p class="archive-dialog-intro">选择记录范围与内容，PDF 将仅在你的浏览器中生成并直接下载。</p>
+          <fieldset class="archive-fieldset">
+            <legend>时间范围</legend>
+            <div class="archive-choice-grid" id="archive-range-options">
+              <label><input type="radio" name="archive-range" value="all" checked><span>全部记录</span></label>
+              <label><input type="radio" name="archive-range" value="this-year"><span>今年</span></label>
+              <label><input type="radio" name="archive-range" value="last-year"><span>去年</span></label>
+              <label><input type="radio" name="archive-range" value="custom"><span>自定义</span></label>
+            </div>
+            <div class="archive-custom-range" id="archive-custom-range" hidden>
+              <label>开始日期<input type="date" id="archive-start-date"></label>
+              <label>结束日期<input type="date" id="archive-end-date"></label>
+            </div>
+          </fieldset>
+          <fieldset class="archive-fieldset">
+            <legend>包含内容</legend>
+            <div class="archive-check-grid">
+              <label><input type="checkbox" name="archive-content" value="tasks" checked><span>My Days 任务</span></label>
+              <label><input type="checkbox" name="archive-content" value="important" checked><span>重要日期</span></label>
+              <label><input type="checkbox" name="archive-content" value="footprints" checked><span>Footprints 旅行足迹</span></label>
+              <label><input type="checkbox" name="archive-content" value="photos" checked><span>旅行照片</span></label>
+            </div>
+          </fieldset>
+          <div class="archive-progress" id="archive-progress" role="status" aria-live="polite" hidden>
+            <span class="archive-progress-bar"><i id="archive-progress-fill"></i></span>
+            <b id="archive-progress-text">正在整理你的生活记录…</b>
+          </div>
+          <p class="archive-error" id="archive-error" role="alert"></p>
+          <footer>
+            <span></span><span></span>
+            <button type="button" data-close="life-archive-dialog">取消</button>
+            <button class="primary" id="create-life-archive" type="submit">生成并下载 PDF</button>
+          </footer>
+        </form>
+      </dialog>
     </div>
 
 

@@ -38,6 +38,24 @@ for (const [session, title] of [[alice, aliceTitle], [bob, bobTitle]]) {
   assert.equal(created.response.status, 201, JSON.stringify(created.data));
 }
 
+const footprintCreate = await jsonApi("/api/me/footprints", {
+  method: "POST", cookie: alice.cookie, csrf: alice.csrf,
+  body: {
+    name: "Paris", locationLabel: "Paris, France", status: "visited", date: "2026-06-12",
+    note: "PDF 测试旅行记录", longitude: 2.3522, latitude: 48.8566,
+    geocoder: "test", sourceId: `test:${stamp}`, nameZh: "巴黎", nameEn: "Paris", countryCode: "FR", placeType: "city",
+  },
+});
+assert.equal(footprintCreate.response.status, 201, JSON.stringify(footprintCreate.data));
+const footprintId = footprintCreate.data.footprint.id;
+const pngBytes = Uint8Array.from(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64"));
+const photoResponse = await fetch(`${base}/api/me/footprints/${encodeURIComponent(footprintId)}/photo`, {
+  method: "PUT",
+  headers: { cookie: alice.cookie, origin: base, "x-csrf-token": alice.csrf, "content-type": "image/png" },
+  body: pngBytes,
+});
+assert.equal(photoResponse.status, 200, await photoResponse.text());
+
 async function download(path, session) {
   return fetch(`${base}${path}`, { headers: { cookie: session.cookie, accept: "application/octet-stream" } });
 }
@@ -46,12 +64,14 @@ const aliceJsonResponse = await download("/api/me/export.json", alice);
 assert.equal(aliceJsonResponse.status, 200);
 assert.match(aliceJsonResponse.headers.get("cache-control") || "", /no-store/);
 const aliceJson = await aliceJsonResponse.json();
+fs.writeFileSync("/tmp/XiaoColour-Data-e2e.json", `${JSON.stringify(aliceJson, null, 2)}\n`);
 assert.equal(aliceJson.format, "xiaocolour-backup");
 assert.equal(aliceJson.version, 1);
 assert.ok(aliceJson.data.myDays.some((task) => task.title === aliceTitle));
 assert.equal(aliceJson.data.myDays.some((task) => task.title === bobTitle), false);
 assert.equal(JSON.stringify(aliceJson).includes("password_hash"), false);
 assert.equal(JSON.stringify(aliceJson).includes("token_hash"), false);
+assert.ok(aliceJson.data.footprints.some((place) => place.id === footprintId && place.photo?.contentType === "image/png"));
 
 const bobJsonResponse = await download("/api/me/export.json", bob);
 const bobJson = await bobJsonResponse.json();
