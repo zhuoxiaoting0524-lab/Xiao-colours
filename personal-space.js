@@ -1,7 +1,7 @@
 import { api, getMe, loginUrlForView } from "./auth-client.js";
 import { mountOverview } from "./overview.js?v=4";
 import { mountDays, openTaskComposer, openImportantComposer } from "./days.js?v=23";
-import { mountFootprints } from "./footprints.js?v=34";
+import { mountFootprints } from "./footprints.js?v=35";
 
 const root = document.querySelector("#personal-space-v2");
 const $ = (selector, scope = root) => scope?.querySelector(selector);

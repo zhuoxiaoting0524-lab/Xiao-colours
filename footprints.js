@@ -364,12 +364,15 @@ function configureMapMode(mode) {
     if (!mapInstance.getSource("xc-terrain")) {
       mapInstance.addSource("xc-terrain", { type: "raster-dem", url: TERRAIN_TILEJSON, tileSize: 256 });
     }
+    if (!mapInstance.getSource("xc-hillshade-dem")) {
+      mapInstance.addSource("xc-hillshade-dem", { type: "raster-dem", url: TERRAIN_TILEJSON, tileSize: 256 });
+    }
     if (!mapInstance.getLayer("xc-hillshade")) {
       const firstSymbol = mapInstance.getStyle().layers?.find((layer) => layer.type === "symbol")?.id;
       mapInstance.addLayer({
         id: "xc-hillshade",
         type: "hillshade",
-        source: "xc-terrain",
+        source: "xc-hillshade-dem",
         paint: { "hillshade-exaggeration": 0.38, "hillshade-shadow-color": "#526D59", "hillshade-highlight-color": "#f7f3e8" },
       }, firstSymbol);
     }
