@@ -235,7 +235,70 @@ function mountSettings() {
     }
   });
 
+  $("#settings-export-json")?.addEventListener("click", () => downloadPrivateData({
+    endpoint: "/api/me/export.json",
+    button: $("#settings-export-json"),
+    busyLabel: "正在整理数据…",
+  }));
+
+  $("#settings-backup-zip")?.addEventListener("click", () => downloadPrivateData({
+    endpoint: "/api/me/backup.zip",
+    button: $("#settings-backup-zip"),
+    busyLabel: "正在生成备份…",
+  }));
+
   $("#settings-logout")?.addEventListener("click", logout);
+}
+
+function downloadFilename(response, fallback) {
+  const disposition = response.headers.get("content-disposition") || "";
+  const match = disposition.match(/filename="([^"]+)"/i);
+  return match?.[1] || fallback;
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function downloadPrivateData({ endpoint, button, busyLabel }) {
+  if (!button || button.disabled) return;
+  const originalLabel = button.textContent;
+  const status = $("#data-export-status");
+  button.disabled = true;
+  button.textContent = busyLabel;
+  if (status) status.textContent = "正在安全读取当前账户的数据，请稍候。";
+  try {
+    const response = await fetch(endpoint, { credentials: "same-origin", headers: { accept: "application/octet-stream, application/json" } });
+    if (!response.ok) {
+      let message = "导出失败，请稍后重试";
+      try { message = (await response.json())?.error?.message || message; } catch { /* Non-JSON error response. */ }
+      if (response.status === 401) location.assign(loginUrlForView("settings"));
+      throw new Error(message);
+    }
+    const blob = await response.blob();
+    const fallback = endpoint.endsWith(".zip") ? "XiaoColour-Backup.zip" : "XiaoColour-Data.json";
+    const filename = downloadFilename(response, fallback);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.hidden = true;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const message = `${filename} 已准备好（${formatFileSize(blob.size)}）`;
+    if (status) status.textContent = message;
+    notify("私人数据导出完成");
+  } catch (error) {
+    if (status) status.textContent = error.message || "导出失败，请稍后重试";
+    notify(error.message || "导出失败，请稍后重试", true);
+  } finally {
+    button.disabled = false;
+    button.textContent = originalLabel;
+  }
 }
 
 async function logout() {

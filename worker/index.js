@@ -4,6 +4,7 @@ import { handleJournalApi } from "./journal-api.js";
 import { handleNotesApi } from "./notes-api.js";
 import { handleDaysApi } from "./days-api.js";
 import { handleFootprintsApi } from "./footprints-api.js";
+import { handleDataExportApi } from "./data-export-api.js";
 import { createNewsCache } from "./news-cache.js";
 import { errorJson, json } from "./http.js";
 
@@ -20,6 +21,11 @@ export default {
       || url.pathname.startsWith("/api/admin")
       || url.pathname.startsWith("/api/me")) {
       try {
+        if (url.pathname === "/api/me/export.json" || url.pathname === "/api/me/backup.zip") {
+          const exportResponse = await handleDataExportApi(request, env);
+          if (exportResponse) return exportResponse;
+          return errorJson(404, "not_found", "接口不存在");
+        }
         if (url.pathname.startsWith("/api/me/notes")) {
           const notesResponse = await handleNotesApi(request, env);
           if (notesResponse) return notesResponse;

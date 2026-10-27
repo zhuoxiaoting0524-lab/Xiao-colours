@@ -526,7 +526,48 @@
                   </div>
                 </section>
 
-                <!-- Card 3: 其他设置 -->
+                <!-- Card 3: 数据与隐私 -->
+                <section class="settings-card data-privacy-card" aria-labelledby="data-privacy-title">
+                  <div class="settings-card-head data-privacy-heading">
+                    <div>
+                      <p class="settings-kicker">DATA &amp; PRIVACY</p>
+                      <h3 id="data-privacy-title">数据与隐私</h3>
+                      <p>你的生活记录属于你自己，可以随时保存一份副本。</p>
+                    </div>
+                    <span class="privacy-lock" aria-hidden="true">⌁</span>
+                  </div>
+                  <div class="data-export-grid">
+                    <article class="data-export-option">
+                      <span class="data-export-icon" aria-hidden="true">▤</span>
+                      <div class="data-export-copy">
+                        <h4>导出我的数据</h4>
+                        <p>下载任务、重要日期、旅行地点及当前可导出的私人记录。JSON 不包含照片文件。</p>
+                        <button type="button" class="btn-primary-pill" id="settings-export-json">↓ 导出 JSON 数据</button>
+                      </div>
+                    </article>
+                    <article class="data-export-option is-backup">
+                      <span class="data-export-icon" aria-hidden="true">▱</span>
+                      <div class="data-export-copy">
+                        <h4>下载完整备份</h4>
+                        <p>将同一份结构化数据与现有 Footprints 照片打包为可解压的 ZIP 文件。</p>
+                        <button type="button" class="btn-primary-pill" id="settings-backup-zip">↓ 下载完整备份 ZIP</button>
+                      </div>
+                    </article>
+                  </div>
+                  <div class="data-export-details">
+                    <div>
+                      <b>导出内容</b>
+                      <span>My Days 任务 · 重要日期 · Footprints 地点与照片 · 其他已实现的私人记录</span>
+                    </div>
+                    <div>
+                      <b>隐私保护</b>
+                      <span>只导出当前登录账户，不包含密码、密钥、登录会话或其他用户数据。</span>
+                    </div>
+                  </div>
+                  <p class="data-export-status" id="data-export-status" role="status" aria-live="polite"></p>
+                </section>
+
+                <!-- Card 4: 其他设置 -->
                 <section class="settings-card">
                   <div class="settings-card-head">
                     <h3>其他设置</h3>

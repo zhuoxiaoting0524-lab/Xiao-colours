@@ -1998,6 +1998,34 @@
   flex-wrap: wrap;
 }
 
+#personal-space-v2 .data-privacy-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+#personal-space-v2 .data-privacy-heading h3 { margin-bottom: 6px; }
+#personal-space-v2 .data-privacy-heading p:not(.settings-kicker) { margin: 0; color: var(--muted); font-size: 13px; }
+#personal-space-v2 .settings-kicker { margin: 0 0 5px; color: var(--brand); font-size: 10px; font-weight: 700; letter-spacing: .16em; }
+#personal-space-v2 .privacy-lock { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); font-size: 22px; }
+
+#personal-space-v2 .data-export-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+#personal-space-v2 .data-export-option { display: flex; align-items: flex-start; gap: 15px; padding: 20px; border: 1px solid var(--line); border-radius: 15px; background: color-mix(in srgb, var(--brand-soft) 24%, var(--surface)); }
+#personal-space-v2 .data-export-option.is-backup { background: color-mix(in srgb, var(--color-peach, #F5E9E2) 45%, var(--surface)); }
+#personal-space-v2 .data-export-icon { display: grid; place-items: center; flex: 0 0 44px; height: 44px; border-radius: 13px; background: var(--surface); color: var(--brand); font-size: 22px; border: 1px solid var(--line); }
+#personal-space-v2 .data-export-copy { min-width: 0; }
+#personal-space-v2 .data-export-copy h4 { margin: 1px 0 6px; color: var(--ink); font-family: "Playfair Display", "Noto Serif SC", Georgia, serif; font-size: 17px; }
+#personal-space-v2 .data-export-copy p { min-height: 42px; margin: 0 0 15px; color: var(--muted); font-size: 12px; line-height: 1.65; }
+#personal-space-v2 .data-export-copy .btn-primary-pill { min-height: 40px; }
+#personal-space-v2 .data-export-copy .btn-primary-pill:disabled { opacity: .62; cursor: wait; transform: none; }
+#personal-space-v2 .data-export-details { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+#personal-space-v2 .data-export-details > div { padding: 13px 15px; border-left: 3px solid color-mix(in srgb, var(--brand) 58%, transparent); background: color-mix(in srgb, var(--bg) 66%, var(--surface)); border-radius: 0 10px 10px 0; }
+#personal-space-v2 .data-export-details b, #personal-space-v2 .data-export-details span { display: block; }
+#personal-space-v2 .data-export-details b { margin-bottom: 4px; color: var(--ink); font-size: 12px; }
+#personal-space-v2 .data-export-details span { color: var(--muted); font-size: 11px; line-height: 1.55; }
+#personal-space-v2 .data-export-status { min-height: 18px; margin: 13px 0 0; color: var(--brand); font-size: 12px; }
+
 /* ----------------------------------------------------
    Responsive Adjustments (Mobile, Tablet)
 ---------------------------------------------------- */
@@ -2014,6 +2042,7 @@
   #personal-space-v2 .theme-options-grid {
     grid-template-columns: 1fr;
   }
+  #personal-space-v2 .data-export-grid, #personal-space-v2 .data-export-details { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
