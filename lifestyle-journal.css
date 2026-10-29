@@ -1998,6 +1998,56 @@
   flex-wrap: wrap;
 }
 
+.pwa-network-status {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 50%;
+  width: min(620px, calc(100% - 28px));
+  padding: 10px 16px;
+  transform: translateX(-50%);
+  border-radius: 0 0 12px 12px;
+  background: #8b6b4d;
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(37,43,40,.14);
+  font: 600 12px/1.5 Inter, "Noto Sans SC", sans-serif;
+  text-align: center;
+}
+
+#personal-space-v2 .pwa-install-card {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+}
+
+#personal-space-v2 .pwa-install-icon {
+  width: 86px;
+  height: 86px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: 0 7px 20px rgba(45,60,48,.08);
+}
+
+#personal-space-v2 .pwa-install-copy h3 { margin: 2px 0 6px; }
+#personal-space-v2 .pwa-install-copy p { margin: 0 0 8px; color: var(--muted); line-height: 1.65; }
+#personal-space-v2 .pwa-install-copy small { color: var(--brand); }
+#personal-space-v2 .pwa-install-card .btn-primary-pill { min-width: 156px; }
+
+#personal-space-v2 .pwa-install-dialog > section { display: grid; justify-items: center; gap: 16px; text-align: center; }
+#personal-space-v2 .pwa-install-dialog header,
+#personal-space-v2 .pwa-install-dialog footer { width: 100%; }
+#personal-space-v2 .pwa-install-dialog img { width: 112px; height: 112px; border-radius: 27px; box-shadow: 0 9px 25px rgba(45,60,48,.1); }
+#personal-space-v2 .pwa-install-dialog ol { width: 100%; margin: 0; padding: 0; list-style: none; counter-reset: pwa-step; display: grid; gap: 9px; text-align: left; }
+#personal-space-v2 .pwa-install-dialog li { position: relative; min-height: 38px; padding: 10px 12px 10px 46px; border: 1px solid var(--line); border-radius: 11px; background: var(--bg); color: var(--text); line-height: 1.55; counter-increment: pwa-step; }
+#personal-space-v2 .pwa-install-dialog li::before { content: counter(pwa-step); position: absolute; top: 9px; left: 11px; display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: var(--brand-soft); color: var(--brand-dark); font-weight: 700; }
+
+@media (max-width: 720px) {
+  #personal-space-v2 .pwa-install-card { grid-template-columns: 68px minmax(0, 1fr); gap: 14px; }
+  #personal-space-v2 .pwa-install-icon { width: 68px; height: 68px; border-radius: 18px; }
+  #personal-space-v2 .pwa-install-card .btn-primary-pill { grid-column: 1 / -1; width: 100%; }
+}
+
 #personal-space-v2 .data-privacy-heading {
   display: flex;
   justify-content: space-between;

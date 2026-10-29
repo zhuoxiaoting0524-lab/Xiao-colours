@@ -6,12 +6,18 @@
     <meta name="description" content="XiaoColour 私人空间：My Days 与 Footprints。" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <meta name="theme-color" content="#F8F7F2" />
-    <link rel="apple-touch-icon" href="./favicon.svg" />
+    <meta name="application-name" content="XiaoColour" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="XiaoColour" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
     <meta property="og:title" content="XiaoColour｜Personal Space" />
     <meta property="og:description" content="XiaoColour — a calm personal workspace for days and places." />
     <meta property="og:type" content="website" />
     <title>XiaoColour｜Personal Space</title>
-    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="./icons/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="./icons/favicon-16.png" sizes="16x16" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -27,8 +33,10 @@
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
     <script type="module" src="./personal-space.js?v=37"></script>
+    <script type="module" src="./pwa-install.js?v=1"></script>
   </head>
   <body>
+    <div class="pwa-network-status" id="pwa-network-status" role="status" aria-live="polite" hidden></div>
     <div class="paper-noise" aria-hidden="true"></div>
     <div class="auth-bar" id="auth-bar">
       <span id="auth-user-label">正在检查登录状态…</span>
@@ -526,7 +534,19 @@
                   </div>
                 </section>
 
-                <!-- Card 3: 数据与隐私 -->
+                <!-- Card 3: 应用安装 -->
+                <section class="settings-card pwa-install-card" aria-labelledby="pwa-install-title">
+                  <img class="pwa-install-icon" src="./icons/icon-192.png" alt="XiaoColour 应用图标">
+                  <div class="pwa-install-copy">
+                    <p class="settings-kicker">INSTALL APP</p>
+                    <h3 id="pwa-install-title">安装 XiaoColour</h3>
+                    <p>添加到手机主屏幕、Mac Dock 或 Windows 开始菜单，以独立窗口快速打开。</p>
+                    <small id="pwa-install-status" role="status" aria-live="polite">正在检查当前设备的安装方式…</small>
+                  </div>
+                  <button type="button" class="btn-primary-pill" id="settings-install-pwa">查看安装步骤</button>
+                </section>
+
+                <!-- Card 4: 数据与隐私 -->
                 <section class="settings-card data-privacy-card" aria-labelledby="data-privacy-title">
                   <div class="settings-card-head data-privacy-heading">
                     <div>
@@ -575,7 +595,7 @@
                   <p class="data-export-status" id="data-export-status" role="status" aria-live="polite"></p>
                 </section>
 
-                <!-- Card 4: 其他设置 -->
+                <!-- Card 5: 其他设置 -->
                 <section class="settings-card">
                   <div class="settings-card-head">
                     <h3>其他设置</h3>
@@ -618,6 +638,16 @@
           </main>
         </div>
       </div>
+
+      <dialog id="pwa-install-dialog" class="dialog small pwa-install-dialog" aria-labelledby="pwa-guide-title">
+        <section>
+          <header><span><p class="overline">INSTALL XIAOCOLOUR</p><h3 id="pwa-guide-title">安装 XiaoColour</h3></span><button type="button" data-close="pwa-install-dialog" aria-label="关闭">×</button></header>
+          <img src="./icons/icon-192.png" alt="XiaoColour 应用图标">
+          <ol id="pwa-guide-steps"></ol>
+          <p class="hint">安装版与网页版使用同一账户和服务器数据，不会复制或公开你的私人记录。</p>
+          <footer><span></span><button type="button" class="primary" data-close="pwa-install-dialog">知道了</button></footer>
+        </section>
+      </dialog>
 
       <dialog id="task-dialog" class="dialog small"><form id="task-form">
         <header><span><p class="overline">MY DAYS</p><h3 id="task-dialog-title">编辑任务</h3></span><button type="button" data-close="task-dialog" aria-label="关闭">×</button></header>
