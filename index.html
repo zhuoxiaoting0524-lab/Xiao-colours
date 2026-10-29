@@ -29,10 +29,10 @@
     <link rel="stylesheet" href="./design-tokens.css?v=1" />
     <link rel="stylesheet" href="./personal-space.css?v=32" />
     <link rel="stylesheet" href="./workspace-shell.css?v=2" />
-    <link rel="stylesheet" href="./lifestyle-journal.css?v=4" />
+    <link rel="stylesheet" href="./lifestyle-journal.css?v=5" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=38"></script>
+    <script type="module" src="./personal-space.js?v=39"></script>
     <script type="module" src="./pwa-install.js?v=1"></script>
   </head>
   <body>
@@ -158,7 +158,71 @@
             <section class="screen module overview-module" data-screen="overview" aria-label="Overview" hidden>
               <p class="inline-status" id="overview-status" role="status" aria-live="polite"></p>
               <div class="overview-grid">
-                <header class="ov-hero">
+                <section class="ov-weather-card" id="overview-weather-card" aria-label="当地时间与天气">
+                  <div class="ov-weather-main">
+                    <div class="ov-local-clock">
+                      <p class="ov-weather-eyebrow">当地时间</p>
+                      <time class="ov-local-time" id="overview-local-time">--:--</time>
+                      <p class="ov-local-date" id="overview-local-date">正在读取日期…</p>
+                      <p class="ov-timezone-note"><span aria-hidden="true">◷</span> <span id="overview-device-timezone">设备所在时区</span></p>
+                    </div>
+                    <div class="ov-weather-divider" aria-hidden="true"></div>
+                    <div class="ov-current-weather">
+                      <button class="ov-city-button" type="button" id="overview-weather-city-button" aria-haspopup="dialog">
+                        <span aria-hidden="true">⌖</span>
+                        <strong id="overview-weather-city-name">正在读取城市…</strong>
+                        <span aria-hidden="true">⌄</span>
+                      </button>
+                      <div class="ov-weather-reading">
+                        <span class="ov-weather-icon" id="overview-weather-icon" aria-hidden="true">🌤️</span>
+                        <div>
+                          <strong class="ov-weather-temp" id="overview-weather-temp">--°C</strong>
+                          <p id="overview-weather-desc">正在更新天气…</p>
+                          <p class="ov-city-time" id="overview-weather-city-time">当地时间 --:--</p>
+                        </div>
+                      </div>
+                      <p class="ov-weather-status" id="overview-weather-status" role="status" aria-live="polite"></p>
+                      <button class="ov-weather-retry" id="overview-weather-retry" type="button" hidden>重新获取</button>
+                    </div>
+                  </div>
+
+                  <button class="ov-weather-details-toggle" id="overview-weather-details-toggle" type="button" aria-expanded="false" aria-controls="overview-weather-details">
+                    查看天气详情 <span aria-hidden="true">⌄</span>
+                  </button>
+
+                  <section class="ov-weather-details" id="overview-weather-details" aria-label="天气详情" hidden>
+                    <header class="ov-weather-sheet-header">
+                      <h3 id="overview-weather-sheet-title">天气详情</h3>
+                      <button type="button" data-weather-close aria-label="关闭天气详情">×</button>
+                    </header>
+                    <div class="ov-weather-metrics">
+                      <article><span aria-hidden="true">♨</span><small>体感温度</small><strong id="overview-weather-feels">--°C</strong></article>
+                      <article><span aria-hidden="true">◉</span><small>降雨概率</small><strong id="overview-weather-rain">--%</strong></article>
+                    </div>
+                    <h4>未来三天天气</h4>
+                    <ul class="ov-weather-forecast" id="overview-weather-forecast"></ul>
+                    <p class="ov-weather-source">天气数据由 <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> 提供</p>
+                  </section>
+
+                  <section class="ov-city-picker" id="overview-city-picker" role="dialog" aria-modal="false" aria-labelledby="overview-city-picker-title" hidden>
+                    <header class="ov-weather-sheet-header">
+                      <div><p class="ov-weather-eyebrow">天气位置</p><h3 id="overview-city-picker-title">选择城市</h3></div>
+                      <button type="button" data-weather-close aria-label="关闭城市选择">×</button>
+                    </header>
+                    <form class="ov-city-search" id="overview-city-search-form">
+                      <label class="sr-only" for="overview-city-search">搜索中文或英文城市</label>
+                      <input id="overview-city-search" type="search" autocomplete="off" placeholder="搜索城市，例如：东京 / Tokyo" />
+                      <button type="submit">搜索</button>
+                    </form>
+                    <button class="ov-use-location" id="overview-use-location" type="button"><span aria-hidden="true">⌖</span> 使用当前位置</button>
+                    <p class="ov-city-status" id="overview-city-status" role="status" aria-live="polite">不会自动请求定位；只有点击“使用当前位置”后才会询问授权。</p>
+                    <ul class="ov-city-results" id="overview-city-results"></ul>
+                    <p class="ov-weather-source">城市搜索由 Open-Meteo / GeoNames 提供</p>
+                  </section>
+                  <button class="ov-weather-backdrop" id="overview-weather-backdrop" type="button" aria-label="关闭天气面板" hidden></button>
+                </section>
+
+                <header class="ov-hero" hidden>
                   <div class="ov-hero-text">
                     <p class="ov-label" id="overview-date">OCTOBER 23 · FRIDAY</p>
                     <h3><span id="overview-greet">下午好</span> <span class="ov-sun" aria-hidden="true">☀</span></h3>

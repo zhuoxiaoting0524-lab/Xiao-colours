@@ -1,5 +1,5 @@
 import { api, getMe, loginUrlForView } from "./auth-client.js";
-import { mountOverview } from "./overview.js?v=4";
+import { mountOverview } from "./overview.js?v=5";
 import { mountDays, openTaskComposer, openImportantComposer } from "./days.js?v=23";
 import { mountFootprints } from "./footprints.js?v=36";
 import { mountLifeArchive } from "./life-archive.js?v=1";

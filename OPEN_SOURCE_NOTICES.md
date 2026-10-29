@@ -47,3 +47,12 @@ Footprints 不需要 API Key，也没有接入 Mapbox 或其他付费地图服�
 ## AI 分析
 
 当前项目没有服务端模型接口，因此 AI 摘要功能保持关闭。页面中的“态势概览”仅对已获取的新闻数量、媒体数量、来源国和规则分类进行统计，不冒充 AI 分析或事实核验。
+
+## Overview 天气与城市搜索
+
+- 天气预报与城市时区：Open-Meteo Forecast API
+- 城市搜索：Open-Meteo Geocoding API（底层地点数据来自 GeoNames）
+- 官方文档：https://open-meteo.com/en/docs
+- 地理编码文档：https://open-meteo.com/en/docs/geocoding-api
+
+天气仅在 Overview 打开时按约 30 分钟间隔更新，不会随时钟每秒重复请求。浏览器不会自动申请定位；只有用户主动点击“使用当前位置”后才调用设备定位权限。最后选择的城市与短期天气缓存只保存在当前浏览器，不包含账户密钥或会话信息。

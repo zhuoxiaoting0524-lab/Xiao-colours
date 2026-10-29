@@ -1,4 +1,5 @@
 import { api } from "./auth-client.js";
+import { mountOverviewWeather } from "./overview-weather.js?v=1";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 
@@ -49,20 +50,6 @@ async function loadOverview() {
   const today = startOfLocalDay(new Date());
   const from = today;
   const to = addDays(today, 14);
-
-  // Overline date formatted in tracked uppercase English like the mockup
-  const enMonth = new Intl.DateTimeFormat("en-US", { month: "long" }).format(today).toUpperCase();
-  const enDay = today.getDate();
-  const enWeekday = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(today).toUpperCase();
-  const dateLabel = $("#overview-date");
-  if (dateLabel) {
-    dateLabel.textContent = `${enMonth} ${enDay} · ${enWeekday}`;
-  }
-
-  const hour = new Date().getHours();
-  const greetText = hour < 12 ? "上午好" : hour < 18 ? "下午好" : "晚上好";
-  const greetElem = $("#overview-greet");
-  if (greetElem) greetElem.textContent = greetText;
 
   try {
     const [tasksData, datesData, placesData] = await Promise.all([
@@ -194,6 +181,7 @@ export async function mountOverview(authState, options = {}) {
   onNavigate = options.onNavigate || onNavigate;
   onAddTask = options.onAddTask || (() => onNavigate("days"));
   onAddDate = options.onAddDate || (() => onNavigate("days"));
+  mountOverviewWeather();
 
   if (!mounted) {
     mounted = true;
