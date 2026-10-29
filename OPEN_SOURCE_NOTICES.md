@@ -6,16 +6,16 @@
 
 当前实现没有复制或打包 World Monitor 的源代码，也没有使用其官方商标、标识、付费 API 或需要授权的密钥。页面底部保留了项目名称、源码链接和许可证背景说明。如果未来直接合并、修改或网络提供 World Monitor 的 AGPL 源码，应按适用的 AGPL-3.0 要求向用户提供对应源代码。
 
-## 实时新闻：GDELT Project
+## 实时新闻：公开 RSS 来源
 
-- 接口：GDELT DOC 2.0 API
-- 用途：检索和展示全球公开新闻标题、来源媒体、发布时间、媒体来源国、语言与原始链接
-- 官方网站：https://www.gdeltproject.org/
-- 接口文档：https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/
+GLOBAL PULSE 的 Worker 定时读取以下媒体公开提供的 RSS 新闻源：
 
-页面不会把 GDELT 的“媒体来源国”描述为“事件发生地”。搜索关键词会发送给 GDELT 公共接口。
+- BBC World：https://feeds.bbci.co.uk/news/world/rss.xml
+- Al Jazeera：https://www.aljazeera.com/xml/rss/all.xml
+- The Guardian World：https://www.theguardian.com/world/rss
+- NPR World：https://feeds.npr.org/1004/rss.xml
 
-浏览器通过 GDELT 官方支持 CORS 的 JSON 接口读取数据。请求之间至少间隔 5.5 秒，避免对公共服务重复施压。点击新闻后直接在新标签页打开媒体原始报道；本站不抓取、绕过付费墙或转载第三方新闻全文。
+本站仅整理 RSS 中公开提供的标题、摘要、发布时间、媒体名称、封面地址与原始链接，不抓取、绕过付费墙或转载第三方新闻全文。点击新闻后直接在新标签页打开对应媒体的具体原始报道。新闻源暂时失败时，系统继续显示最近一次成功保存的数据，并保留每个来源的健康状态；失败响应不会覆盖有效缓存。
 
 ## 自然事件：USGS
 

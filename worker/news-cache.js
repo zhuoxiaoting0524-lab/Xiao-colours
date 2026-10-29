@@ -1,308 +1,169 @@
-const GDELT_API = "https://api.gdeltproject.org/api/v2/doc/doc";
-const GDELT_QUERY =
-  '(theme:GENERAL_HEALTH OR theme:NATURAL_DISASTER OR theme:ARMEDCONFLICT OR theme:TAX_FNCACT_PRESIDENT OR theme:UNREST OR theme:ECON OR theme:ENV OR theme:IMMIGRATION OR theme:MEDIA OR theme:SCIENCE) sourcelang:eng';
+const RSS_SOURCES = [
+  { id: "bbc", name: "BBC News", country: "United Kingdom", url: "https://feeds.bbci.co.uk/news/world/rss.xml" },
+  { id: "aljazeera", name: "Al Jazeera", country: "Qatar", url: "https://www.aljazeera.com/xml/rss/all.xml" },
+  { id: "guardian", name: "The Guardian", country: "United Kingdom", url: "https://www.theguardian.com/world/rss" },
+  { id: "npr", name: "NPR", country: "United States", url: "https://feeds.npr.org/1004/rss.xml" },
+];
 
-const TIMEOUT_MS = 25000;
-const RETRY_DELAYS_MS = [5500, 11000];
+const SOURCE_TIMEOUT_MS = 12000;
 const LIVE_WINDOW_MS = 30 * 60 * 1000;
 const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
-const REFRESH_COOLDOWN_MS = 60 * 1000;
-const MIN_VALID_ARTICLES = 5;
+const REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MIN_VALID_ARTICLES = 3;
+const CACHE_KEYS = { "1d": "news:1d", "1w": "news:1w", health: "news:health", cooldown: "news:cooldown:v2" };
 
-const CACHE_KEYS = {
-  "1d": "news:1d",
-  "1w": "news:1w",
-  health: "news:health",
-  cooldown: "news:cooldown",
-};
-
-function nowIso() {
-  return new Date().toISOString();
+function nowIso(now = Date.now()) { return new Date(now).toISOString(); }
+function compactDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? "" : date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 }
-
-function windowTimespan(time) {
-  return time === "1w" ? "7d" : "1d";
+function decodeXml(value = "") {
+  return String(value).replace(/^<!\[CDATA\[|\]\]>$/g, "")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)));
 }
-
-function buildGdeltUrl(time) {
-  const params = new URLSearchParams({
-    query: GDELT_QUERY,
-    mode: "ArtList",
-    maxrecords: "150",
-    format: "json",
-    sort: "HybridRel",
-    timespan: windowTimespan(time),
-  });
-  return `${GDELT_API}?${params}`;
+function textTag(block, name) {
+  const match = block.match(new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${name}>`, "i"));
+  return decodeXml(match?.[1] || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
-
-function emptyHealth(storage) {
-  return {
-    lastSuccessAt: null,
-    lastFailureAt: null,
-    lastError: null,
-    rawCount: 0,
-    validCount: 0,
-    cacheCount: 0,
-    cacheAgeMs: null,
-    stale: false,
-    requestedWindow: null,
-    storage,
-  };
+function attrUrl(block, tag) {
+  const match = block.match(new RegExp(`<${tag}[^>]+url=["']([^"']+)["'][^>]*>`, "i"));
+  return decodeXml(match?.[1] || "");
 }
-
-async function readJson(store, key) {
-  if (!store) return null;
+function safeHttps(value) {
   try {
-    const value = await store.get(key, "json");
-    return value || null;
-  } catch {
-    return null;
+    const url = new URL(String(value || "").trim());
+    if (url.protocol === "http:") url.protocol = "https:";
+    return url.protocol === "https:" ? url.toString() : "";
+  } catch { return ""; }
+}
+function parseRss(xml, source) {
+  return [...String(xml).matchAll(/<item\b[\s\S]*?<\/item>/gi)].map(([item]) => ({
+    url: safeHttps(textTag(item, "link") || textTag(item, "guid")),
+    url_mobile: "",
+    title: textTag(item, "title"),
+    summary: textTag(item, "description"),
+    seendate: compactDate(textTag(item, "pubDate") || textTag(item, "dc:date")),
+    socialimage: safeHttps(attrUrl(item, "media:content") || attrUrl(item, "media:thumbnail") || attrUrl(item, "enclosure")),
+    domain: source.name,
+    language: "English",
+    sourcecountry: source.country,
+  })).filter((article) => article.title && article.url && article.seendate);
+}
+function articleTime(article) {
+  const match = String(article?.seendate || "").match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+  return match ? Date.parse(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}Z`) : 0;
+}
+function mergeArticles(...groups) {
+  const map = new Map();
+  for (const article of groups.flat()) {
+    const key = safeHttps(article?.url).replace(/[?#].*$/, "").replace(/\/$/, "");
+    if (key && !map.has(key)) map.set(key, article);
   }
+  return [...map.values()].sort((a, b) => articleTime(b) - articleTime(a));
 }
-
-async function writeJson(store, key, value) {
-  if (!store) return;
-  await store.put(key, JSON.stringify(value));
-}
-
-function validateArticles(payload) {
-  const articles = Array.isArray(payload?.articles) ? payload.articles : [];
-  const valid = articles.filter((article) => {
-    const title = String(article?.title || "").trim();
-    const url = String(article?.url || "").trim();
-    const seen = String(article?.seendate || "").trim();
-    return title && /^https?:\/\//i.test(url) && seen;
-  });
-  return { rawCount: articles.length, articles: valid, validCount: valid.length };
-}
-
-async function fetchUpstream(time) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const response = await fetch(buildGdeltUrl(time), {
-      signal: controller.signal,
-      headers: { Accept: "application/json" },
-    });
-    if (!response.ok) {
-      const error = new Error(`GDELT HTTP ${response.status}`);
-      error.code = `http_${response.status}`;
-      throw error;
-    }
-    return await response.json();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function fetchWithRetry(time) {
-  let lastError = null;
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
-    try {
-      const payload = await fetchUpstream(time);
-      const checked = validateArticles(payload);
-      if (checked.validCount < MIN_VALID_ARTICLES) {
-        const error = new Error(`有效新闻不足：${checked.validCount}`);
-        error.code = "empty_or_invalid";
-        throw error;
-      }
-      return checked;
-    } catch (error) {
-      lastError = error;
-      if (attempt >= RETRY_DELAYS_MS.length) break;
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
-    }
-  }
-  throw lastError || new Error("GDELT refresh failed");
-}
-
-function classifyStatus(fetchedAt) {
+function within(articles, now, days) { return articles.filter((article) => articleTime(article) >= now - days * DAY_MS); }
+function classifyStatus(fetchedAt, now = Date.now()) {
   if (!fetchedAt) return "unavailable";
-  const age = Date.now() - new Date(fetchedAt).valueOf();
-  if (Number.isNaN(age)) return "unavailable";
+  const age = now - new Date(fetchedAt).valueOf();
+  if (!Number.isFinite(age)) return "unavailable";
   if (age <= LIVE_WINDOW_MS) return "live";
   if (age <= STALE_AFTER_MS) return "cache";
   return "stale";
 }
-
-export function createNewsCache(env) {
-  const kv = env?.GLOBAL_PULSE_CACHE || null;
-  const storage = kv ? "kv" : "edge-cache";
-
-  // Fallback in-memory store for local preview without KV binding.
-  const memory = globalThis.__xiaoNewsMemory || (globalThis.__xiaoNewsMemory = new Map());
-
-  const store = kv || {
-    async get(key, type) {
-      const value = memory.get(key);
-      if (value == null) return null;
-      return type === "json" ? JSON.parse(value) : value;
-    },
-    async put(key, value) {
-      memory.set(key, value);
-    },
+function errorInfo(error, source = null) {
+  const status = Number(error?.status || 0) || null;
+  return {
+    type: status === 429 ? "rate_limit" : status >= 500 ? "upstream_5xx" : error?.name === "AbortError" ? "timeout" : "source_error",
+    status, source, message: String(error?.message || "新闻源请求失败").slice(0, 180),
   };
+}
+async function readJson(store, key) { try { return await store?.get(key, "json") || null; } catch { return null; } }
+async function writeJson(store, key, value) { if (store) await store.put(key, JSON.stringify(value)); }
+async function fetchSource(source, fetchImpl = fetch) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SOURCE_TIMEOUT_MS);
+  try {
+    const response = await fetchImpl(source.url, { signal: controller.signal, headers: { Accept: "application/rss+xml, application/xml, text/xml" } });
+    if (!response.ok) { const error = new Error(`${source.name} HTTP ${response.status}`); error.status = response.status; throw error; }
+    const articles = parseRss(await response.text(), source);
+    if (!articles.length) throw new Error(`${source.name} 未返回可解析新闻`);
+    return { source: source.id, ok: true, count: articles.length, articles };
+  } finally { clearTimeout(timer); }
+}
 
-  async function readHealth() {
-    return (await readJson(store, CACHE_KEYS.health)) || emptyHealth(storage);
-  }
+export function createNewsCache(env, runtime = {}) {
+  const kv = env?.GLOBAL_PULSE_CACHE || null;
+  const memory = globalThis.__xiaoNewsMemory || (globalThis.__xiaoNewsMemory = new Map());
+  const store = kv || {
+    async get(key, type) { const value = memory.get(key); return value == null ? null : type === "json" ? JSON.parse(value) : value; },
+    async put(key, value) { memory.set(key, value); },
+  };
+  const storage = kv ? "kv" : "memory";
+  const fetchImpl = runtime.fetchImpl || fetch;
+  const clock = runtime.now || (() => Date.now());
+  async function readHealth() { return await readJson(store, CACHE_KEYS.health) || { storage, lastSuccessAt: null, lastFailureAt: null, lastError: null, sources: [] }; }
 
-  async function writeHealth(patch) {
-    const current = await readHealth();
-    const next = { ...current, ...patch, storage };
-    await writeJson(store, CACHE_KEYS.health, next);
-    return next;
-  }
-
-  async function readWindow(time) {
-    return readJson(store, CACHE_KEYS[time] || CACHE_KEYS["1d"]);
-  }
-
-  async function writeWindow(time, snapshot) {
-    await writeJson(store, CACHE_KEYS[time] || CACHE_KEYS["1d"], snapshot);
-  }
-
-  async function refreshWindow(time, { force = false } = {}) {
+  async function refreshAll({ force = false } = {}) {
+    const now = clock();
     const cooldown = await readJson(store, CACHE_KEYS.cooldown);
-    if (!force && cooldown?.until && Date.now() < cooldown.until) {
-      return { ok: false, skipped: true, reason: "cooldown" };
+    if (!force && cooldown?.until > now) return { ok: false, skipped: true, reason: "cooldown" };
+    await writeJson(store, CACHE_KEYS.cooldown, { until: now + REFRESH_COOLDOWN_MS });
+    const settled = await Promise.allSettled(RSS_SOURCES.map((source) => fetchSource(source, fetchImpl)));
+    const sourceHealth = settled.map((result, index) => result.status === "fulfilled"
+      ? { source: RSS_SOURCES[index].id, ok: true, count: result.value.count }
+      : { source: RSS_SOURCES[index].id, ok: false, count: 0, error: errorInfo(result.reason, RSS_SOURCES[index].id) });
+    const fresh = mergeArticles(...settled.filter((result) => result.status === "fulfilled").map((result) => result.value.articles));
+    const previousWeek = await readJson(store, CACHE_KEYS["1w"]);
+    const weekArticles = within(mergeArticles(fresh, previousWeek?.articles || []), now, 7);
+    const dayArticles = within(fresh, now, 1);
+    if (fresh.length < MIN_VALID_ARTICLES || dayArticles.length < MIN_VALID_ARTICLES) {
+      const failures = sourceHealth.filter((source) => !source.ok).map((source) => source.error);
+      const failure = failures[0] || { type: "empty_or_invalid", status: null, source: null, message: `最近24小时有效新闻不足：${dayArticles.length}` };
+      const current = await readHealth();
+      await writeJson(store, CACHE_KEYS.health, { ...current, storage, lastFailureAt: nowIso(now), lastError: failure, rawCount: fresh.length, validCount: dayArticles.length, sources: sourceHealth });
+      console.log(JSON.stringify({ event: "news_refresh_failed", error: failure, sources: sourceHealth }));
+      return { ok: false, error: failure, sources: sourceHealth };
     }
-
-    try {
-      const checked = await fetchWithRetry(time);
-      const fetchedAt = nowIso();
-      const snapshot = {
-        status: "live",
-        articles: checked.articles,
-        fetchedAt,
-        health: {
-          lastSuccessAt: fetchedAt,
-          lastFailureAt: null,
-          lastError: null,
-          rawCount: checked.rawCount,
-          validCount: checked.validCount,
-          cacheCount: checked.validCount,
-          cacheAgeMs: 0,
-          stale: false,
-          requestedWindow: time,
-          storage,
-        },
-      };
-      await writeWindow(time, snapshot);
-      await writeHealth({
-        lastSuccessAt: fetchedAt,
-        lastFailureAt: null,
-        lastError: null,
-        rawCount: checked.rawCount,
-        validCount: checked.validCount,
-        cacheCount: checked.validCount,
-        cacheAgeMs: 0,
-        stale: false,
-        requestedWindow: time,
-      });
-      await writeJson(store, CACHE_KEYS.cooldown, { until: Date.now() + REFRESH_COOLDOWN_MS });
-      console.log(JSON.stringify({ event: "news_refresh_success", time, count: checked.validCount }));
-      return { ok: true, snapshot };
-    } catch (error) {
-      const failure = {
-        lastFailureAt: nowIso(),
-        lastError: {
-          code: error.code || error.name || "refresh_failed",
-          message: error.message || "refresh failed",
-        },
-        requestedWindow: time,
-      };
-      await writeHealth(failure);
-      await writeJson(store, CACHE_KEYS.cooldown, { until: Date.now() + REFRESH_COOLDOWN_MS });
-      console.log(JSON.stringify({ event: "news_refresh_failed", time, error: failure.lastError }));
-      return { ok: false, error: failure.lastError };
-    }
+    const fetchedAt = nowIso(now);
+    const health = { storage, lastSuccessAt: fetchedAt, lastFailureAt: null, lastError: null, rawCount: fresh.length, validCount: dayArticles.length, sources: sourceHealth };
+    await Promise.all([
+      writeJson(store, CACHE_KEYS["1d"], { status: "live", articles: dayArticles.slice(0, 200), fetchedAt, health }),
+      writeJson(store, CACHE_KEYS["1w"], { status: "live", articles: weekArticles.slice(0, 500), fetchedAt, health }),
+      writeJson(store, CACHE_KEYS.health, health),
+    ]);
+    console.log(JSON.stringify({ event: "news_refresh_success", dayCount: dayArticles.length, weekCount: weekArticles.length, sources: sourceHealth }));
+    return { ok: true, dayCount: dayArticles.length, weekCount: weekArticles.length, sources: sourceHealth };
   }
 
   async function getNews(time, { force = false } = {}) {
-    if (force) await refreshWindow(time, { force: true });
-
-    let snapshot = await readWindow(time);
-    if (!snapshot && !force) {
-      await refreshWindow(time, { force: false });
-      snapshot = await readWindow(time);
-    }
-
-    if (!snapshot?.articles?.length) {
-      return {
-        status: 503,
-        body: {
-          status: "unavailable",
-          articles: [],
-          fetchedAt: null,
-          health: {
-            ...(await readHealth()),
-            requestedWindow: time,
-            storage,
-          },
-        },
-      };
-    }
-
-    const status = classifyStatus(snapshot.fetchedAt);
-    const age = snapshot.fetchedAt ? Date.now() - new Date(snapshot.fetchedAt).valueOf() : null;
-    const health = {
-      ...(snapshot.health || emptyHealth(storage)),
-      ...(await readHealth()),
-      cacheCount: snapshot.articles.length,
-      cacheAgeMs: age,
-      stale: status === "stale",
-      requestedWindow: time,
-      storage,
-    };
-
-    return {
-      status: 200,
-      body: {
-        status,
-        articles: snapshot.articles,
-        fetchedAt: snapshot.fetchedAt,
-        health,
-      },
-    };
+    const key = time === "1w" ? "1w" : "1d";
+    let snapshot = await readJson(store, CACHE_KEYS[key]);
+    if (force || !snapshot?.articles?.length) { await refreshAll({ force }); snapshot = await readJson(store, CACHE_KEYS[key]); }
+    if (!snapshot?.articles?.length) return { status: 503, body: { status: "unavailable", articles: [], fetchedAt: null, health: { ...(await readHealth()), requestedWindow: key, cacheCount: 0, stale: false } } };
+    const now = clock();
+    const status = classifyStatus(snapshot.fetchedAt, now);
+    const health = { ...(snapshot.health || {}), ...(await readHealth()), requestedWindow: key, cacheCount: snapshot.articles.length, cacheAgeMs: now - new Date(snapshot.fetchedAt).valueOf(), stale: status === "stale", storage };
+    return { status: 200, body: { status, articles: snapshot.articles, fetchedAt: snapshot.fetchedAt, health } };
   }
-
   async function getHealth() {
-    const health = await readHealth();
-    const windows = {};
-    for (const time of ["1d", "1w"]) {
-      const snapshot = await readWindow(time);
-      windows[time] = snapshot
-        ? {
-            status: classifyStatus(snapshot.fetchedAt),
-            fetchedAt: snapshot.fetchedAt,
-            count: snapshot.articles?.length || 0,
-          }
-        : null;
-    }
-    return {
-      status: classifyStatus(health.lastSuccessAt),
-      generatedAt: nowIso(),
-      storage,
-      windows,
-      lastSuccessAt: health.lastSuccessAt,
-      lastFailureAt: health.lastFailureAt,
-      lastError: health.lastError,
-    };
+    const health = await readHealth(); const windows = {};
+    for (const key of ["1d", "1w"]) { const snapshot = await readJson(store, CACHE_KEYS[key]); windows[key] = snapshot ? { status: classifyStatus(snapshot.fetchedAt, clock()), fetchedAt: snapshot.fetchedAt, count: snapshot.articles?.length || 0, cacheCount: snapshot.articles?.length || 0 } : null; }
+    return { status: classifyStatus(health.lastSuccessAt, clock()), generatedAt: nowIso(clock()), storage, windows, ...health };
   }
+  return { getNews, getHealth, refreshAll, storage };
+}
 
-  async function refreshAll() {
-    const results = {
-      "1d": await refreshWindow("1d"),
-      "1w": await refreshWindow("1w"),
-    };
-    console.log(JSON.stringify({ event: "scheduled_refresh_complete", results: {
-      "1d": Boolean(results["1d"].ok),
-      "1w": Boolean(results["1w"].ok),
-    } }));
-    return results;
-  }
-
-  return { getNews, getHealth, refreshAll, refreshWindow, storage };
+export async function getNewsPayload(env, time, options = {}) {
+  const cache = createNewsCache(env, { fetchImpl: options.fetchImpl, now: () => options.now ?? Date.now() });
+  const result = await cache.getNews(time, { force: options.force });
+  return new Response(JSON.stringify(result.body), { status: result.status, headers: { "content-type": "application/json; charset=utf-8" } });
+}
+export async function getHealthPayload(env, now = Date.now()) {
+  const payload = await createNewsCache(env, { now: () => now }).getHealth();
+  return new Response(JSON.stringify(payload), { headers: { "content-type": "application/json; charset=utf-8" } });
+}
+export async function refreshWindow(env, _time, options = {}) {
+  return createNewsCache(env, { fetchImpl: options.fetchImpl, now: () => options.now ?? Date.now() }).refreshAll({ force: options.force });
 }

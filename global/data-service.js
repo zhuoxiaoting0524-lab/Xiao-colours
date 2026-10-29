@@ -1,7 +1,5 @@
 import {
   CACHE_KEY,
-  GDELT_API,
-  GDELT_QUERY,
   NEWS_API,
   USGS_FEEDS,
 } from "./config.js";
@@ -13,10 +11,8 @@ import {
   safeNewsUrl,
 } from "./utils.js";
 import { clusterNewsEvents } from "./news-quality.js";
-import { fetchGdeltJson } from "./gdelt-client.js";
 
 const REQUEST_TIMEOUT_MS = 40000;
-const GDELT_TIMEOUT_MS = 30000;
 const NEWS_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 const SEED_NEWS_URL = new URL("../data/news-cache.json", import.meta.url);
 
@@ -116,18 +112,6 @@ function writeBrowserCache(time, snapshot) {
   }
 }
 
-function buildGdeltUrl(time) {
-  const params = new URLSearchParams({
-    query: GDELT_QUERY,
-    mode: "ArtList",
-    maxrecords: "150",
-    format: "json",
-    sort: "HybridRel",
-    timespan: time,
-  });
-  return `${GDELT_API}?${params}`;
-}
-
 async function fetchJson(url, signal) {
   const response = await fetch(url, {
     signal,
@@ -136,20 +120,6 @@ async function fetchJson(url, signal) {
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();
-}
-
-async function fetchGdelt(time, signal) {
-  const corsController = new AbortController();
-  const abortCors = () => corsController.abort();
-  const timeout = window.setTimeout(abortCors, GDELT_TIMEOUT_MS);
-  signal?.addEventListener("abort", abortCors, { once: true });
-
-  try {
-    return await fetchGdeltJson(buildGdeltUrl(time), corsController.signal);
-  } finally {
-    window.clearTimeout(timeout);
-    signal?.removeEventListener("abort", abortCors);
-  }
 }
 
 function serverNewsUrl(time, force) {
@@ -191,28 +161,9 @@ async function fetchWorkerNews(time, signal, { force = false } = {}) {
 async function fetchNews(time, signal, { force = false } = {}) {
   const serverPayload = await fetchWorkerNews(time, signal, { force });
   if (serverPayload) return { payload: serverPayload, transport: "worker" };
-
-  // Compatibility fallback for local static previews and deployments that have
-  // not yet enabled the Worker API. Production uses the shared Worker cache.
-  const directPayload = await fetchGdelt(time, signal);
-  return {
-    payload: {
-      status: "live",
-      articles: directPayload.articles || [],
-      fetchedAt: new Date().toISOString(),
-      health: {
-        lastSuccessAt: new Date().toISOString(),
-        lastFailureAt: null,
-        lastError: null,
-        rawCount: directPayload.articles?.length || 0,
-        validCount: directPayload.articles?.length || 0,
-        cacheCount: directPayload.articles?.length || 0,
-        stale: false,
-        storage: "browser-direct",
-      },
-    },
-    transport: "browser-direct",
-  };
+  const error = new Error("新闻服务暂不可用");
+  error.name = "NewsServiceResponseError";
+  throw error;
 }
 
 async function readSeedSnapshot() {
