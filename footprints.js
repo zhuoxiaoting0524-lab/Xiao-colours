@@ -420,7 +420,14 @@ async function initFallbackMap(reason) {
   container.replaceChildren();
   const L = await loadLeaflet();
   mapEngine = "leaflet";
-  mapInstance = L.map(container, { zoomControl: true, worldCopyJump: true }).setView([22, 18], 2);
+  const coarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches;
+  mapInstance = L.map(container, {
+    zoomControl: true,
+    worldCopyJump: true,
+    dragging: !coarsePointer,
+    touchZoom: true,
+    scrollWheelZoom: !coarsePointer,
+  }).setView([22, 18], 2);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: "© OpenStreetMap contributors",
@@ -469,6 +476,7 @@ async function initMap(force = false) {
         renderWorldCopies: false,
         attributionControl: false,
         canvasContextAttributes: { antialias: true },
+        cooperativeGestures: true,
       });
       mapInstance.addControl(new mapModule.NavigationControl({ showCompass: true, showZoom: true, visualizePitch: true }), "top-right");
       mapInstance.addControl(new mapModule.AttributionControl({ compact: true }), "bottom-right");
