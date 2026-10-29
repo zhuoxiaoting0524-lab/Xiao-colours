@@ -11,7 +11,7 @@
     <title>GLOBAL PULSE 全球脉搏｜XiaoColour</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://earthquake.usgs.gov" crossorigin />
-    <link rel="stylesheet" href="./global.css?v=6" />
+    <link rel="stylesheet" href="./global.css?v=7" />
     <script src="./global/watchdog.js?v=1" defer></script>
     <script type="module" src="./global.js?v=8"></script>
   </head>
@@ -20,17 +20,23 @@
 
     <header class="gp-header" id="gp-top">
       <div class="gp-header__inner">
-        <a class="gp-brand" href="./index.html" aria-label="返回 XiaoColour 首页">
-          <span class="gp-brand__mark" aria-hidden="true">GP</span>
-          <span class="gp-brand__copy">
-            <b>GLOBAL PULSE</b>
-            <small>全球脉搏</small>
-          </span>
-        </a>
+        <div class="gp-header__identity">
+          <a class="gp-back-home" href="/#overview" target="_self" aria-label="返回 XiaoColour Overview">
+            <span aria-hidden="true">←</span>
+            <span>返回 XiaoColour</span>
+          </a>
+          <a class="gp-brand" href="/global" target="_self" aria-label="GLOBAL PULSE 首页">
+            <span class="gp-brand__mark" aria-hidden="true">GP</span>
+            <span class="gp-brand__copy">
+              <b>GLOBAL PULSE</b>
+              <small>全球脉搏</small>
+            </span>
+          </a>
+        </div>
 
         <nav class="gp-nav" aria-label="页面导航">
-          <a href="./index.html">个人主页</a>
-          <a class="is-active" href="./global.html" aria-current="page">全球脉搏</a>
+          <a href="/#overview" target="_self">个人主页</a>
+          <a class="is-active" href="/global" target="_self" aria-current="page">全球脉搏</a>
         </nav>
 
         <div class="gp-header__tools">

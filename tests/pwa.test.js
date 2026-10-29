@@ -9,11 +9,26 @@ test("PWA manifest opens XiaoColour Overview in standalone mode", async () => {
   assert.equal(manifest.name, "XiaoColour");
   assert.equal(manifest.short_name, "XiaoColour");
   assert.equal(manifest.start_url, "/#overview");
+  assert.equal(manifest.scope, "/");
   assert.equal(manifest.display, "standalone");
   assert.equal(manifest.theme_color, "#738B7B");
   assert.equal(manifest.background_color, "#F8F7F2");
   assert.ok(manifest.icons.some((icon) => icon.sizes === "192x192" && icon.purpose === "any"));
   assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.purpose === "maskable"));
+});
+
+test("all production Global Pulse entrances stay in the current PWA window", async () => {
+  const html = await readFile(new URL("index.html", root), "utf8");
+  const entries = [...html.matchAll(/<a\b[^>]*href="\/global"[^>]*>/g)].map((match) => match[0]);
+  assert.equal(entries.length, 4);
+  assert.ok(entries.every((entry) => /target="_self"/.test(entry)));
+  assert.doesNotMatch(html, /href="\.\/global\.html"/);
+});
+
+test("Global Pulse provides a direct Overview return link", async () => {
+  const html = await readFile(new URL("global.html", root), "utf8");
+  assert.match(html, /class="gp-back-home" href="\/#overview" target="_self"/);
+  assert.match(html, /返回 XiaoColour/);
 });
 
 test("service worker never caches APIs or cross-origin map resources", async () => {
