@@ -32,7 +32,7 @@
     <link rel="stylesheet" href="./lifestyle-journal.css?v=5" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=39"></script>
+    <script type="module" src="./personal-space.js?v=40"></script>
     <script type="module" src="./pwa-install.js?v=1"></script>
   </head>
   <body>
@@ -96,6 +96,10 @@
             <button type="button" class="ws-nav-item" data-route="footprints">
               <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11.5A7 7 0 0 1 19 9.5C19 15.5 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
               <span>Footprints</span>
+            </button>
+            <button type="button" class="ws-nav-item" data-route="travel">
+              <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 7-3 4-8 2 1-3 8 7 4-1 2-8-3-4 4-1-1 2-5-5 1Z"/></svg>
+              <span>Travel Planner</span>
             </button>
             <button type="button" class="ws-nav-item ws-settings-nav" data-route="settings">
               <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
@@ -426,6 +430,122 @@
                   </div>
                 </aside>
               </div>
+            </section>
+
+            <section class="screen module travel-module" data-screen="travel" aria-label="Travel Planner" hidden>
+              <div class="travel-page-head">
+                <div><h2>Travel Planner</h2><p>旅行攻略</p></div>
+                <button class="btn-primary-pill" id="travel-new-trip" type="button">＋ 新建旅行</button>
+              </div>
+              <p class="inline-status" id="travel-status" role="status" aria-live="polite"></p>
+
+              <div class="travel-workspace">
+                <aside class="travel-trip-sidebar" aria-label="我的旅行">
+                  <header><h3>我的旅行</h3><span id="travel-trip-count">0</span></header>
+                  <div class="travel-trip-list" id="travel-trip-list"></div>
+                </aside>
+
+                <section class="travel-detail" id="travel-detail">
+                  <div class="travel-empty" id="travel-empty">
+                    <span aria-hidden="true">✈</span>
+                    <h3>开始规划下一段旅程</h3>
+                    <p>先创建一个空白计划。即使 AI 尚未启用，全部手动规划功能仍可使用。</p>
+                    <button class="btn-primary-pill" type="button" data-travel-new>＋ 新建旅行</button>
+                  </div>
+
+                  <div id="travel-detail-content" hidden>
+                    <header class="travel-hero">
+                      <div class="travel-hero-copy">
+                        <span class="travel-status-pill" id="travel-detail-status">规划中</span>
+                        <h3 id="travel-detail-name">旅行名称</h3>
+                        <p id="travel-detail-meta"></p>
+                      </div>
+                      <div class="travel-hero-actions">
+                        <button type="button" id="travel-edit-trip" aria-label="编辑旅行">✎</button>
+                        <button type="button" id="travel-delete-trip" aria-label="删除旅行">⋯</button>
+                      </div>
+                    </header>
+
+                    <nav class="travel-tabs" id="travel-tabs" aria-label="旅行功能">
+                      <button class="active" type="button" data-travel-tab="itinerary">▣ <span>行程</span></button>
+                      <button type="button" data-travel-tab="map">⌖ <span>地图</span></button>
+                      <button type="button" data-travel-tab="saved">♡ <span>地点收藏</span></button>
+                      <button type="button" data-travel-tab="info">ⓘ <span>旅行信息</span></button>
+                      <button type="button" data-travel-tab="budget">◉ <span>预算</span></button>
+                      <button type="button" data-travel-tab="checklist">☑ <span>旅行清单</span></button>
+                    </nav>
+
+                    <section class="travel-tab-panel active" data-travel-panel="itinerary">
+                      <div class="travel-days" id="travel-days" role="tablist" aria-label="旅行日期"></div>
+                      <div class="travel-day-head">
+                        <div><h3 id="travel-day-title">每日行程</h3><p id="travel-day-note"></p></div>
+                        <div><button class="btn-ghost-pill" id="travel-ai-day" type="button">✦ AI 调整此日</button><button class="btn-primary-pill" id="travel-add-activity" type="button">＋ 添加活动</button></div>
+                      </div>
+                      <div class="travel-timeline" id="travel-timeline"></div>
+                    </section>
+
+                    <section class="travel-tab-panel" data-travel-panel="map" hidden>
+                      <div class="travel-map-toolbar"><strong id="travel-map-title">全程地点</strong><select id="travel-map-day-filter" aria-label="地图日期筛选"></select></div>
+                      <div class="travel-map" id="travel-map" aria-label="旅行路线地图"></div>
+                      <p class="travel-map-note" id="travel-map-note">路线按已验证坐标连接；没有路线服务时不会显示虚构交通时间。</p>
+                    </section>
+
+                    <section class="travel-tab-panel" data-travel-panel="saved" hidden>
+                      <div class="travel-section-head"><div><h3>地点收藏</h3><p>先收藏，再决定加入哪一天。</p></div><button class="btn-primary-pill" id="travel-add-saved" type="button">＋ 收藏地点</button></div>
+                      <div class="travel-card-grid" id="travel-saved-list"></div>
+                    </section>
+
+                    <section class="travel-tab-panel" data-travel-panel="info" hidden>
+                      <div class="travel-section-head"><div><h3>旅行信息</h3><p>住宿、交通、预订、链接与普通备注。</p></div><button class="btn-primary-pill" id="travel-add-info" type="button">＋ 添加信息</button></div>
+                      <div class="travel-card-grid" id="travel-info-list"></div>
+                    </section>
+
+                    <section class="travel-tab-panel" data-travel-panel="budget" hidden>
+                      <div class="travel-budget-summary"><article><small>总预算</small><strong id="travel-budget-total">—</strong></article><article><small>已记录</small><strong id="travel-budget-spent">—</strong></article><article><small>剩余</small><strong id="travel-budget-left">—</strong></article></div>
+                      <div class="travel-budget-progress"><span id="travel-budget-bar"></span></div>
+                      <form class="travel-inline-form" id="travel-expense-form"><input name="title" required maxlength="160" placeholder="费用名称"><input name="amount" required type="number" min="0" step="0.01" placeholder="金额"><select name="category"><option value="stay">住宿</option><option value="transport">交通</option><option value="food">餐饮</option><option value="activity">门票与活动</option><option value="shopping">购物</option><option value="other">其他</option></select><button class="btn-primary-pill" type="submit">添加费用</button></form>
+                      <div class="travel-list" id="travel-expense-list"></div>
+                    </section>
+
+                    <section class="travel-tab-panel" data-travel-panel="checklist" hidden>
+                      <div class="travel-checklist-tabs" id="travel-checklist-tabs"><button class="active" type="button" data-section="before">出发前</button><button type="button" data-section="during">旅行中</button><button type="button" data-section="return">返程前</button></div>
+                      <form class="travel-inline-form" id="travel-checklist-form"><input name="title" required maxlength="200" placeholder="添加清单事项"><button class="btn-primary-pill" type="submit">＋ 添加</button></form>
+                      <div class="travel-list" id="travel-checklist-list"></div>
+                    </section>
+                  </div>
+                </section>
+              </div>
+
+              <dialog class="travel-dialog" id="travel-trip-dialog">
+                <form method="dialog" class="travel-form" id="travel-trip-form">
+                  <header><div><small>TRAVEL PLANNER</small><h3 id="travel-trip-dialog-title">新建旅行</h3></div><button value="cancel" type="submit" aria-label="关闭">×</button></header>
+                  <label>旅行名称<input name="name" required maxlength="120" placeholder="例如：东京之旅"></label>
+                  <label>国家 / 城市目的地<div class="travel-destination-field"><input name="destinationQuery" required maxlength="120" autocomplete="off" placeholder="东京 / Tokyo"><button type="button" id="travel-destination-search">搜索</button></div></label>
+                  <div class="travel-search-results" id="travel-destination-results" hidden></div>
+                  <input name="destinationName" type="hidden"><input name="destinationLabel" type="hidden"><input name="destinationTimezone" type="hidden"><input name="countryCode" type="hidden"><input name="longitude" type="hidden"><input name="latitude" type="hidden">
+                  <div class="travel-form-row"><label>出发日期<input name="startDate" required type="date"></label><label>返回日期<input name="endDate" required type="date"></label><label>旅行人数<input name="travelers" required type="number" min="1" max="99" value="1"></label></div>
+                  <fieldset><legend>旅行预算</legend><div class="travel-choice-row"><label><input type="radio" name="budgetLevel" value="economy">经济</label><label><input type="radio" name="budgetLevel" value="moderate" checked>适中</label><label><input type="radio" name="budgetLevel" value="comfortable">舒适</label><label><input type="radio" name="budgetLevel" value="premium">高预算</label><label><input type="radio" name="budgetLevel" value="custom">自定义</label></div><div class="travel-form-row"><label>总预算<input name="budgetAmount" type="number" min="0" step="0.01" placeholder="可选"></label><label>货币<select name="currency"><option>EUR</option><option>CNY</option><option>JPY</option><option>USD</option><option>GBP</option></select></label></div></fieldset>
+                  <fieldset><legend>旅行风格（可多选）</legend><div class="travel-choice-row"><label><input type="checkbox" name="styles" value="classic">经典观光</label><label><input type="checkbox" name="styles" value="nature">自然风景</label><label><input type="checkbox" name="styles" value="food">美食探索</label><label><input type="checkbox" name="styles" value="art">艺术与博物馆</label><label><input type="checkbox" name="styles" value="photo">摄影</label><label><input type="checkbox" name="styles" value="relax">休闲度假</label><label><input type="checkbox" name="styles" value="hidden">小众景点</label><label><input type="checkbox" name="styles" value="family">亲子旅行</label></div></fieldset>
+                  <div class="travel-form-row"><label>旅行节奏<select name="pace"><option value="relaxed">轻松</option><option value="moderate" selected>适中</option><option value="compact">紧凑</option></select></label><label>交通偏好<select name="transport"><option value="walk">步行</option><option value="transit">公共交通</option><option value="drive">自驾</option><option value="mixed" selected>混合</option></select></label></div>
+                  <label>其他偏好<textarea name="preferences" rows="3" maxlength="2000" placeholder="例如：不想太早出门，喜欢咖啡馆，尽量少走路。"></textarea></label>
+                  <p class="travel-form-status" id="travel-trip-form-status"></p>
+                  <footer><button class="btn-ghost-pill" value="cancel" type="submit">取消</button><button class="btn-ghost-pill" id="travel-create-ai" value="ai" type="submit">✦ AI 生成旅行计划</button><button class="btn-primary-pill" id="travel-create-blank" value="blank" type="submit">创建空白计划</button></footer>
+                </form>
+              </dialog>
+
+              <dialog class="travel-dialog" id="travel-activity-dialog">
+                <form method="dialog" class="travel-form" id="travel-activity-form">
+                  <header><div><small>ITINERARY</small><h3 id="travel-activity-dialog-title">添加活动</h3></div><button value="cancel" type="submit" aria-label="关闭">×</button></header>
+                  <input name="activityId" type="hidden"><label>活动名称<input name="name" required maxlength="160"></label>
+                  <div class="travel-form-row"><label>日期<select name="dayId" required></select></label><label>开始时间<input name="startTime" type="time"></label><label>停留分钟<input name="durationMinutes" type="number" min="0" max="1440" step="15"></label></div>
+                  <label>活动类型<select name="type"><option value="place">景点</option><option value="food">餐饮</option><option value="rest">休息</option><option value="transport">交通</option><option value="custom">自定义</option></select></label>
+                  <label>具体地点<div class="travel-destination-field"><input name="placeQuery" maxlength="120" placeholder="搜索真实地点（可选）"><button type="button" id="travel-place-search">验证地点</button></div></label>
+                  <div class="travel-search-results" id="travel-place-results" hidden></div>
+                  <input name="locationLabel" type="hidden"><input name="sourceId" type="hidden"><input name="longitude" type="hidden"><input name="latitude" type="hidden"><input name="verification" type="hidden" value="unverified">
+                  <label>简短介绍<textarea name="description" rows="2" maxlength="1200"></textarea></label><label>我的备注<textarea name="note" rows="3" maxlength="2000"></textarea></label>
+                  <footer><button class="btn-ghost-pill" value="cancel" type="submit">取消</button><button class="btn-primary-pill" value="save" type="submit">保存活动</button></footer>
+                </form>
+              </dialog>
             </section>
 
             <section class="screen module map-module footprints-module" data-screen="footprints" aria-label="Footprints" hidden>

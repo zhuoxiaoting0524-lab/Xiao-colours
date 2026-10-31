@@ -5,6 +5,7 @@ import { handleNotesApi } from "./notes-api.js";
 import { handleDaysApi } from "./days-api.js";
 import { handleFootprintsApi } from "./footprints-api.js";
 import { handleDataExportApi } from "./data-export-api.js";
+import { handleTravelApi } from "./travel-api.js";
 import { createNewsCache } from "./news-cache.js";
 import { errorJson, json } from "./http.js";
 
@@ -39,6 +40,11 @@ export default {
         if (url.pathname.startsWith("/api/me/footprints")) {
           const footprintsResponse = await handleFootprintsApi(request, env);
           if (footprintsResponse) return footprintsResponse;
+          return errorJson(404, "not_found", "接口不存在");
+        }
+        if (url.pathname.startsWith("/api/me/travel")) {
+          const travelResponse = await handleTravelApi(request, env);
+          if (travelResponse) return travelResponse;
           return errorJson(404, "not_found", "接口不存在");
         }
         if (url.pathname.startsWith("/api/me/gallery")) {

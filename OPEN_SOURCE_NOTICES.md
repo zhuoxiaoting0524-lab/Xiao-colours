@@ -44,6 +44,12 @@ GLOBAL PULSE 继续使用上述 Leaflet 实现，不受私人空间改版影响�
 
 Footprints 不需要 API Key，也没有接入 Mapbox 或其他付费地图服务。常见中英文地点别名的候选在本地完成；公共 Nominatim 查询只在已登录用户主动提交时发起，不做逐键远程自动补全。Worker 将规范化查询散列后缓存结果，并以全站最多约每秒一次的频率访问公共 Nominatim 服务。搜索词会发送给 OpenStreetMap Foundation 的服务，因此不应在地点搜索框输入私密文字。界面保留地图署名；若访问量增长，应迁移到自托管或具有明确服务保障的地理编码服务。
 
+### Travel Planner 旅行攻略
+
+Travel Planner 复用 XiaoColour 已有的 MapLibre、OpenFreeMap 与受控 Nominatim 地点搜索能力。二维路线图中的虚线只表达用户保存的行程顺序，不宣称为实际道路、公共交通路线或实时通勤时间。
+
+产品调研参考了 [TREK](https://github.com/liketrek/TREK)（AGPL-3.0）、[TRIP](https://github.com/itskovacs/TRIP)（MIT）和 [ai-trip](https://github.com/Ripwords/ai-trip)（MIT）的公开产品思路。当前实现没有复制、打包或修改这些项目的源代码和素材；Travel Planner 使用 XiaoColour 原有技术栈独立实现。若未来复用 AGPL 项目代码，必须另行评估并履行相应的源代码提供义务。
+
 ## AI 分析
 
 当前项目没有服务端模型接口，因此 AI 摘要功能保持关闭。页面中的“态势概览”仅对已获取的新闻数量、媒体数量、来源国和规则分类进行统计，不冒充 AI 分析或事实核验。
