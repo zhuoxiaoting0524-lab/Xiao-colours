@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="./design-tokens.css?v=1" />
     <link rel="stylesheet" href="./personal-space.css?v=32" />
     <link rel="stylesheet" href="./workspace-shell.css?v=2" />
-    <link rel="stylesheet" href="./lifestyle-journal.css?v=5" />
+    <link rel="stylesheet" href="./lifestyle-journal.css?v=6" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
     <script type="module" src="./personal-space.js?v=40"></script>
@@ -529,7 +529,7 @@
                   <div class="travel-form-row"><label>旅行节奏<select name="pace"><option value="relaxed">轻松</option><option value="moderate" selected>适中</option><option value="compact">紧凑</option></select></label><label>交通偏好<select name="transport"><option value="walk">步行</option><option value="transit">公共交通</option><option value="drive">自驾</option><option value="mixed" selected>混合</option></select></label></div>
                   <label>其他偏好<textarea name="preferences" rows="3" maxlength="2000" placeholder="例如：不想太早出门，喜欢咖啡馆，尽量少走路。"></textarea></label>
                   <p class="travel-form-status" id="travel-trip-form-status"></p>
-                  <footer><button class="btn-ghost-pill" value="cancel" type="submit">取消</button><button class="btn-ghost-pill" id="travel-create-ai" value="ai" type="submit">✦ AI 生成旅行计划</button><button class="btn-primary-pill" id="travel-create-blank" value="blank" type="submit">创建空白计划</button></footer>
+                  <footer><button class="btn-ghost-pill" value="cancel" type="submit">取消</button><button class="btn-ghost-pill" id="travel-create-ai" value="ai" type="submit" disabled title="尚未配置服务端 AI 模型">✦ AI 尚未启用</button><button class="btn-primary-pill" id="travel-create-blank" value="blank" type="submit">创建空白计划</button></footer>
                 </form>
               </dialog>
 

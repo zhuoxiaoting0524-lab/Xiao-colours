@@ -3,7 +3,7 @@ import { mountOverview } from "./overview.js?v=5";
 import { mountDays, openTaskComposer, openImportantComposer } from "./days.js?v=23";
 import { mountFootprints } from "./footprints.js?v=36";
 import { mountLifeArchive } from "./life-archive.js?v=1";
-import { mountTravelPlanner } from "./travel-planner.js?v=2";
+import { mountTravelPlanner } from "./travel-planner.js?v=3";
 
 const root = document.querySelector("#personal-space-v2");
 const $ = (selector, scope = root) => scope?.querySelector(selector);

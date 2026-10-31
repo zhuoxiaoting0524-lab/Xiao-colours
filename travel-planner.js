@@ -286,7 +286,14 @@ async function searchPlace(query, target, onSelect) {
   try {
     const payload = await request(`/api/me/footprints/search?q=${encodeURIComponent(query)}`);
     const places = payload.results || [];
+    if (places.length === 1) {
+      onSelect(places[0]);
+      results.innerHTML = `<p class="travel-search-selected">✓ 已选择：${escapeHtml(places[0].label)}</p>`;
+      results.hidden = false;
+      return;
+    }
     results.innerHTML = places.length ? places.map((place, index) => `<button type="button" data-index="${index}"><strong>${escapeHtml(place.name)}</strong><small>${escapeHtml(place.label)}</small></button>`).join("") : "<p>没有找到地点，请尝试更完整的名称。</p>";
+    if (places.length > 1) results.insertAdjacentHTML("afterbegin", '<p class="travel-search-hint">请选择下方一个真实地点：</p>');
     $$('[data-index]', results).forEach((button) => button.addEventListener("click", () => onSelect(places[Number(button.dataset.index)])));
   } catch (error) { results.innerHTML = `<p>${escapeHtml(error.message || "地点搜索失败")}</p>`; }
 }
@@ -390,7 +397,25 @@ function bindEvents() {
   $("#travel-edit-trip").addEventListener("click", () => openTripDialog(detail.trip));
   $("#travel-delete-trip").addEventListener("click", async () => { if (!confirm(`删除“${detail.trip.name}”及其所有行程资料？此操作不能撤销。`)) return; await request(`/api/me/travel/${detail.trip.id}`, { method: "DELETE" }); selectedTripId = null; selectedDayId = null; detail = null; await loadTrips(); });
   $("#travel-trip-form").addEventListener("submit", submitTrip);
-  $("#travel-destination-search").addEventListener("click", () => searchPlace($("#travel-trip-form").elements.destinationQuery.value, "#travel-destination-results", (place) => { const form = $("#travel-trip-form"); form.elements.destinationQuery.value = place.name; form.elements.destinationName.value = place.name; form.elements.destinationLabel.value = place.label; form.elements.countryCode.value = place.countryCode || ""; form.elements.longitude.value = place.longitude; form.elements.latitude.value = place.latitude; $("#travel-destination-results").hidden = true; }));
+  const destinationForm = $("#travel-trip-form");
+  const selectDestination = (place) => {
+    destinationForm.elements.destinationQuery.value = place.name;
+    destinationForm.elements.destinationName.value = place.name;
+    destinationForm.elements.destinationLabel.value = place.label;
+    destinationForm.elements.countryCode.value = place.countryCode || "";
+    destinationForm.elements.longitude.value = place.longitude;
+    destinationForm.elements.latitude.value = place.latitude;
+    $("#travel-trip-form-status").textContent = `已选择真实目的地：${place.label}`;
+  };
+  destinationForm.elements.destinationQuery.addEventListener("input", () => {
+    destinationForm.elements.destinationName.value = "";
+    destinationForm.elements.destinationLabel.value = "";
+    destinationForm.elements.countryCode.value = "";
+    destinationForm.elements.longitude.value = "";
+    destinationForm.elements.latitude.value = "";
+    $("#travel-trip-form-status").textContent = "输入后点击搜索；只有选中真实地点后才能创建计划。";
+  });
+  $("#travel-destination-search").addEventListener("click", () => searchPlace(destinationForm.elements.destinationQuery.value, "#travel-destination-results", selectDestination));
   $("#travel-activity-form").addEventListener("submit", submitActivity);
   $("#travel-place-search").addEventListener("click", () => searchPlace($("#travel-activity-form").elements.placeQuery.value, "#travel-place-results", (place) => { const form = $("#travel-activity-form"); form.elements.placeQuery.value = place.name; form.elements.locationLabel.value = place.label; form.elements.sourceId.value = place.sourceId; form.elements.longitude.value = place.longitude; form.elements.latitude.value = place.latitude; form.elements.verification.value = "verified"; $("#travel-place-results").hidden = true; }));
   $("#travel-add-activity").addEventListener("click", () => openActivityDialog());
