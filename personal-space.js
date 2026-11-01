@@ -4,6 +4,7 @@ import { mountDays, openTaskComposer, openImportantComposer } from "./days.js?v=
 import { mountFootprints } from "./footprints.js?v=36";
 import { mountLifeArchive } from "./life-archive.js?v=1";
 import { mountTravelPlanner } from "./travel-planner.js?v=3";
+import { mountCountryArchives } from "./country-archives.js?v=1";
 
 const root = document.querySelector("#personal-space-v2");
 const $ = (selector, scope = root) => scope?.querySelector(selector);
@@ -184,7 +185,10 @@ async function mountRoute(name) {
     });
   }
   if (name === "days") await mountDays(authState, { notify });
-  if (name === "footprints") await mountFootprints(authState, { notify });
+  if (name === "footprints") {
+    await mountFootprints(authState, { notify });
+    await mountCountryArchives(authState, { notify });
+  }
   if (name === "travel") await mountTravelPlanner(authState, { notify });
   if (name === "settings") mountSettings();
 }

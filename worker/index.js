@@ -6,6 +6,7 @@ import { handleDaysApi } from "./days-api.js";
 import { handleFootprintsApi } from "./footprints-api.js";
 import { handleDataExportApi } from "./data-export-api.js";
 import { handleTravelApi } from "./travel-api.js";
+import { handleCountryArchivesApi } from "./country-archives-api.js";
 import { createNewsCache } from "./news-cache.js";
 import { errorJson, json } from "./http.js";
 
@@ -40,6 +41,11 @@ export default {
         if (url.pathname.startsWith("/api/me/footprints")) {
           const footprintsResponse = await handleFootprintsApi(request, env);
           if (footprintsResponse) return footprintsResponse;
+          return errorJson(404, "not_found", "接口不存在");
+        }
+        if (url.pathname.startsWith("/api/me/country-archives")) {
+          const response = await handleCountryArchivesApi(request, env);
+          if (response) return response;
           return errorJson(404, "not_found", "接口不存在");
         }
         if (url.pathname.startsWith("/api/me/travel")) {

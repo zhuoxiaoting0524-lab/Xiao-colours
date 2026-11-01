@@ -42,7 +42,10 @@ export function filterArchiveData(exported, options) {
   const taskRows = options.include.has("tasks") ? (exported.data?.myDays || []).filter((item) => withinRange(item.date, bounds)) : [];
   const importantDates = options.include.has("important") ? (exported.data?.importantDates || []).filter((item) => withinRange(item.date, bounds)) : [];
   const footprints = options.include.has("footprints") ? (exported.data?.footprints || []).filter((item) => withinRange(item.visitedDate || item.createdAt, bounds)) : [];
-  return { bounds, tasks: taskRows, importantDates, footprints };
+  const countryArchives = options.include.has("footprints") ? (exported.data?.countryArchives?.archives || []) : [];
+  const countryExperiences = options.include.has("footprints") ? (exported.data?.countryArchives?.experiences || []).filter((item) => withinRange(item.experience_date || item.created_at, bounds)) : [];
+  const countryExpenses = options.include.has("footprints") ? (exported.data?.countryArchives?.expenses || []).filter((item) => withinRange(item.expense_date || item.created_at, bounds)) : [];
+  return { bounds, tasks: taskRows, importantDates, footprints, countryArchives, countryExperiences, countryExpenses };
 }
 
 function roundedRect(ctx, x, y, width, height, radius, fill, stroke = null) {
@@ -279,6 +282,35 @@ async function renderArchive(exported, options, onProgress) {
         paragraph(ctx, place.note || "这条足迹还没有添加文字备注。", 96, 435, 680, { font: '22px "Noto Sans SC", sans-serif', color: COLORS.ink, lineHeight: 37, maxLines: image ? 3 : 7 });
         if (image) { drawCoverImage(ctx, image, 64, 570, 772, 470); image.close?.(); }
       });
+    }
+
+    if (filtered.countryExperiences.length || filtered.countryExpenses.length) {
+      const archiveById = new Map(filtered.countryArchives.map((archive) => [archive.id, archive]));
+      const totals = new Map();
+      for (const expense of filtered.countryExpenses) {
+        const key = `${expense.archive_id}:${expense.currency}`;
+        totals.set(key, (totals.get(key) || 0) + Number(expense.amount_minor || 0));
+      }
+      const chunks = Array.from({ length: Math.ceil(filtered.countryExperiences.length / 9) || 1 }, (_, index) => filtered.countryExperiences.slice(index * 9, index * 9 + 9));
+      for (let index = 0; index < chunks.length; index += 1) {
+        await addPage(pages, async (ctx, page) => {
+          pageHeader(ctx, "国家旅行档案", `COUNTRY ARCHIVES · ${index + 1}/${chunks.length}`, page);
+          const currencyLines = [...totals.entries()].map(([key, value]) => {
+            const [archiveId, currency] = key.split(":");
+            const archive = archiveById.get(archiveId);
+            return `${archive?.name_zh || archive?.country_code || "国家"}  ${currency} ${(value / 100).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          });
+          paragraph(ctx, currencyLines.length ? `花销按币种分别统计：${currencyLines.join(" · ")}` : "尚未记录国家档案花销。", 72, 220, 760, { font: '18px "Noto Sans SC", sans-serif', color: COLORS.muted, lineHeight: 30, maxLines: 3 });
+          chunks[index].forEach((item, rowIndex) => {
+            const y = 320 + rowIndex * 90;
+            const archive = archiveById.get(item.archive_id);
+            roundedRect(ctx, 64, y, 772, 70, 13, rowIndex % 2 ? COLORS.paper : "#F5F7F2", COLORS.line);
+            text(ctx, archive?.name_zh || archive?.country_code || "国家", 84, y + 28, { font: '15px "Noto Sans SC", sans-serif', color: COLORS.sageDark });
+            text(ctx, item.name || "未命名记录", 200, y + 30, { font: '600 19px "Noto Sans SC", sans-serif' });
+            text(ctx, [item.city, item.experience_date].filter(Boolean).join(" · ") || "日期未记录", 200, y + 55, { font: '14px "Noto Sans SC", sans-serif', color: COLORS.muted });
+          });
+        });
+      }
     }
   }
 

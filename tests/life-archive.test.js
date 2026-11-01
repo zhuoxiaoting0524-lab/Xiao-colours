@@ -15,6 +15,11 @@ const exported = { data: {
     { id: "e", name: "Paris", visitedDate: "2026-03-12", status: "visited" },
     { id: "f", name: "Tokyo", visitedDate: "2025-04-10", status: "wish" },
   ],
+  countryArchives: {
+    archives: [{ id: "jp", country_code: "JP", name_zh: "日本" }],
+    experiences: [{ id: "ramen", archive_id: "jp", name: "一兰拉面", experience_date: "2026-04-14" }],
+    expenses: [{ id: "cost", archive_id: "jp", currency: "JPY", amount_minor: 150000, expense_date: "2026-04-14" }],
+  },
 } };
 
 test("life archive date ranges are deterministic", () => {
@@ -32,6 +37,8 @@ test("life archive filters every selected data group by date", () => {
   assert.deepEqual(result.tasks.map((item) => item.id), ["a"]);
   assert.deepEqual(result.importantDates.map((item) => item.id), ["c"]);
   assert.deepEqual(result.footprints.map((item) => item.id), ["e"]);
+  assert.deepEqual(result.countryExperiences.map((item) => item.id), ["ramen"]);
+  assert.deepEqual(result.countryExpenses.map((item) => item.id), ["cost"]);
 });
 
 test("life archive respects content toggles and empty accounts", () => {
@@ -39,6 +46,7 @@ test("life archive respects content toggles and empty accounts", () => {
   assert.deepEqual(result.tasks, []);
   assert.deepEqual(result.importantDates, []);
   assert.deepEqual(result.footprints, []);
+  assert.deepEqual(result.countryExperiences, []);
 });
 
 test("PDF writer emits a valid page tree and PDF trailer", () => {

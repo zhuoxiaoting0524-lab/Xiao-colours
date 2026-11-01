@@ -77,7 +77,7 @@ test("JSON export omits photo bytes and authentication secrets", async () => {
   assert.equal(text.includes("password_hash"), false);
   assert.equal(text.includes("token_hash"), false);
   assert.equal(text.includes("csrf"), false);
-  assert.equal(data.version, 1);
+  assert.equal(data.version, 2);
   assert.equal(data.format, "xiaocolour-backup");
 });
 

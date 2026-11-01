@@ -3,7 +3,7 @@ import { errorJson } from "./http.js";
 import { loadSession } from "./sessions.js";
 
 const BACKUP_FORMAT = "xiaocolour-backup";
-const BACKUP_VERSION = 1;
+const BACKUP_VERSION = 2;
 const MAX_ZIP_BYTES = 24 * 1024 * 1024;
 const encoder = new TextEncoder();
 
@@ -65,7 +65,8 @@ function publicFootprint(row, photo) {
 export async function collectUserExport(db, user, { includePhotoBytes = false } = {}) {
   const tables = await tableNames(db);
   const userId = user.id;
-  const [taskRows, importantDateRows, footprintRows, photoMetadataRows, noteRows, journalRows, galleryRows, mediaRows] = await Promise.all([
+  const [taskRows, importantDateRows, footprintRows, photoMetadataRows, noteRows, journalRows, galleryRows, mediaRows,
+    archiveRows, experienceRows, experiencePhotoMetadataRows, expenseRows, routeDayRows, routeItemRows] = await Promise.all([
     selectForUser(db, tables, "day_tasks", userId, "task_date ASC, created_at ASC"),
     selectForUser(db, tables, "important_dates", userId, "event_date ASC, created_at ASC"),
     selectForUser(db, tables, "footprints", userId),
@@ -76,6 +77,14 @@ export async function collectUserExport(db, user, { includePhotoBytes = false } 
     selectForUser(db, tables, "journal_pages", userId),
     selectForUser(db, tables, "gallery_items", userId),
     selectForUser(db, tables, "media_objects", userId),
+    selectForUser(db, tables, "country_archives", userId),
+    selectForUser(db, tables, "country_experiences", userId),
+    tables.has("country_experience_photos")
+      ? db.prepare(`SELECT id, experience_id, user_id, content_type, byte_size, sort_order, created_at FROM country_experience_photos WHERE user_id = ? ORDER BY created_at ASC`).bind(userId).all().then(rows)
+      : [],
+    selectForUser(db, tables, "country_expenses", userId),
+    selectForUser(db, tables, "country_route_days", userId, "route_type ASC, day_number ASC"),
+    selectForUser(db, tables, "country_route_items", userId, "route_day_id ASC, sort_order ASC"),
   ]);
   const photosByFootprint = new Map(photoMetadataRows.map((photo) => [photo.footprint_id, photo]));
   const footprints = footprintRows.map((footprint) => publicFootprint(footprint, photosByFootprint.get(footprint.id)));
@@ -85,6 +94,13 @@ export async function collectUserExport(db, user, { includePhotoBytes = false } 
     account: { id: user.id, email: user.email, displayName: user.displayName },
     data: {
       myDays: taskRows.map(publicTask), importantDates: importantDateRows.map(publicImportantDate), footprints,
+      countryArchives: {
+        archives: archiveRows.map((row) => withoutPrivateColumns(row)),
+        experiences: experienceRows.map((row) => ({ ...withoutPrivateColumns(row), photos: experiencePhotoMetadataRows.filter((photo) => photo.experience_id === row.id).map((photo) => withoutPrivateColumns(photo)) })),
+        expenses: expenseRows.map((row) => withoutPrivateColumns(row)),
+        routeDays: routeDayRows.map((row) => withoutPrivateColumns(row)),
+        routeItems: routeItemRows.map((row) => withoutPrivateColumns(row)),
+      },
       other: {
         notes: noteRows.map((row) => withoutPrivateColumns(row)),
         journalPages: journalRows.map((row) => withoutPrivateColumns(row)),
@@ -92,9 +108,9 @@ export async function collectUserExport(db, user, { includePhotoBytes = false } 
         mediaMetadata: mediaRows.map((row) => withoutPrivateColumns(row)),
       },
     },
-    counts: { myDays: taskRows.length, importantDates: importantDateRows.length, footprints: footprints.length, footprintPhotos: photoMetadataRows.length, otherRecords: noteRows.length + journalRows.length + galleryRows.length + mediaRows.length },
+    counts: { myDays: taskRows.length, importantDates: importantDateRows.length, footprints: footprints.length, footprintPhotos: photoMetadataRows.length, countryArchives: archiveRows.length, countryExperiences: experienceRows.length, countryExpenses: expenseRows.length, countryRoutes: routeItemRows.length, countryExperiencePhotos: experiencePhotoMetadataRows.length, otherRecords: noteRows.length + journalRows.length + galleryRows.length + mediaRows.length },
   };
-  const declaredPhotoBytes = photoMetadataRows.reduce((sum, photo) => sum + Number(photo.byte_size || 0), 0);
+  const declaredPhotoBytes = [...photoMetadataRows, ...experiencePhotoMetadataRows].reduce((sum, photo) => sum + Number(photo.byte_size || 0), 0);
   if (includePhotoBytes && declaredPhotoBytes > MAX_ZIP_BYTES) {
     const error = new Error("照片备份超过单次下载上限，请联系管理员分批导出");
     error.code = "backup_too_large";
@@ -105,10 +121,16 @@ export async function collectUserExport(db, user, { includePhotoBytes = false } 
   const photoRows = includePhotoBytes && tables.has("footprint_photos")
     ? rows(await db.prepare(`SELECT * FROM footprint_photos WHERE user_id = ? ORDER BY created_at ASC`).bind(userId).all())
     : [];
+  const experiencePhotoRows = includePhotoBytes && tables.has("country_experience_photos")
+    ? rows(await db.prepare(`SELECT * FROM country_experience_photos WHERE user_id = ? ORDER BY created_at ASC`).bind(userId).all())
+    : [];
   const photos = photoRows.map((photo) => ({
-    id: photo.id, footprintId: photo.footprint_id, contentType: photo.content_type, byteSize: Number(photo.byte_size || 0),
+    id: photo.id, kind: "footprint", footprintId: photo.footprint_id, contentType: photo.content_type, byteSize: Number(photo.byte_size || 0),
     bytes: photo.image_data instanceof Uint8Array ? photo.image_data : new Uint8Array(photo.image_data || []),
-  }));
+  })).concat(experiencePhotoRows.map((photo) => ({
+    id: photo.id, kind: "country-experience", experienceId: photo.experience_id, contentType: photo.content_type, byteSize: Number(photo.byte_size || 0),
+    bytes: photo.image_data instanceof Uint8Array ? photo.image_data : new Uint8Array(photo.image_data || []),
+  })));
   return { data, photos };
 }
 
@@ -160,18 +182,23 @@ function prettyJson(value) { return encoder.encode(`${JSON.stringify(value, null
 function zipFiles(exported, photos) {
   const root = "XiaoColour-Backup", photoPaths = new Map();
   const photoFiles = photos.map((photo) => {
-    const filename = `${safeSegment(photo.footprintId, "footprint")}-${safeSegment(photo.id, "photo")}.${extensionFor(photo.contentType)}`;
-    const path = `${root}/photos/footprints/${filename}`;
+    const ownerId = photo.kind === "country-experience" ? photo.experienceId : photo.footprintId;
+    const filename = `${safeSegment(ownerId, "record")}-${safeSegment(photo.id, "photo")}.${extensionFor(photo.contentType)}`;
+    const folder = photo.kind === "country-experience" ? "country-experiences" : "footprints";
+    const path = `${root}/photos/${folder}/${filename}`;
     photoPaths.set(photo.id, path);
     return { name: path, bytes: photo.bytes };
   });
   const footprints = exported.data.footprints.map((footprint) => ({ ...footprint, photo: footprint.photo ? { ...footprint.photo, backupPath: photoPaths.get(footprint.photo.id) || null } : null }));
-  const manifest = { format: exported.format, version: exported.version, exportedAt: exported.exportedAt, account: exported.account, counts: exported.counts, contents: ["data/my-days.json", "data/important-dates.json", "data/footprints.json", "data/other-data.json", ...photoFiles.map((file) => file.name.replace(`${root}/`, ""))] };
+  const countryArchives = structuredClone(exported.data.countryArchives || {});
+  for (const experience of countryArchives.experiences || []) for (const photo of experience.photos || []) photo.backupPath = photoPaths.get(photo.id) || null;
+  const manifest = { format: exported.format, version: exported.version, exportedAt: exported.exportedAt, account: exported.account, counts: exported.counts, contents: ["data/my-days.json", "data/important-dates.json", "data/footprints.json", "data/country-archives.json", "data/other-data.json", ...photoFiles.map((file) => file.name.replace(`${root}/`, ""))] };
   return [
     { name: `${root}/manifest.json`, bytes: prettyJson(manifest) },
     { name: `${root}/data/my-days.json`, bytes: prettyJson(exported.data.myDays) },
     { name: `${root}/data/important-dates.json`, bytes: prettyJson(exported.data.importantDates) },
     { name: `${root}/data/footprints.json`, bytes: prettyJson(footprints) },
+    { name: `${root}/data/country-archives.json`, bytes: prettyJson(countryArchives) },
     { name: `${root}/data/other-data.json`, bytes: prettyJson(exported.data.other) },
     ...photoFiles,
   ];
