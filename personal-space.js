@@ -3,20 +3,18 @@ import { mountOverview } from "./overview.js?v=5";
 import { mountDays, openTaskComposer, openImportantComposer } from "./days.js?v=23";
 import { mountFootprints } from "./footprints.js?v=36";
 import { mountLifeArchive } from "./life-archive.js?v=1";
-import { mountTravelPlanner } from "./travel-planner.js?v=3";
 import { mountCountryArchives } from "./country-archives.js?v=2";
 
 const root = document.querySelector("#personal-space-v2");
 const $ = (selector, scope = root) => scope?.querySelector(selector);
 const $$ = (selector, scope = root) => [...(scope?.querySelectorAll(selector) || [])];
-const privateRoutes = new Set(["overview", "days", "footprints", "travel", "settings"]);
+const privateRoutes = new Set(["overview", "days", "footprints", "settings"]);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const PANEL_META = {
   overview: { title: "Overview", desc: "温柔的问候、今日计划与生活概览" },
   days: { title: "My Days", desc: "把日子过成自己喜欢的样子。" },
   footprints: { title: "Footprints", desc: "走过的地方，都是生活的颜色。" },
-  travel: { title: "Travel Planner", desc: "规划下一段旅程。" },
   settings: { title: "设置", desc: "让这个空间更符合你的喜好。" },
 };
 
@@ -189,7 +187,6 @@ async function mountRoute(name) {
     await mountFootprints(authState, { notify });
     await mountCountryArchives(authState, { notify });
   }
-  if (name === "travel") await mountTravelPlanner(authState, { notify });
   if (name === "settings") mountSettings();
 }
 

@@ -32,7 +32,7 @@
     <link rel="stylesheet" href="./lifestyle-journal.css?v=6" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=42"></script>
+    <script type="module" src="./personal-space.js?v=43"></script>
     <script type="module" src="./pwa-install.js?v=1"></script>
   </head>
   <body>
@@ -96,10 +96,6 @@
             <button type="button" class="ws-nav-item" data-route="footprints">
               <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11.5A7 7 0 0 1 19 9.5C19 15.5 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
               <span>Footprints</span>
-            </button>
-            <button type="button" class="ws-nav-item" data-route="travel">
-              <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 7-3 4-8 2 1-3 8 7 4-1 2-8-3-4 4-1-1 2-5-5 1Z"/></svg>
-              <span>Travel Planner</span>
             </button>
             <button type="button" class="ws-nav-item ws-settings-nav" data-route="settings">
               <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
@@ -432,6 +428,7 @@
               </div>
             </section>
 
+            <!-- Travel Planner retired. Its production database tables and historical rows are intentionally preserved.
             <section class="screen module travel-module" data-screen="travel" aria-label="Travel Planner" hidden>
               <div class="travel-page-head">
                 <div><h2>Travel Planner</h2><p>旅行攻略</p></div>
@@ -548,6 +545,7 @@
               </dialog>
             </section>
 
+            -->
             <section class="screen module map-module footprints-module" data-screen="footprints" aria-label="Footprints" hidden>
               <!-- In-page Header for Footprints -->
               <div class="page-head-row">

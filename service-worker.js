@@ -1,4 +1,4 @@
-const CACHE_VERSION = "xiaocolour-pwa-v9";
+const CACHE_VERSION = "xiaocolour-pwa-v10";
 const CORE_ASSETS = [
   "/offline",
   "/manifest.webmanifest",
