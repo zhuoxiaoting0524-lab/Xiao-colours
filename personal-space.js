@@ -4,7 +4,7 @@ import { mountDays, openTaskComposer, openImportantComposer } from "./days.js?v=
 import { mountFootprints } from "./footprints.js?v=36";
 import { mountLifeArchive } from "./life-archive.js?v=1";
 import { mountTravelPlanner } from "./travel-planner.js?v=3";
-import { mountCountryArchives } from "./country-archives.js?v=1";
+import { mountCountryArchives } from "./country-archives.js?v=2";
 
 const root = document.querySelector("#personal-space-v2");
 const $ = (selector, scope = root) => scope?.querySelector(selector);

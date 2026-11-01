@@ -27,12 +27,12 @@
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.css" />
     <link rel="stylesheet" href="./styles.css?v=16" />
     <link rel="stylesheet" href="./design-tokens.css?v=1" />
-    <link rel="stylesheet" href="./personal-space.css?v=33" />
+    <link rel="stylesheet" href="./personal-space.css?v=34" />
     <link rel="stylesheet" href="./workspace-shell.css?v=2" />
     <link rel="stylesheet" href="./lifestyle-journal.css?v=6" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=41"></script>
+    <script type="module" src="./personal-space.js?v=42"></script>
     <script type="module" src="./pwa-install.js?v=1"></script>
   </head>
   <body>
@@ -556,12 +556,12 @@
                   <p>走过的地方，都是生活的颜色。</p>
                 </div>
                 <div class="country-mode-switch" role="group" aria-label="Footprints 视图">
-                  <button type="button" class="active" data-footprints-mode="globe">地点与地球</button>
-                  <button type="button" data-footprints-mode="countries">国家旅行档案</button>
+                  <button type="button" data-footprints-mode="globe">地点与地球</button>
+                  <button type="button" class="active" data-footprints-mode="countries">国家旅行档案</button>
                 </div>
               </div>
 
-              <section class="country-archive-shell" id="country-archive-shell" hidden>
+              <section class="country-archive-shell" id="country-archive-shell">
                 <aside class="country-archive-list">
                   <header><span><small>COUNTRY ARCHIVES</small><h3>国家 / 地区</h3></span></header>
                   <div id="country-archive-countries"></div>
@@ -572,7 +572,7 @@
               </section>
 
               <!-- Toolbar: bilingual search and add -->
-              <div class="footprints-toolbar-row" data-footprints-globe>
+              <div class="footprints-toolbar-row" data-footprints-globe hidden>
                 <form class="place-search-form" id="place-search-form">
                   <label class="search">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -586,7 +586,7 @@
               <div class="geocode-results" id="geocode-results" data-footprints-globe hidden></div>
 
               <!-- 3 Footprints stats cards matching mockup -->
-              <section class="footprint-stats-row" data-footprints-globe aria-label="足迹统计">
+              <section class="footprint-stats-row" data-footprints-globe aria-label="足迹统计" hidden>
                 <article class="fp-stat-card fp-stat-visited">
                   <span class="fp-stat-icon visited-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-5.5-7-11.5A7 7 0 0 1 19 9.5C19 15.5 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
@@ -620,10 +620,10 @@
                 </article>
               </section>
 
-              <p class="inline-status" id="footprints-status" data-footprints-globe role="status" aria-live="polite">正在读取你的足迹…</p>
+              <p class="inline-status" id="footprints-status" data-footprints-globe role="status" aria-live="polite" hidden>正在读取你的足迹…</p>
 
               <!-- Map and Place cards 2-column split layout matching mockup -->
-              <div class="footprints-split-layout" data-footprints-globe>
+              <div class="footprints-split-layout" data-footprints-globe hidden>
                 <div class="footprints-map-wrapper">
                   <div class="real-map" id="footprints-map" aria-label="可旋转、缩放和触摸操作的真实三维地球"></div>
                   <div class="map-status" id="map-loading"><span></span><b>正在加载 3D 地球</b><small>MapLibre Globe · OpenFreeMap</small></div>

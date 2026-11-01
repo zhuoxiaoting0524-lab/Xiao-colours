@@ -152,4 +152,5 @@ async function deleteRoute(id){if(!confirm("从路线中移除此地点？"))ret
 export async function mountCountryArchives(nextAuth, options={}) {
   authState=nextAuth;notify=options.notify||notify;
   if(!mounted){mounted=true;$$('[data-footprints-mode]').forEach(button=>button.addEventListener("click",()=>setMode(button.dataset.footprintsMode)));window.addEventListener("xc:open-country-archive",async event=>{setMode("countries");await loadCountries();if(event.detail?.countryCode)await openCountry(event.detail.countryCode);});}
+  setMode("countries");
 }
