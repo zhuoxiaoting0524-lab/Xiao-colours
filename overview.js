@@ -62,6 +62,7 @@ async function loadOverview() {
     const dates = datesData.dates || [];
     const places = placesData.footprints || placesData.places || [];
     const visitedPlaces = places.filter((p) => p.status === "visited");
+    const wishlistPlaces = places.filter((p) => p.status === "wish");
     const completedTasks = tasks.filter((task) => task.completed).length;
 
     // Summary stat cards
@@ -84,9 +85,9 @@ async function loadOverview() {
     const placeCountEl = $("#overview-place-count");
     const placeSubEl = $("#overview-place-sub");
     if (placeCountEl) placeCountEl.textContent = String(places.length);
-    if (placeSubEl) {
-      placeSubEl.textContent = `已去过 ${visitedPlaces.length} 个地方`;
-    }
+    if (placeSubEl) placeSubEl.textContent = `已去 ${visitedPlaces.length} · 想去 ${wishlistPlaces.length}`;
+
+    document.querySelector("[data-overview-add='task']")?.toggleAttribute("hidden", !tasks.length);
 
     // Render Today's Plan (今天的小计划)
     const todosContainer = $("#overview-todos");

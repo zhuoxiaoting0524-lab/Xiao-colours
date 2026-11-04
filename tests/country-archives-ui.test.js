@@ -24,6 +24,12 @@ test("country archive UI has four persistent data views and responsive rules", (
   assert.match(css, /country-archive-shell\.country-selected/);
 });
 
+test("country names are localized and country selection is restored", () => {
+  assert.match(js, /Intl\.DisplayNames/);
+  assert.match(js, /xiaocolour-country-archive/);
+  assert.match(js, /已去 \$\{Number\(country\.visited_count\|\|0\)\} · 想去/);
+});
+
 test("money and tenant ownership are enforced server-side", () => {
   assert.match(migration, /amount_minor INTEGER/);
   assert.match(migration, /experience_id TEXT UNIQUE/);

@@ -476,6 +476,11 @@
   gap: 18px;
 }
 
+#personal-space-v2 .ov-today-card,
+#personal-space-v2 .ov-dates-card {
+  grid-column: 1 / -1;
+}
+
 /* Overview Hero Greeting Card */
 #personal-space-v2 .ov-hero {
   grid-column: 1 / -1;

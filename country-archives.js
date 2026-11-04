@@ -2,7 +2,9 @@ import { api, uploadBytes } from "./auth-client.js";
 
 const $ = (selector, root = document) => root?.querySelector(selector);
 const $$ = (selector, root = document) => [...(root?.querySelectorAll(selector) || [])];
-const COUNTRY_NAMES = { JP:["日本","Japan"], CN:["中国","China"], FR:["法国","France"], IT:["意大利","Italy"], GB:["英国","United Kingdom"], US:["美国","United States"], ES:["西班牙","Spain"], DE:["德国","Germany"], KR:["韩国","South Korea"], TH:["泰国","Thailand"] };
+const COUNTRY_NAME_OVERRIDES = {
+  TW:["中国台湾","Taiwan"], HK:["中国香港","Hong Kong"], MO:["中国澳门","Macao"],
+};
 const CATEGORY_LABELS = { food:"美食",cafe:"咖啡与饮品",sight:"景点",shopping:"购物",stay:"住宿",entertainment:"娱乐",other:"其他",transport:"交通",activity:"门票与活动" };
 
 let authState;
@@ -14,10 +16,22 @@ let mounted = false;
 let routeMap = null;
 
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>'"]/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char])); }
+function localizedCountryName(code, locale) {
+  try {
+    return new Intl.DisplayNames([locale], { type:"region" }).of(code) || "";
+  } catch {
+    return "";
+  }
+}
 function namesFor(country) {
-  const code = country.country_code || country.archive?.country_code;
-  const defaults = COUNTRY_NAMES[code] || [code, code];
-  return [country.archive?.name_zh || defaults[0], country.archive?.name_en || defaults[1]];
+  const code = String(country.country_code || country.archive?.country_code || "").toUpperCase();
+  const localized = COUNTRY_NAME_OVERRIDES[code] || [localizedCountryName(code, "zh-CN"), localizedCountryName(code, "en")];
+  const storedZh = country.archive?.name_zh || country.name_zh;
+  const storedEn = country.archive?.name_en || country.name_en;
+  const isCode = (value) => String(value || "").trim().toUpperCase() === code;
+  const zh = storedZh && !isCode(storedZh) ? storedZh : localized[0];
+  const en = storedEn && !isCode(storedEn) ? storedEn : localized[1];
+  return [zh || en || code, en && en !== zh ? en : ""];
 }
 function amount(minor, currency) { return new Intl.NumberFormat("zh-CN", { style:"currency", currency, maximumFractionDigits:2 }).format(Number(minor || 0) / 100); }
 function setMode(mode) {
@@ -36,7 +50,7 @@ function renderCountryList() {
   }
   box.innerHTML = countries.map((country) => {
     const [zh,en] = namesFor(country); const code = country.country_code;
-    return `<button type="button" class="country-list-card ${current?.archive?.country_code === code ? "active" : ""}" data-country="${code}"><span class="country-list-symbol">${escapeHtml(code)}</span><span><b>${escapeHtml(zh)} <em>${escapeHtml(en)}</em></b><small>${Number(country.visited_count||0)} 个去过地点 · ${Number(country.wish_count||0)} 个想去地点</small></span><i>›</i></button>`;
+    return `<button type="button" class="country-list-card ${current?.archive?.country_code === code ? "active" : ""}" data-country="${code}"><span class="country-list-symbol">${escapeHtml(code)}</span><span class="country-list-copy"><b>${escapeHtml(zh)}${en ? ` <em>${escapeHtml(en)}</em>` : ""}</b><small>已去 ${Number(country.visited_count||0)} · 想去 ${Number(country.wish_count||0)}</small></span><i>›</i></button>`;
   }).join("");
   $$('[data-country]', box).forEach((button) => button.addEventListener("click", () => openCountry(button.dataset.country)));
 }
@@ -44,7 +58,14 @@ function renderCountryList() {
 async function loadCountries() {
   try {
     const data = await api("/api/me/country-archives"); countries = data.countries || []; renderCountryList();
-    if (!current && countries[0]) await openCountry(countries[0].country_code);
+    if (!current && countries.length) {
+      const remembered = localStorage.getItem("xiaocolour-country-archive");
+      const preferred = countries.find((item) => item.country_code === remembered)
+        || countries.find((item) => Number(item.visited_count) > 0)
+        || countries.find((item) => Number(item.wish_count) > 0)
+        || countries[0];
+      await openCountry(preferred.country_code);
+    }
   } catch (error) { notify(error.message, true); }
 }
 
@@ -58,13 +79,15 @@ async function openCountry(code) {
       if (error.status !== 404) throw error;
       data = await api(`/api/me/country-archives/${code}`, { method:"POST", csrfToken:authState.csrfToken, body:{ nameZh,nameEn } });
     }
-    current = data; renderCountryList(); renderArchive();
+    current = data;
+    localStorage.setItem("xiaocolour-country-archive", code);
+    renderCountryList(); renderArchive();
   } catch (error) { notify(error.message, true); }
 }
 
 function archiveHeader() {
-  const a=current.archive; const title=[a.name_zh||a.country_code,a.name_en].filter(Boolean).join(" · ");
-  return `<header class="country-hero"><button type="button" class="country-mobile-back" aria-label="返回国家列表">‹</button><div><small>COUNTRY TRAVEL ARCHIVE</small><h3>${escapeHtml(title)}</h3><p>所有在 ${escapeHtml(a.name_zh||a.country_code)} 的地点、路线、体验与花销。</p></div><span>${escapeHtml(a.country_code)}</span></header>
+  const a=current.archive; const [nameZh,nameEn]=namesFor({country_code:a.country_code,archive:a}); const title=[nameZh,nameEn].filter(Boolean).join(" · ");
+  return `<header class="country-hero"><button type="button" class="country-mobile-back" aria-label="返回国家列表">‹</button><div><small>COUNTRY TRAVEL ARCHIVE</small><h3>${escapeHtml(title)}</h3><p>所有在 ${escapeHtml(nameZh)} 的地点、路线、体验与花销。</p></div><span>${escapeHtml(a.country_code)}</span></header>
     <nav class="country-tabs" role="tablist">${[["overview","总览"],["routes","路线"],["experiences","吃喝玩乐"],["expenses","花销"]].map(([id,label])=>`<button type="button" data-country-tab="${id}" class="${activeTab===id?"active":""}">${label}</button>`).join("")}</nav>`;
 }
 

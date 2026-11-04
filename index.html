@@ -27,12 +27,12 @@
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.css" />
     <link rel="stylesheet" href="./styles.css?v=16" />
     <link rel="stylesheet" href="./design-tokens.css?v=1" />
-    <link rel="stylesheet" href="./personal-space.css?v=34" />
+    <link rel="stylesheet" href="./personal-space.css?v=35" />
     <link rel="stylesheet" href="./workspace-shell.css?v=2" />
-    <link rel="stylesheet" href="./lifestyle-journal.css?v=6" />
+    <link rel="stylesheet" href="./lifestyle-journal.css?v=7" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=43"></script>
+    <script type="module" src="./personal-space.js?v=44"></script>
     <script type="module" src="./pwa-install.js?v=1"></script>
   </head>
   <body>
@@ -115,7 +115,6 @@
               <path d="M82 28 C 100 22, 110 32, 106 45 C 95 50, 84 40, 82 28 Z" fill="#94AC9E" opacity="0.7" />
               <path d="M92 12 C 96 2, 108 0, 112 8 C 110 16, 100 18, 92 12 Z" fill="#8CA595" opacity="0.8" />
             </svg>
-            <span class="ws-sidebar-script">A more colorful life ☆</span>
           </div>
 
           <div class="ws-nav-footer">
@@ -304,7 +303,7 @@
                     <div class="ov-stat-content">
                       <small>旅行足迹</small>
                       <b id="overview-place-count">0</b>
-                      <em id="overview-place-sub">已去过 0 个地方</em>
+                      <em id="overview-place-sub">已去 0 · 想去 0</em>
                     </div>
                     <i class="ov-stat-arrow" aria-hidden="true">→</i>
                   </button>
@@ -324,15 +323,7 @@
                   <ul class="ov-list" id="overview-todos"></ul>
                 </article>
 
-                <button class="ov-travel-card" type="button" data-overview-go="footprints">
-                  <div class="ov-travel-info">
-                    <small>旅行足迹</small>
-                    <b>去看一看世界，<br>也去看看更大的自己。</b>
-                  </div>
-                  <i class="ov-travel-arrow" aria-hidden="true">→</i>
-                </button>
-
-                <!-- Bottom row: Important dates & Warm quote card -->
+                <!-- Bottom row: Important dates -->
                 <article class="ov-card ov-dates-card">
                   <div class="ov-head">
                     <div class="ov-head-left">
@@ -349,11 +340,6 @@
                   <ul class="ov-list" id="overview-dates"></ul>
                 </article>
 
-                <article class="ov-quote" aria-label="生活小句">
-                  <span class="ov-quote-mark" aria-hidden="true">“</span>
-                  <p>生活或许平凡，<br>但每一天都值得被认真对待。</p>
-                  <span class="ov-quote-flower" aria-hidden="true">☘</span>
-                </article>
                 <ul id="overview-footprints" hidden></ul>
               </div>
             </section>
@@ -363,7 +349,7 @@
               <div class="page-head-row">
                 <div class="page-head-copy">
                   <h2>My Days</h2>
-                  <p>把日子过成自己喜欢的样子。</p>
+                  <p>日历、任务与重要日期</p>
                 </div>
                 <div class="days-controls-cluster">
                   <div class="segmented-pills switch" role="tablist">
@@ -551,7 +537,7 @@
               <div class="page-head-row">
                 <div class="page-head-copy">
                   <h2>Footprints</h2>
-                  <p>走过的地方，都是生活的颜色。</p>
+                  <p>地点、路线与旅行记录</p>
                 </div>
                 <div class="country-mode-switch" role="group" aria-label="Footprints 视图">
                   <button type="button" data-footprints-mode="globe">地点与地球</button>
