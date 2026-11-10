@@ -30,9 +30,10 @@
     <link rel="stylesheet" href="./personal-space.css?v=35" />
     <link rel="stylesheet" href="./workspace-shell.css?v=2" />
     <link rel="stylesheet" href="./lifestyle-journal.css?v=7" />
+    <link rel="stylesheet" href="./speaking-studio.css?v=1" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=45"></script>
+    <script type="module" src="./personal-space.js?v=46"></script>
     <script type="module" src="./pwa-install.js?v=1"></script>
   </head>
   <body>
@@ -88,6 +89,10 @@
             <button type="button" class="ws-nav-item" data-route="overview">
               <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 20Z"/><path d="M9 21v-7h6v7"/></svg>
               <span>Overview</span>
+            </button>
+            <button type="button" class="ws-nav-item" data-route="speaking">
+              <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></svg>
+              <span><b>Speaking Studio</b><small>雅思口语</small></span>
             </button>
             <button type="button" class="ws-nav-item" data-route="footprints">
               <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11.5A7 7 0 0 1 19 9.5C19 15.5 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
@@ -404,6 +409,105 @@
             </section>
 
             -->
+            <section class="screen module speaking-module" data-screen="speaking" aria-label="IELTS Speaking Studio" hidden>
+              <header class="speaking-page-head">
+                <div><p class="speaking-eyebrow">IELTS SPEAKING</p><h2>Speaking Studio</h2><p>真实录音、结构化练习与可追溯的语言反馈。</p></div>
+                <div class="speaking-usage" id="speaking-usage"><small>AI 免费保护额度（估算）</small><strong>-- / 8,000</strong><span><i></i></span><em>UTC 00:00 重置</em></div>
+              </header>
+              <nav class="speaking-tabs" id="speaking-tabs" aria-label="口语训练功能">
+                <button class="active" type="button" data-speaking-tab="home">Home</button>
+                <button type="button" data-speaking-tab="practice">Practice</button>
+                <button type="button" data-speaking-tab="feedback">Feedback</button>
+                <button type="button" data-speaking-tab="questions">Question Bank</button>
+                <button type="button" data-speaking-tab="library">Library</button>
+                <button type="button" data-speaking-tab="progress">Progress</button>
+              </nav>
+              <p class="inline-status" id="speaking-status" role="status" aria-live="polite"></p>
+
+              <section class="speaking-panel active" data-speaking-panel="home">
+                <div class="speaking-stat-grid">
+                  <article><small>本周练习天数</small><strong id="speaking-days">0</strong></article>
+                  <article><small>本周训练时长</small><strong id="speaking-duration">0 分钟</strong></article>
+                  <article><small>待复习题目</small><strong id="speaking-review-count">0</strong></article>
+                  <article><small>待复习表达</small><strong id="speaking-expression-count">0</strong></article>
+                </div>
+                <div class="speaking-entry-grid">
+                  <button type="button" data-speaking-start="daily"><span>3–5 MINUTES</span><b>Daily Speaking</b><p>从未练题中选择 1–3 道，轻量完成今日开口。</p><i>开始练习 →</i></button>
+                  <button type="button" data-speaking-start="topic"><span>PART 1 · 2 · 3</span><b>Topic Practice</b><p>按 Part 与话题筛选，专门练习薄弱题目。</p><i>选择题目 →</i></button>
+                  <button type="button" data-speaking-start="mock"><span>11–14 MINUTES</span><b>Full Mock Test</b><p>按考试结构连续完成三部分，结束后统一查看报告。</p><i>开始模拟 →</i></button>
+                </div>
+                <article class="speaking-recent"><div><small>最近一次练习</small><h3 id="speaking-recent-title">还没有练习记录</h3><p id="speaking-recent-meta">完成第一次回答后会显示在这里。</p></div><button type="button" data-speaking-tab-target="progress">查看历史</button></article>
+              </section>
+
+              <section class="speaking-panel" data-speaking-panel="questions" hidden>
+                <div class="speaking-toolbar">
+                  <select id="speaking-part-filter" aria-label="按 Part 筛选"><option value="all">全部 Part</option><option value="1">Part 1</option><option value="2">Part 2</option><option value="3">Part 3</option></select>
+                  <select id="speaking-topic-filter" aria-label="按话题筛选"><option value="all">全部话题</option></select>
+                  <label class="speaking-search"><span>⌕</span><input id="speaking-question-search" type="search" placeholder="搜索英文或中文题目"></label>
+                  <button type="button" id="speaking-random-question">随机抽题</button>
+                  <button type="button" id="speaking-add-question">＋ 自定义题目</button>
+                </div>
+                <p class="speaking-bank-summary" id="speaking-bank-summary"></p>
+                <div class="speaking-question-list" id="speaking-question-list"></div>
+              </section>
+
+              <section class="speaking-panel" data-speaking-panel="practice" hidden>
+                <div class="speaking-practice-shell">
+                  <header><div><span id="speaking-practice-part">Part 1</span><small id="speaking-practice-topic">Topic</small></div><p id="speaking-practice-progress">练习模式</p></header>
+                  <article class="speaking-question-card">
+                    <button type="button" id="speaking-read-question" aria-label="朗读题目">🔊</button>
+                    <h3 id="speaking-question-en">请选择一道题目</h3>
+                    <p id="speaking-question-zh"></p>
+                    <ul id="speaking-cue-points" hidden></ul>
+                  </article>
+                  <div class="speaking-mock-note" id="speaking-mock-note" hidden><label>Part 2 准备笔记<textarea id="speaking-prep-notes" rows="3" maxlength="800" placeholder="准备阶段可在这里记下关键词"></textarea></label><strong id="speaking-mock-timer">01:00</strong></div>
+                  <div class="speaking-recorder">
+                    <div class="speaking-record-clock"><span id="speaking-record-dot"></span><strong id="speaking-record-time">00:00</strong><small id="speaking-record-state">准备录音</small></div>
+                    <div class="speaking-record-actions">
+                      <button class="primary" type="button" id="speaking-record-start">● 开始录音</button>
+                      <button type="button" id="speaking-record-stop" disabled>■ 结束录音</button>
+                      <button type="button" id="speaking-record-reset" disabled>重新录制</button>
+                    </div>
+                    <audio id="speaking-audio" controls hidden></audio>
+                    <div class="speaking-submit-row"><button type="button" id="speaking-download-audio" disabled>导出录音</button><button class="primary" type="button" id="speaking-submit-ai" disabled>提交 AI 批改</button></div>
+                    <p id="speaking-recorder-message" role="status" aria-live="polite">录音只保存在当前浏览器；提交时会临时传给 Cloudflare AI 处理。</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="speaking-panel" data-speaking-panel="feedback" hidden>
+                <div class="speaking-feedback-empty" id="speaking-feedback-empty"><h3>还没有批改报告</h3><p>完成一次真实录音并提交后，转写和结构化中文反馈会显示在这里。</p></div>
+                <div class="speaking-feedback" id="speaking-feedback" hidden>
+                  <article><header><h3>英文转写</h3><button type="button" id="speaking-edit-transcript">修正识别文字</button></header><p id="speaking-transcript"></p></article>
+                  <div class="speaking-feedback-grid"><article><h3>语法批改</h3><div id="speaking-grammar"></div></article><article><h3>词汇优化</h3><div id="speaking-vocabulary"></div></article></div>
+                  <article><h3>内容与逻辑</h3><div id="speaking-content"></div></article>
+                  <article><h3>优化后的参考回答</h3><p id="speaking-improved"></p><button type="button" id="speaking-save-expression">收藏优秀表达</button></article>
+                  <article><h3>本次优先改进</h3><ol id="speaking-priorities"></ol></article>
+                  <article id="speaking-comparison" hidden><h3>同题回答对比</h3><div class="speaking-comparison-grid"><div><small>上一次</small><p id="speaking-previous-answer"></p></div><div><small>这一次</small><p id="speaking-current-answer"></p></div></div></article>
+                  <p class="speaking-ai-notice">AI 反馈不是 IELTS 官方评分；仅根据转写文字分析语言和内容，不评估发音、重音或语调。</p>
+                  <button class="primary" type="button" id="speaking-retry-question">再练一次</button>
+                </div>
+              </section>
+
+              <section class="speaking-panel" data-speaking-panel="library" hidden>
+                <div class="speaking-library-grid">
+                  <article><span>TOPIC LANGUAGE</span><h3>按话题建立自然表达</h3><p>Hometown：a close-knit neighbourhood · Travel：a well-planned itinerary · Study：hands-on learning。表达用于理解和替换，不鼓励整段背诵。</p></article>
+                  <article><span>ORIGINAL EXAMPLE</span><h3>简洁示例回答</h3><p><b>Do you enjoy travelling?</b><br>Yes, especially short trips. They give me a break from my routine, and I usually return with a clearer mind.</p></article>
+                  <article><span>ANSWER STRUCTURE</span><h3>Opinion → Reason → Example → Feeling</h3><p>先直接回答，再解释原因，补充具体例子，最后自然表达感受。结构用于组织思路，不需要逐句背诵。</p></article>
+                  <article><span>NATURAL LANGUAGE</span><h3>Useful speaking moves</h3><ul><li>From my point of view, ...</li><li>One reason for this is that ...</li><li>A good example would be ...</li><li>What I found most memorable was ...</li></ul></article>
+                </div>
+                <header class="speaking-section-head"><div><h3>个人语料库</h3><p>从批改报告中保存真正适合自己的表达。</p></div><input id="speaking-expression-search" type="search" placeholder="搜索表达或话题" aria-label="搜索个人语料"></header>
+                <div class="speaking-expression-list" id="speaking-expression-list"></div>
+              </section>
+
+              <section class="speaking-panel" data-speaking-panel="progress" hidden>
+                <header class="speaking-section-head"><div><h3>Progress & History</h3><p>只展示有真实练习数据支持的记录，不生成虚假的进步百分比。</p></div></header>
+                <div class="speaking-progress-summary" id="speaking-progress-summary"></div>
+                <article class="speaking-error-summary"><h3>高频语法提醒</h3><div id="speaking-error-list"><p>完成练习后，将根据真实批改记录汇总。</p></div></article>
+                <div class="speaking-history-list" id="speaking-history-list"></div>
+              </section>
+            </section>
+
             <section class="screen module map-module footprints-module" data-screen="footprints" aria-label="Footprints" hidden>
               <!-- In-page Header for Footprints -->
               <div class="page-head-row">

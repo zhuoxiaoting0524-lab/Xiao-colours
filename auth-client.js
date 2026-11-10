@@ -60,7 +60,7 @@ export function safeNextPath(raw, fallback = "./index.html") {
 
 export const PRIVATE_VIEWS = Object.freeze([
   "overview",
-  "days",
+  "speaking",
   "footprints",
   "settings",
   "journal",

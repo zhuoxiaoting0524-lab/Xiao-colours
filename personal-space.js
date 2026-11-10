@@ -3,15 +3,17 @@ import { mountOverview } from "./overview.js?v=7";
 import { mountFootprints } from "./footprints.js?v=36";
 import { mountLifeArchive } from "./life-archive.js?v=1";
 import { mountCountryArchives } from "./country-archives.js?v=3";
+import { mountSpeakingStudio } from "./speaking-studio.js?v=1";
 
 const root = document.querySelector("#personal-space-v2");
 const $ = (selector, scope = root) => scope?.querySelector(selector);
 const $$ = (selector, scope = root) => [...(scope?.querySelectorAll(selector) || [])];
-const privateRoutes = new Set(["overview", "footprints", "settings"]);
+const privateRoutes = new Set(["overview", "speaking", "footprints", "settings"]);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const PANEL_META = {
   overview: { title: "Overview", desc: "时间天气与旅行概览" },
+  speaking: { title: "Speaking Studio", desc: "雅思口语练习、录音与语言反馈" },
   footprints: { title: "Footprints", desc: "地点、路线与旅行记录" },
   settings: { title: "设置", desc: "让这个空间更符合你的喜好。" },
 };
@@ -182,6 +184,7 @@ async function mountRoute(name) {
     await mountFootprints(authState, { notify });
     await mountCountryArchives(authState, { notify });
   }
+  if (name === "speaking") await mountSpeakingStudio(authState, { notify });
   if (name === "settings") mountSettings();
 }
 

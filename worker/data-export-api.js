@@ -66,7 +66,8 @@ export async function collectUserExport(db, user, { includePhotoBytes = false } 
   const tables = await tableNames(db);
   const userId = user.id;
   const [taskRows, importantDateRows, footprintRows, photoMetadataRows, noteRows, journalRows, galleryRows, mediaRows,
-    archiveRows, experienceRows, experiencePhotoMetadataRows, expenseRows, routeDayRows, routeItemRows] = await Promise.all([
+    archiveRows, experienceRows, experiencePhotoMetadataRows, expenseRows, routeDayRows, routeItemRows,
+    speakingAnswerRows, speakingFeedbackRows, speakingExpressionRows, speakingCustomQuestionRows, speakingMarkRows] = await Promise.all([
     selectForUser(db, tables, "day_tasks", userId, "task_date ASC, created_at ASC"),
     selectForUser(db, tables, "important_dates", userId, "event_date ASC, created_at ASC"),
     selectForUser(db, tables, "footprints", userId),
@@ -85,6 +86,11 @@ export async function collectUserExport(db, user, { includePhotoBytes = false } 
     selectForUser(db, tables, "country_expenses", userId),
     selectForUser(db, tables, "country_route_days", userId, "route_type ASC, day_number ASC"),
     selectForUser(db, tables, "country_route_items", userId, "route_day_id ASC, sort_order ASC"),
+    selectForUser(db, tables, "speaking_answers", userId),
+    selectForUser(db, tables, "speaking_feedback", userId),
+    selectForUser(db, tables, "speaking_saved_expressions", userId),
+    selectForUser(db, tables, "speaking_custom_questions", userId),
+    selectForUser(db, tables, "speaking_question_marks", userId, "updated_at ASC"),
   ]);
   const photosByFootprint = new Map(photoMetadataRows.map((photo) => [photo.footprint_id, photo]));
   const footprints = footprintRows.map((footprint) => publicFootprint(footprint, photosByFootprint.get(footprint.id)));
@@ -101,6 +107,14 @@ export async function collectUserExport(db, user, { includePhotoBytes = false } 
         routeDays: routeDayRows.map((row) => withoutPrivateColumns(row)),
         routeItems: routeItemRows.map((row) => withoutPrivateColumns(row)),
       },
+      speakingStudio: {
+        answers: speakingAnswerRows.map((row) => withoutPrivateColumns(row)),
+        feedback: speakingFeedbackRows.map((row) => withoutPrivateColumns(row)),
+        savedExpressions: speakingExpressionRows.map((row) => withoutPrivateColumns(row)),
+        customQuestions: speakingCustomQuestionRows.map((row) => withoutPrivateColumns(row)),
+        questionMarks: speakingMarkRows.map((row) => withoutPrivateColumns(row)),
+        audioStorage: "Original recordings stay in the current browser IndexedDB and are not uploaded to server backups.",
+      },
       other: {
         notes: noteRows.map((row) => withoutPrivateColumns(row)),
         journalPages: journalRows.map((row) => withoutPrivateColumns(row)),
@@ -108,7 +122,7 @@ export async function collectUserExport(db, user, { includePhotoBytes = false } 
         mediaMetadata: mediaRows.map((row) => withoutPrivateColumns(row)),
       },
     },
-    counts: { myDays: taskRows.length, importantDates: importantDateRows.length, footprints: footprints.length, footprintPhotos: photoMetadataRows.length, countryArchives: archiveRows.length, countryExperiences: experienceRows.length, countryExpenses: expenseRows.length, countryRoutes: routeItemRows.length, countryExperiencePhotos: experiencePhotoMetadataRows.length, otherRecords: noteRows.length + journalRows.length + galleryRows.length + mediaRows.length },
+    counts: { myDays: taskRows.length, importantDates: importantDateRows.length, footprints: footprints.length, footprintPhotos: photoMetadataRows.length, countryArchives: archiveRows.length, countryExperiences: experienceRows.length, countryExpenses: expenseRows.length, countryRoutes: routeItemRows.length, countryExperiencePhotos: experiencePhotoMetadataRows.length, speakingAnswers: speakingAnswerRows.length, speakingExpressions: speakingExpressionRows.length, otherRecords: noteRows.length + journalRows.length + galleryRows.length + mediaRows.length },
   };
   const declaredPhotoBytes = [...photoMetadataRows, ...experiencePhotoMetadataRows].reduce((sum, photo) => sum + Number(photo.byte_size || 0), 0);
   if (includePhotoBytes && declaredPhotoBytes > MAX_ZIP_BYTES) {
@@ -192,13 +206,14 @@ function zipFiles(exported, photos) {
   const footprints = exported.data.footprints.map((footprint) => ({ ...footprint, photo: footprint.photo ? { ...footprint.photo, backupPath: photoPaths.get(footprint.photo.id) || null } : null }));
   const countryArchives = structuredClone(exported.data.countryArchives || {});
   for (const experience of countryArchives.experiences || []) for (const photo of experience.photos || []) photo.backupPath = photoPaths.get(photo.id) || null;
-  const manifest = { format: exported.format, version: exported.version, exportedAt: exported.exportedAt, account: exported.account, counts: exported.counts, contents: ["data/my-days.json", "data/important-dates.json", "data/footprints.json", "data/country-archives.json", "data/other-data.json", ...photoFiles.map((file) => file.name.replace(`${root}/`, ""))] };
+  const manifest = { format: exported.format, version: exported.version, exportedAt: exported.exportedAt, account: exported.account, counts: exported.counts, contents: ["data/my-days.json", "data/important-dates.json", "data/footprints.json", "data/country-archives.json", "data/speaking-studio.json", "data/other-data.json", ...photoFiles.map((file) => file.name.replace(`${root}/`, ""))] };
   return [
     { name: `${root}/manifest.json`, bytes: prettyJson(manifest) },
     { name: `${root}/data/my-days.json`, bytes: prettyJson(exported.data.myDays) },
     { name: `${root}/data/important-dates.json`, bytes: prettyJson(exported.data.importantDates) },
     { name: `${root}/data/footprints.json`, bytes: prettyJson(footprints) },
     { name: `${root}/data/country-archives.json`, bytes: prettyJson(countryArchives) },
+    { name: `${root}/data/speaking-studio.json`, bytes: prettyJson(exported.data.speakingStudio || {}) },
     { name: `${root}/data/other-data.json`, bytes: prettyJson(exported.data.other) },
     ...photoFiles,
   ];

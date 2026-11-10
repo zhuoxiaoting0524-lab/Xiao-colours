@@ -9,6 +9,12 @@
     "binding": "ASSETS",
     "run_worker_first": ["/api/*"]
   },
+  "ai": {
+    "binding": "AI"
+  },
+  "vars": {
+    "SPEAKING_AI_DAILY_LIMIT": "8000"
+  },
   "kv_namespaces": [
     {
       "binding": "GLOBAL_PULSE_CACHE",
