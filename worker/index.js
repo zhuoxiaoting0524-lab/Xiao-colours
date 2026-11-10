@@ -2,7 +2,6 @@ import { handleAuthApi } from "./auth-api.js";
 import { handleGalleryApi } from "./gallery-api.js";
 import { handleJournalApi } from "./journal-api.js";
 import { handleNotesApi } from "./notes-api.js";
-import { handleDaysApi } from "./days-api.js";
 import { handleFootprintsApi } from "./footprints-api.js";
 import { handleDataExportApi } from "./data-export-api.js";
 import { handleCountryArchivesApi } from "./country-archives-api.js";
@@ -30,11 +29,6 @@ export default {
         if (url.pathname.startsWith("/api/me/notes")) {
           const notesResponse = await handleNotesApi(request, env);
           if (notesResponse) return notesResponse;
-          return errorJson(404, "not_found", "接口不存在");
-        }
-        if (url.pathname.startsWith("/api/me/days")) {
-          const daysResponse = await handleDaysApi(request, env);
-          if (daysResponse) return daysResponse;
           return errorJson(404, "not_found", "接口不存在");
         }
         if (url.pathname.startsWith("/api/me/footprints")) {

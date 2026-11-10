@@ -555,6 +555,10 @@
   gap: 16px;
 }
 
+#personal-space-v2 .ov-stats.ov-stats-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 #personal-space-v2 .ov-stat {
   display: flex;
   align-items: center;

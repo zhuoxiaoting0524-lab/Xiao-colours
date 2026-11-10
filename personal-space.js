@@ -1,6 +1,5 @@
 import { api, getMe, loginUrlForView } from "./auth-client.js";
-import { mountOverview } from "./overview.js?v=6";
-import { mountDays, openTaskComposer, openImportantComposer } from "./days.js?v=23";
+import { mountOverview } from "./overview.js?v=7";
 import { mountFootprints } from "./footprints.js?v=36";
 import { mountLifeArchive } from "./life-archive.js?v=1";
 import { mountCountryArchives } from "./country-archives.js?v=3";
@@ -8,12 +7,11 @@ import { mountCountryArchives } from "./country-archives.js?v=3";
 const root = document.querySelector("#personal-space-v2");
 const $ = (selector, scope = root) => scope?.querySelector(selector);
 const $$ = (selector, scope = root) => [...(scope?.querySelectorAll(selector) || [])];
-const privateRoutes = new Set(["overview", "days", "footprints", "settings"]);
+const privateRoutes = new Set(["overview", "footprints", "settings"]);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const PANEL_META = {
-  overview: { title: "Overview", desc: "时间天气、今日计划与生活概览" },
-  days: { title: "My Days", desc: "日历、任务与重要日期" },
+  overview: { title: "Overview", desc: "时间天气与旅行概览" },
   footprints: { title: "Footprints", desc: "地点、路线与旅行记录" },
   settings: { title: "设置", desc: "让这个空间更符合你的喜好。" },
 };
@@ -163,7 +161,7 @@ function renderAccount() {
   if (detail) {
     detail.textContent = authState.status === "error"
       ? "请检查网络后刷新；为保护私人数据，不会误判为已登录。"
-      : "登录后可进入 Overview、My Days 与 Footprints。";
+      : "登录后可进入 Overview 与 Footprints。";
   }
   if (email) email.textContent = "—";
   if (login) login.hidden = false;
@@ -178,11 +176,8 @@ async function mountRoute(name) {
     await mountOverview(authState, {
       notify,
       onNavigate: (target) => route(target),
-      onAddTask: async () => { await route("days"); openTaskComposer(); },
-      onAddDate: async () => { await route("days"); openImportantComposer(); },
     });
   }
-  if (name === "days") await mountDays(authState, { notify });
   if (name === "footprints") {
     await mountFootprints(authState, { notify });
     await mountCountryArchives(authState, { notify });

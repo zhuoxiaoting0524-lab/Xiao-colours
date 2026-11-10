@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="XiaoColour 私人空间：My Days 与 Footprints。" />
+    <meta name="description" content="XiaoColour 私人空间：Overview 与 Footprints。" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <meta name="theme-color" content="#F8F7F2" />
     <meta name="application-name" content="XiaoColour" />
@@ -32,7 +32,7 @@
     <link rel="stylesheet" href="./lifestyle-journal.css?v=7" />
     <link rel="stylesheet" href="./auth.css?v=3" />
     <script type="module" src="./script.js?v=20"></script>
-    <script type="module" src="./personal-space.js?v=44"></script>
+    <script type="module" src="./personal-space.js?v=45"></script>
     <script type="module" src="./pwa-install.js?v=1"></script>
   </head>
   <body>
@@ -56,13 +56,13 @@
         <div class="ws-welcome">
           <p class="ws-kicker">Welcome</p>
           <h1 class="ws-brand">XiaoColour</h1>
-          <p class="ws-lead">Days and places — in one calm workspace.</p>
+          <p class="ws-lead">Places and memories — in one calm workspace.</p>
           <div class="ws-welcome-actions">
             <button class="ws-cta" type="button" data-route="overview" id="welcome-enter">进入工作区</button>
             <a class="ws-link" href="./login.html" id="personal-auth-login-link">登录</a>
             <a class="ws-link" href="/global" target="_self">Global Pulse ↗</a>
           </div>
-          <p class="ws-welcome-hint" id="personal-auth-user-detail">登录后可使用 Overview、My Days 与 Footprints。</p>
+          <p class="ws-welcome-hint" id="personal-auth-user-detail">登录后可使用 Overview 与 Footprints。</p>
           <a class="ws-admin" href="./admin.html" id="personal-auth-admin-link" hidden>邀请管理</a>
         </div>
       </section>
@@ -88,10 +88,6 @@
             <button type="button" class="ws-nav-item" data-route="overview">
               <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 20Z"/><path d="M9 21v-7h6v7"/></svg>
               <span>Overview</span>
-            </button>
-            <button type="button" class="ws-nav-item" data-route="days">
-              <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-              <span>My Days</span>
             </button>
             <button type="button" class="ws-nav-item" data-route="footprints">
               <svg class="ws-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11.5A7 7 0 0 1 19 9.5C19 15.5 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
@@ -272,30 +268,7 @@
                   </div>
                 </header>
 
-                <!-- 3 Summary Stat Cards matching mockup -->
-                <section class="ov-stats" aria-label="今日概览">
-                  <button class="ov-stat ov-stat-task" type="button" data-overview-go="days">
-                    <span class="ov-stat-icon">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M9 11l2 2 4-4"/></svg>
-                    </span>
-                    <div class="ov-stat-content">
-                      <small>今日任务</small>
-                      <b id="overview-task-count">0 / 0</b>
-                      <em id="overview-task-sub">还没有安排，开始计划吧</em>
-                    </div>
-                    <i class="ov-stat-arrow" aria-hidden="true">→</i>
-                  </button>
-                  <button class="ov-stat ov-stat-peach" type="button" data-overview-go="days" data-overview-add="date">
-                    <span class="ov-stat-icon">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    </span>
-                    <div class="ov-stat-content">
-                      <small>重要日期</small>
-                      <b id="overview-date-count">0</b>
-                      <em id="overview-date-sub">还没有重要日期</em>
-                    </div>
-                    <i class="ov-stat-arrow" aria-hidden="true">→</i>
-                  </button>
+                <section class="ov-stats ov-stats-single" aria-label="旅行概览">
                   <button class="ov-stat ov-stat-apricot" type="button" data-overview-go="footprints">
                     <span class="ov-stat-icon">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11.5A7 7 0 0 1 19 9.5C19 15.5 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
@@ -309,108 +282,7 @@
                   </button>
                 </section>
 
-                <!-- Middle row: Today's plan & Travel feature card -->
-                <article class="ov-card ov-today-card">
-                  <div class="ov-head">
-                    <div class="ov-head-left">
-                      <span class="ov-head-badge green-badge" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
-                      </span>
-                      <h3>今天的小计划</h3>
-                    </div>
-                    <button type="button" class="btn-ghost-pill" data-overview-add="task">＋ 添加任务</button>
-                  </div>
-                  <ul class="ov-list" id="overview-todos"></ul>
-                </article>
-
-                <!-- Bottom row: Important dates -->
-                <article class="ov-card ov-dates-card">
-                  <div class="ov-head">
-                    <div class="ov-head-left">
-                      <span class="ov-head-badge peach-badge" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                      </span>
-                      <div>
-                        <h3>重要的日子</h3>
-                        <p>记录值得期待的时刻</p>
-                      </div>
-                    </div>
-                    <button type="button" class="btn-ghost-pill" data-overview-add="date">＋ 添加重要日期</button>
-                  </div>
-                  <ul class="ov-list" id="overview-dates"></ul>
-                </article>
-
                 <ul id="overview-footprints" hidden></ul>
-              </div>
-            </section>
-
-            <section class="screen module days-module" data-screen="days" aria-label="My Days" hidden>
-              <!-- In-page Header for My Days -->
-              <div class="page-head-row">
-                <div class="page-head-copy">
-                  <h2>My Days</h2>
-                  <p>日历、任务与重要日期</p>
-                </div>
-                <div class="days-controls-cluster">
-                  <div class="segmented-pills switch" role="tablist">
-                    <button class="active" type="button" data-calendar-view="week">周视图</button>
-                    <button type="button" data-calendar-view="month">月历</button>
-                  </div>
-                  <div class="nav-arrows">
-                    <button type="button" id="calendar-prev" aria-label="上一段日期">←</button>
-                    <button type="button" id="calendar-next" aria-label="下一段日期">→</button>
-                  </div>
-                  <button type="button" class="btn-ghost-pill" id="calendar-today">今天</button>
-                </div>
-              </div>
-
-              <p class="inline-status" id="days-status" role="status" aria-live="polite">正在读取生活计划…</p>
-
-              <!-- Calendar card container -->
-              <div class="calendar-strip-card">
-                <div class="calendar-card-head">
-                  <h3 id="calendar-range-label">October 2026</h3>
-                  <p id="calendar-month-label" hidden>MONTH</p>
-                </div>
-                <div class="week" id="week"></div>
-                <div class="month" id="month" hidden></div>
-              </div>
-
-              <!-- Main 2-column layout: Tasks (left) and Progress + Important dates (right) -->
-              <div class="days-split-layout">
-                <section class="days-task-card">
-                  <div class="days-card-head">
-                    <h3 id="day-title">今天 · 10月23日 星期五</h3>
-                    <p id="day-label" hidden>SELECTED DAY</p>
-                    <button class="btn-ghost-pill" id="add-task" type="button">＋ 新建任务</button>
-                  </div>
-                  <div class="tasks" id="tasks"></div>
-                </section>
-
-                <aside class="days-side-column">
-                  <!-- Progress Card -->
-                  <div class="progress-card">
-                    <div class="progress-head">
-                      <h4>本周进度</h4>
-                      <b id="week-progress-label">0 / 0</b>
-                    </div>
-                    <div class="progress-visual">
-                      <span class="sprout-icon" aria-hidden="true">🌱</span>
-                      <div class="progress-track"><u id="week-progress-bar"></u></div>
-                    </div>
-                    <small class="progress-sub">完成一点点，也是一种进步。</small>
-                  </div>
-
-                  <!-- Important Dates Card -->
-                  <div class="important-dates-card">
-                    <div class="important-head">
-                      <span class="important-star" aria-hidden="true">☆</span>
-                      <h4>重要日期</h4>
-                    </div>
-                    <div class="dates" id="important-dates"></div>
-                    <button class="btn-dashed-action" id="add-important" type="button">＋ 添加重要日期</button>
-                  </div>
-                </aside>
               </div>
             </section>
 
@@ -767,7 +639,7 @@
                   <div class="data-export-details">
                     <div>
                       <b>导出内容</b>
-                      <span>My Days 任务 · 重要日期 · Footprints 地点与照片 · 其他已实现的私人记录</span>
+                      <span>历史任务与重要日期 · Footprints 地点与照片 · 其他已实现的私人记录</span>
                     </div>
                     <div>
                       <b>隐私保护</b>
@@ -831,24 +703,6 @@
         </section>
       </dialog>
 
-      <dialog id="task-dialog" class="dialog small"><form id="task-form">
-        <header><span><p class="overline">MY DAYS</p><h3 id="task-dialog-title">编辑任务</h3></span><button type="button" data-close="task-dialog" aria-label="关闭">×</button></header>
-        <label>任务<input id="task-title" required maxlength="140"></label>
-        <div class="field-grid"><label>日期<input id="task-date" type="date" required></label><label>时间（可选）<input id="task-time" type="time"></label></div>
-        <div class="field-grid"><label>标签<select id="task-tag"><option>Personal</option><option>Study</option><option>Health</option><option>Home</option></select></label><label>重复<select id="task-repeat"><option value="none">不重复</option><option value="daily">每天 · 30次</option><option value="weekly">每周 · 12次</option><option value="monthly">每月 · 6次</option></select></label></div>
-        <p class="hint" id="task-meta">重复任务会创建独立日期记录，之后可逐条调整。</p>
-        <footer><button class="danger" id="delete-task" type="button">删除</button><span></span><button type="button" data-close="task-dialog">取消</button><button class="primary" id="save-task" type="submit">保存</button></footer>
-      </form></dialog>
-
-      <dialog id="important-dialog" class="dialog small"><form id="important-form">
-        <header><span><p class="overline">IMPORTANT DATE</p><h3 id="important-dialog-title">重要日期</h3></span><button type="button" data-close="important-dialog" aria-label="关闭">×</button></header>
-        <label>名称<input id="important-title" required maxlength="140"></label>
-        <label>日期<input id="important-date" type="date" required></label>
-        <label>备注<textarea id="important-note" rows="3" maxlength="500"></textarea></label>
-        <label>重复<select id="important-repeat"><option value="none">不重复</option><option value="yearly">每年</option></select></label>
-        <footer><button class="danger" id="delete-important" type="button">删除</button><span></span><button type="button" data-close="important-dialog">取消</button><button class="primary" id="save-important" type="submit">保存</button></footer>
-      </form></dialog>
-
       <dialog id="place-dialog" class="dialog small"><form id="place-form">
         <header><span><p class="overline">FOOTPRINTS</p><h3 id="place-dialog-title">添加足迹</h3></span><button type="button" data-close="place-dialog" aria-label="关闭">×</button></header>
         <p class="hint place-location-label" id="place-location-label"></p>
@@ -891,7 +745,7 @@
           <fieldset class="archive-fieldset">
             <legend>包含内容</legend>
             <div class="archive-check-grid">
-              <label><input type="checkbox" name="archive-content" value="tasks" checked><span>My Days 任务</span></label>
+              <label><input type="checkbox" name="archive-content" value="tasks" checked><span>历史任务</span></label>
               <label><input type="checkbox" name="archive-content" value="important" checked><span>重要日期</span></label>
               <label><input type="checkbox" name="archive-content" value="footprints" checked><span>Footprints 旅行足迹</span></label>
               <label><input type="checkbox" name="archive-content" value="photos" checked><span>旅行照片</span></label>
